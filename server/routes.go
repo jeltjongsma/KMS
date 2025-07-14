@@ -6,8 +6,11 @@ import (
 	"kms/storage"
 )
 
-func RegisterRoutes(repo storage.KeyRepository) {
+func RegisterRoutes(keyRepo storage.KeyRepository, userRepo storage.UserRepository) {
 
-	http.HandleFunc("/keys", handlers.MakeKeyHandler(repo))
-	http.HandleFunc("/keys/", handlers.MakeKeyByIDHandler(repo))
+	http.HandleFunc("/keys", handlers.MakeKeyHandler(keyRepo))
+	http.HandleFunc("/keys/", handlers.MakeKeyByIDHandler(keyRepo))
+
+	http.HandleFunc("/users", handlers.MakeUserHandler(userRepo))
+	http.HandleFunc("/users/", handlers.MakeUserByIDHandler(userRepo))
 }

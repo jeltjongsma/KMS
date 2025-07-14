@@ -5,29 +5,33 @@ import (
 	"kms/storage"
 )
 
-type PostgresRepo struct {
-	DB *sql.DB
+type PostgresKeyRepo struct {
+	db *sql.DB
+}
+
+func NewPostgresKeyRepo(db *sql.DB) *PostgresKeyRepo {
+	return &PostgresKeyRepo{db: db}
 }
 
 // TODO: Replace queries with query builder
-func (r *PostgresRepo) CreateKey(key *storage.Key) (string, error) {
+func (r *PostgresKeyRepo) CreateKey(key *storage.Key) (string, error) {
 	query := "INSERT INTO keys (dek, userId) VALUES ($1, $2) RETURNING id"
 	var id string
-	err := r.DB.QueryRow(query, key.DEK, key.UserId).Scan(&id)
+	err := r.db.QueryRow(query, key.DEK, key.UserId).Scan(&id)
 	return id, err
 }
 
-func (r *PostgresRepo) GetKey(id string) (storage.Key, error) {
+func (r *PostgresKeyRepo) GetKey(id string) (storage.Key, error) {
 	query := "SELECT * FROM keys WHERE id = $1"
 	var key storage.Key
-	err := r.DB.QueryRow(query, id).Scan(&key.ID, &key.DEK, &key.UserId)
+	err := r.db.QueryRow(query, id).Scan(&key.ID, &key.DEK, &key.UserId)
 	return key, err
 }
 
-func (r *PostgresRepo) GetAll() ([]storage.Key, error) {
+func (r *PostgresKeyRepo) GetAll() ([]storage.Key, error) {
 	query := "SELECT * FROM keys"
 	var keys []storage.Key
-	rows, err := r.DB.Query(query)
+	rows, err := r.db.Query(query)
 	if err != nil {return keys, err}
 
 	defer rows.Close()

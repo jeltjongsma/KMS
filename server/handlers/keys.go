@@ -8,38 +8,34 @@ import (
 	"errors"
 )
 
-func MakeKeyHandler(repo storage.KeyRepository) http.HandlerFunc {
+func MakeKeyHandler(keyRepo storage.KeyRepository) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 
 		// TODO: Discard invalid request body
 		case http.MethodPost:
-			defer r.Body.Close()
-
 			var newKey storage.Key
 			if utils.HandleHttpErr(w, utils.DecodePayload(r.Body, &newKey), 
 					"Invalid request body", http.StatusBadRequest) {
 				return
 			}
 
-			id, err := repo.CreateKey(&newKey)
-			newKey.ID = id
+			id, err := keyRepo.CreateKey(&newKey)
 
 			// TODO: Perform error handling different (Global handler?)
 			if errors.Is(err, sql.ErrNoRows) {
-				http.Error(w, "User not found", http.StatusNotFound)
+				http.Error(w, "Key not found", http.StatusNotFound)
 			}
-			utils.HandleErr(err, "Could not query row")
+			if utils.HandleHttpErr(w, err, "Could not create key", http.StatusInternalServerError) {return}
 
-			w.Header().Set("Content-Type", "application/json")
+			newKey.ID = id
+
 			utils.SendEncodedJSON(w, &newKey)
-			return
 
 		case http.MethodGet:
-			keys, err := repo.GetAll()
+			keys, err := keyRepo.GetAll()
 			if utils.HandleHttpErr(w, err, "Failed to retrieve keys", http.StatusInternalServerError) {return}
 
-			w.Header().Set("Content-Type", "application/json")
 			utils.SendEncodedJSON(w, keys)
 			return
 
@@ -49,19 +45,19 @@ func MakeKeyHandler(repo storage.KeyRepository) http.HandlerFunc {
 	}
 }
 
-func MakeKeyByIDHandler(repo storage.KeyRepository) http.HandlerFunc {
+func MakeKeyByIDHandler(keyRepo storage.KeyRepository) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		id, err := utils.GetIDFromURL(r.URL.Path, 2, true)
 		if utils.HandleHttpErr(w, err, "Couldn't retrieve ID from URL", http.StatusBadRequest) {return}
 
 		switch r.Method {
 		case http.MethodGet:
-			key, err := repo.GetKey(id)
+			key, err := keyRepo.GetKey(id)
 			if utils.HandleHttpErr(w, err, "Failed to retrieve key", http.StatusNotFound) {return}
 
-			w.Header().Set("Content-Type", "application/json")
 			utils.SendEncodedJSON(w, &key)
 			return
+			
 		case http.MethodPut:
 			http.Error(w, "", http.StatusNotImplemented)
 		case http.MethodDelete:

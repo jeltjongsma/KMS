@@ -5,3 +5,9 @@ type KeyRepository interface {
 	GetKey(id string) (Key, error)
 	GetAll() ([]Key, error)
 }
+
+type UserRepository interface {
+	CreateUser(user *User) (int, error)
+	GetUser(id int) (User, error)
+	GetAll() ([]User, error)
+}
