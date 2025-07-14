@@ -31,6 +31,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
 
 	schemas := []postgres.TableSchema{
 		postgres.TableSchema{
@@ -72,7 +73,6 @@ func main() {
 	keyRepo := postgres.NewPostgresKeyRepo(db)
 	userRepo := postgres.NewPostgresUserRepo(db)
 	
-
 	server.RegisterRoutes(keyRepo, userRepo)
 
 	http.ListenAndServe(":8080", nil)

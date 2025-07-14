@@ -21,9 +21,23 @@ func (r *PostgresUserRepo) CreateUser(user *storage.User) (int, error) {
 }
 
 func (r *PostgresUserRepo) GetUser(id int) (storage.User, error) {
-	return storage.User{}, nil
+	query := "SELECT * FROM users WHERE id = $1"
+	var user storage.User
+	err := r.db.QueryRow(query, id).Scan(&user.ID, &user.Email, &user.FName, &user.LName, &user.Password)
+	return user, err
 }
 
 func (r *PostgresUserRepo) GetAll() ([]storage.User, error) {
-	return []storage.User{storage.User{}}, nil
+	query := "SELECT * FROM users"
+	var users []storage.User
+	rows, err := r.db.Query(query)
+	if err != nil {return users, err}
+	defer rows.Close()
+	for rows.Next() {
+		var user storage.User
+		err := rows.Scan(&user.ID, &user.Email, &user.FName, &user.LName, &user.Password)
+		if err != nil {return users, err}
+		users = append(users, user)
+	}
+	return users, nil
 }
