@@ -6,6 +6,7 @@ import (
 	"kms/utils"
 	"errors"
 	"database/sql"
+	"strconv"
 )
 
 func MakeUserHandler(userRepo storage.UserRepository) http.HandlerFunc {
@@ -49,8 +50,11 @@ func MakeUserHandler(userRepo storage.UserRepository) http.HandlerFunc {
 
 func MakeUserByIDHandler(userRepo storage.UserRepository) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
-		id, err := utils.GetIDFromURL(r.URL.Path, 2, true)
+		idStr, err := utils.GetIDFromURL(r.URL.Path, 2, true)
 		if utils.HandleHttpErr(w, err, "Couldn't retrieve ID from URL", http.StatusBadRequest) {return}
+
+		id, err := strconv.Atoi(idStr)
+		if utils.HandleHttpErr(w, err, "ID must be a number", http.StatusBadRequest) {return}
 		
 		switch r.Method {
 		case http.MethodGet:
