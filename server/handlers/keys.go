@@ -2,16 +2,17 @@ package handlers
 
 import (
 	"net/http"
+	"database/sql"
 	"kms/storage"
 	"kms/utils"
 	"errors"
-	"database/sql"
 )
 
-func MakeKeyHandler(db *sql.DB) http.HandlerFunc {
+func MakeKeyHandler(repo storage.KeyRepository) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 
+		// TODO: Discard invalid request body
 		case http.MethodPost:
 			defer r.Body.Close()
 
@@ -21,37 +22,25 @@ func MakeKeyHandler(db *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			err := db.QueryRow(
-				"INSERT INTO keys (dek, userId) VALUES ($1, $2) RETURNING id",
-				&newKey.DEK, &newKey.UserId,
-			).Scan(&newKey.ID)
+			id, err := repo.CreateKey(&newKey)
+			newKey.ID = id
 
+			// TODO: Perform error handling different (Global handler?)
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "User not found", http.StatusNotFound)
 			}
 			utils.HandleErr(err, "Could not query row")
 
 			w.Header().Set("Content-Type", "application/json")
-			utils.EncodeJSON(w, &newKey)
+			utils.SendEncodedJSON(w, &newKey)
 			return
 
 		case http.MethodGet:
-			rows, err := db.Query(
-				"SELECT * FROM keys",
-			)
-			utils.HandleErr(err, "Failed to query keys")
-
-			var keys []storage.Key
-			defer rows.Close()
-			for rows.Next() {
-				var key storage.Key
-				err := rows.Scan(&key.ID, &key.DEK, &key.UserId)
-				utils.HandleErr(err, "Failed to read row")
-				keys = append(keys, key)
-			}
+			keys, err := repo.GetAll()
+			if utils.HandleHttpErr(w, err, "Failed to retrieve keys", http.StatusInternalServerError) {return}
 
 			w.Header().Set("Content-Type", "application/json")
-			utils.EncodeJSON(w, keys)
+			utils.SendEncodedJSON(w, keys)
 			return
 
 		default:
@@ -60,27 +49,18 @@ func MakeKeyHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func MakeKeyByIDHandler(db *sql.DB) http.HandlerFunc {
+func MakeKeyByIDHandler(repo storage.KeyRepository) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		id, err := utils.GetIDFromURL(r.URL.Path, 2, true)
-		if utils.HandleHttpErr(w, err, "Couldn't retrieve ID from URL", http.StatusBadRequest) {
-			return
-		}
+		if utils.HandleHttpErr(w, err, "Couldn't retrieve ID from URL", http.StatusBadRequest) {return}
+
 		switch r.Method {
 		case http.MethodGet:
-			row := db.QueryRow(
-				"SELECT * FROM keys WHERE id = $1",
-				id,
-			)
-
-			var key storage.Key
-			err := row.Scan(&key.ID, &key.DEK, &key.UserId)
-			if utils.HandleHttpErr(w, err, "Failed to retrieve key", http.StatusNotFound) {
-				return
-			}
+			key, err := repo.GetKey(id)
+			if utils.HandleHttpErr(w, err, "Failed to retrieve key", http.StatusNotFound) {return}
 
 			w.Header().Set("Content-Type", "application/json")
-			utils.EncodeJSON(w, &key)
+			utils.SendEncodedJSON(w, &key)
 			return
 		case http.MethodPut:
 			http.Error(w, "", http.StatusNotImplemented)

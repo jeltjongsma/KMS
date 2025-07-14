@@ -10,6 +10,6 @@ func DecodePayload(body io.ReadCloser, payload interface{}) error {
 	return json.NewDecoder(body).Decode(payload)
 }
 
-func EncodeJSON(w http.ResponseWriter, payload interface{}) error {
+func SendEncodedJSON(w http.ResponseWriter, payload interface{}) error {
 	return json.NewEncoder(w).Encode(payload)
 }

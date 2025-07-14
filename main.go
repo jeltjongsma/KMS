@@ -6,6 +6,7 @@ import (
 	_ "github.com/lib/pq"
 	"log"
 	"kms/server"
+	"kms/storage/postgres"
 )
 
 type Test struct {
@@ -48,7 +49,9 @@ func main() {
 
 	log.Println("Connected!")
 
-	server.RegisterRoutes(db)
+	repo := &postgres.PostgresRepo{DB: db}
+
+	server.RegisterRoutes(repo)
 
 	http.ListenAndServe(":8080", nil)
 }
