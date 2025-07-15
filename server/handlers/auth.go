@@ -74,8 +74,6 @@ func MakeLoginHandler(cfg map[string]string, userRepo storage.UserRepository) ht
 				http.StatusUnauthorized,
 			) {return}
 
-			// Return token
-			// w.WriteHeader(200)
 			jwt, err := auth.GenerateJWT(cfg, user.ID)
 			if utils.HandleErrAndSendHttp(w, err, "Failed to generate JWT", http.StatusInternalServerError) {return}
 

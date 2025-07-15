@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"fmt"
 	"time"
+	"log"
 )
 
 type Token struct {
@@ -24,7 +25,7 @@ type TokenHeader struct {
 
 type TokenPayload struct {
 	Sub 	int		`json:"sub"`
-	Ttl 	int		`json:"ttl"`
+	Ttl 	int64	`json:"ttl"`
 	Iat 	int64	`json:"iat"`
 	// Scp 	[]string	`json:"scp"`
 }
@@ -33,7 +34,7 @@ func GenerateJWT(cfg map[string]string, userId int) (string, error) {
 	header := TokenHeader{
 		Ver: "1",
 	}
-	ttl, err := strconv.Atoi(cfg["JWT_TTL"])
+	ttl, err := strconv.ParseInt(cfg["JWT_TTL"], 0, 64)
 	if err != nil {
 		return "", err
 	}
@@ -77,39 +78,48 @@ func signHMAC(message, secret []byte) string {
 	return b64.RawURLEncoding.EncodeToString(signature)
 }
 
+// TODO: Check if token has been revoked (logout, invalidation)
 func VerifyToken(jwt string, secret []byte) (Token, error) {
 	var token Token
 	parts := strings.Split(jwt, ".")
 	if len(parts) != 3 {return token, fmt.Errorf("Not a JWT")}
 
 	message := parts[0] + "." + parts[1]
-	signature := parts[2]
-
-	if verifyHMAC([]byte(message), []byte(signature), secret) {
-		decodedHeader, err := b64.RawURLEncoding.DecodeString(parts[0])
-		if err != nil {
-			return token, err
-		}
-		var header TokenHeader
-		if err := json.Unmarshal(decodedHeader, &header); err != nil {
-			return token, err
-		}
-
-		decodedPayload, err := b64.RawURLEncoding.DecodeString(parts[1])
-		if err != nil {
-			return token, err
-		}
-		var payload TokenPayload
-		if err := json.Unmarshal(decodedPayload, &payload); err != nil {
-			return token, err
-		}
-
-		return Token{
-			Header: &header,
-			Payload: &payload,
-		}, nil
+	decodedSignature, err := b64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil {
+		return token, err
 	}
-	return token, fmt.Errorf("MACs don't match")
+
+	if !verifyHMAC([]byte(message), decodedSignature, secret) {
+		return token, fmt.Errorf("MACs don't match")
+	}
+
+	decodedPayload, err := b64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return token, err
+	}
+	var payload TokenPayload
+	if err := json.Unmarshal(decodedPayload, &payload); err != nil {
+		return token, err
+	}
+
+	if !verifyStillValid(&payload) {
+		return token, fmt.Errorf("TTL has passed")
+	}
+
+	decodedHeader, err := b64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return token, err
+	}
+	var header TokenHeader
+	if err := json.Unmarshal(decodedHeader, &header); err != nil {
+		return token, err
+	}
+
+	return Token{
+		Header: &header,
+		Payload: &payload,
+	}, nil
 }
 
 func verifyHMAC(message, signature, secret []byte) bool {
@@ -117,5 +127,13 @@ func verifyHMAC(message, signature, secret []byte) bool {
 	h.Write(message)
 	expectedMAC := h.Sum(nil)
 	return hmac.Equal(signature, expectedMAC)
+}
+
+func verifyStillValid(payload *TokenPayload) bool {
+	now := time.Now().UnixMilli()
+	if now < (payload.Ttl + payload.Iat) {
+		return true
+	}
+	return false
 }
 

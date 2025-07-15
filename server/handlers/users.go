@@ -4,11 +4,12 @@ import (
 	"kms/storage"
 	"net/http"
 	"kms/utils"
+	"kms/server/auth"
 	"strconv"
 )
 
-func MakeUserHandler(userRepo storage.UserRepository) http.HandlerFunc {
-	return func (w http.ResponseWriter, r *http.Request) {
+func MakeUserHandler(userRepo storage.UserRepository) auth.AuthorizedHandlerFunc {
+	return auth.AuthorizedHandlerFunc(func (w http.ResponseWriter, r *http.Request, token auth.Token) {
 		switch r.Method {
 		case http.MethodPost:
 			var user storage.User
@@ -32,7 +33,7 @@ func MakeUserHandler(userRepo storage.UserRepository) http.HandlerFunc {
 		default:
 			utils.ReturnMethodNotAllowed(w)
 		}
-	}
+	})
 }
 
 func MakeUserByIDHandler(userRepo storage.UserRepository) http.HandlerFunc {
