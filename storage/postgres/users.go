@@ -6,7 +6,7 @@ import (
 )
 
 type PostgresUserRepo struct {
-	db * sql.DB
+	db *sql.DB
 }
 
 func NewPostgresUserRepo(db *sql.DB) *PostgresUserRepo {
@@ -14,16 +14,16 @@ func NewPostgresUserRepo(db *sql.DB) *PostgresUserRepo {
 }
 
 func (r *PostgresUserRepo) CreateUser(user *storage.User) (int, error) {
-	query := "INSERT INTO users (email, fname, lname, password) VALUES ($1, $2, $3, $4) RETURNING id"
+	query := "INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id"
 	var id int
-	err := r.db.QueryRow(query, user.Email, user.FName, user.LName, user.Password).Scan(&id)
+	err := r.db.QueryRow(query, user.Email, user.Password).Scan(&id)
 	return id, err
 }
 
 func (r *PostgresUserRepo) GetUser(id int) (storage.User, error) {
 	query := "SELECT * FROM users WHERE id = $1"
 	var user storage.User
-	err := r.db.QueryRow(query, id).Scan(&user.ID, &user.Email, &user.FName, &user.LName, &user.Password)
+	err := r.db.QueryRow(query, id).Scan(&user.ID, &user.Email, &user.Password)
 	return user, err
 }
 
@@ -35,7 +35,7 @@ func (r *PostgresUserRepo) GetAll() ([]storage.User, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var user storage.User
-		err := rows.Scan(&user.ID, &user.Email, &user.FName, &user.LName, &user.Password)
+		err := rows.Scan(&user.ID, &user.Email, &user.Password)
 		if err != nil {return users, err}
 		users = append(users, user)
 	}
@@ -45,6 +45,6 @@ func (r *PostgresUserRepo) GetAll() ([]storage.User, error) {
 func (r *PostgresUserRepo) FindByEmail(email string) (storage.User, error) {
 	query := "SELECT * FROM users WHERE email = $1"
 	var user storage.User
-	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.FName, &user.LName, &user.Password)
+	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password)
 	return user, err
 }

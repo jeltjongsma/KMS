@@ -9,12 +9,5 @@ type Key struct {
 type User struct {
 	ID 			int		`json:"id"`
 	Email		string 	`json:"email"`
-	FName		string	`json:"fname"`
-	LName		string	`json:"lname"`
-	Password	string 	`json:"password"`
-}
-
-type Login struct {
-	Email 		string 	`json:"email"`
 	Password	string 	`json:"password"`
 }

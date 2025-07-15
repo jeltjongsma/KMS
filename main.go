@@ -46,15 +46,11 @@ func main() {
 			Fields: map[string]string{
 				"id": 	"SERIAL PRIMARY KEY",
 				"email": "TEXT UNIQUE",
-				"fname": "TEXT",
-				"lname": "TEXT",
 				"password": "TEXT",
 			},
 			Keys: []string{
 				"id",
 				"email",
-				"fname",
-				"lname",
 				"password",
 			},
 		},

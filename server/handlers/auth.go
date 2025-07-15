@@ -4,6 +4,7 @@ import (
 	"kms/storage"
 	"kms/utils"
 	"kms/utils/hashing"
+	"kms/server/dto"
 	"net/http"
 )
 
@@ -12,11 +13,19 @@ func MakeSignupHandler(userRepo storage.UserRepository) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
-			var user storage.User
-			if utils.DecodePayloadAndHandleError(w, r.Body, &user) {return}
+			var cred dto.Credentials
+			if utils.DecodePayloadAndHandleError(w, r.Body, &cred) {return}
+			if utils.HandleErrAndSendHttp(
+				w,
+				cred.Validate(),
+				"Missing credentials",
+				http.StatusBadRequest,
+			) {return}
 
-			hashedPassword, err := hashing.HashPassword(user.Password)
+			hashedPassword, err := hashing.HashPassword(cred.Password)
 			if utils.HandleErrAndSendHttp(w, err, "Unable to hash password", http.StatusInternalServerError) {return}
+
+			user := cred.Lift()
 
 			user.Password = hashedPassword
 			
@@ -25,6 +34,7 @@ func MakeSignupHandler(userRepo storage.UserRepository) http.HandlerFunc {
 
 			user.ID = id
 
+			// TODO: Replace with token (Don't return user)
 			utils.SendEncodedJSON(w, &user)
 			return
 
@@ -38,15 +48,21 @@ func MakeLoginHandler(userRepo storage.UserRepository) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
-			var login storage.Login
-			if utils.DecodePayloadAndHandleError(w, r.Body, &login) {return}
+			var cred dto.Credentials
+			if utils.DecodePayloadAndHandleError(w, r.Body, &cred) {return}
+			if utils.HandleErrAndSendHttp(
+				w,
+				cred.Validate(),
+				"Missing credentials",
+				http.StatusBadRequest,
+			) {return}
 
-			user, err := userRepo.FindByEmail(login.Email)
+			user, err := userRepo.FindByEmail(cred.Email)
 			if utils.HandleRepoErr(w, err, "Failed to retrieve user") {return}
 
 			if utils.HandleErrAndSendHttp(
 				w, 
-				hashing.CheckPassword(user.Password, login.Password),
+				hashing.CheckPassword(user.Password, cred.Password),
 				"Incorrect password",
 				http.StatusUnauthorized,
 			) {return}
