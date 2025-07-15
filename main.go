@@ -15,7 +15,7 @@ import (
 // Event log
 
 func main() {
-	cfg, err := infra.LoadConfig("resources/.env")
+	cfg, err := infra.LoadConfig(".env")
 	if err != nil {
 		log.Fatal("Unable to load config: ", err)
 	}
