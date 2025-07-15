@@ -35,7 +35,6 @@ func MakeUserHandler(userRepo storage.UserRepository) http.HandlerFunc {
 			return
 
 		case http.MethodGet:
-			// http.Error(w, "", http.StatusNotImplemented)
 			users, err := userRepo.GetAll()
 			if utils.HandleHttpErr(w, err, "Failed to retrieve keys", http.StatusInternalServerError) {return}
 

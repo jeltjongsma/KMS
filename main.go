@@ -6,33 +6,27 @@ import (
 	"kms/server"
 	"kms/storage/postgres"
 	"kms/infra"
-	_ "github.com/lib/pq"
+	"fmt"
 )
 
-type Test struct {
-	ID		int32 	`json:"id"`
-	Name 	string	`json:"name"`
-	Age		int16	`json:"age"`
-}
-
-func handleErr(err error, msg string) {
-	if err != nil {
-		log.Fatal(msg, err)
-	}
-}
+// TODO:
+// Authentication
+// Authorization
+// Event log
 
 func main() {
-	// TODO: Replace hardcoded values with config or env 
-	port := 5433
-	user := "postgres"
-	password := "kmsPassword"
-
-	db, err := infra.ConnectDatabase(port, user, password)
+	cfg, err := infra.LoadConfig("resources/.env")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Unable to load config: ", err)
+	}
+	
+	db, err := infra.ConnectDatabase(cfg)
+	if err != nil {
+		log.Fatal("Unable to connect to database: ", err)
 	}
 	defer db.Close()
 
+	// TODO: Implement migration instead of this mess
 	schemas := []postgres.TableSchema{
 		postgres.TableSchema{
 			Name: "keys",
@@ -70,10 +64,11 @@ func main() {
 		log.Fatal("Failed to create schema: ", err)
 	}
 
+	// TODO: Create AppContext for passing around repos and cfg
 	keyRepo := postgres.NewPostgresKeyRepo(db)
 	userRepo := postgres.NewPostgresUserRepo(db)
 	
 	server.RegisterRoutes(keyRepo, userRepo)
 
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(fmt.Sprintf(":%v", cfg["SERVER_PORT"]), nil)
 }
