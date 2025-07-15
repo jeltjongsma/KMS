@@ -1,18 +1,11 @@
 package utils
 
 import (
-	"log"
 	"errors"
 	"database/sql"
 	"net/http"
     "github.com/lib/pq"
 )
-
-func HandleErr(err error, msg string) {
-	if err != nil {
-		log.Printf("%v: %v\n", msg, err)
-	}
-}
 
 func HandleRepoErr(w http.ResponseWriter, err error, msg string) bool {
 	if errors.Is(err, sql.ErrNoRows) {
