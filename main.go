@@ -64,7 +64,7 @@ func main() {
 	keyRepo := postgres.NewPostgresKeyRepo(db)
 	userRepo := postgres.NewPostgresUserRepo(db)
 	
-	server.RegisterRoutes(keyRepo, userRepo)
+	server.RegisterRoutes(cfg, keyRepo, userRepo)
 
 	http.ListenAndServe(fmt.Sprintf(":%v", cfg["SERVER_PORT"]), nil)
 }

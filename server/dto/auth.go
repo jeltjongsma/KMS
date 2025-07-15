@@ -25,3 +25,7 @@ func (c* Credentials) Validate() error {
 	if c.Email != "" && c.Password != "" {return nil}
 	return fmt.Errorf("Email and password should be non-empty")
 }
+
+type JWTResponse struct {
+	JWT 		string 	`json:"jwt"`
+}

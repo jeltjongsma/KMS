@@ -6,10 +6,11 @@ import (
 	"kms/utils/hashing"
 	"kms/server/dto"
 	"net/http"
+	"kms/server/auth"
 )
 
 // TODO: Minimum password requirements
-func MakeSignupHandler(userRepo storage.UserRepository) http.HandlerFunc {
+func MakeSignupHandler(cfg map[string]string, userRepo storage.UserRepository) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
@@ -34,8 +35,14 @@ func MakeSignupHandler(userRepo storage.UserRepository) http.HandlerFunc {
 
 			user.ID = id
 
-			// TODO: Replace with token (Don't return user)
-			utils.SendEncodedJSON(w, &user)
+			jwt, err := auth.GenerateJWT(cfg, user.ID)
+			if utils.HandleErrAndSendHttp(w, err, "Failed to generate JWT", http.StatusInternalServerError) {return}
+
+			response := &dto.JWTResponse{
+				JWT: jwt,
+			}
+
+			utils.SendEncodedJSON(w, response)
 			return
 
 		default:
@@ -44,7 +51,7 @@ func MakeSignupHandler(userRepo storage.UserRepository) http.HandlerFunc {
 	}
 }
 
-func MakeLoginHandler(userRepo storage.UserRepository) http.HandlerFunc {
+func MakeLoginHandler(cfg map[string]string, userRepo storage.UserRepository) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
@@ -68,7 +75,16 @@ func MakeLoginHandler(userRepo storage.UserRepository) http.HandlerFunc {
 			) {return}
 
 			// Return token
-			w.WriteHeader(200)
+			// w.WriteHeader(200)
+			jwt, err := auth.GenerateJWT(cfg, user.ID)
+			if utils.HandleErrAndSendHttp(w, err, "Failed to generate JWT", http.StatusInternalServerError) {return}
+
+			response := &dto.JWTResponse{
+				JWT: jwt,
+			}
+
+			utils.SendEncodedJSON(w, response)
+			return
 
 		default:
 			utils.ReturnMethodNotAllowed(w)
