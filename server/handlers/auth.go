@@ -13,7 +13,7 @@ func MakeSignupHandler(userRepo storage.UserRepository) http.HandlerFunc {
 		switch r.Method {
 		case http.MethodPost:
 			var user storage.User
-			if utils.DecodePayloadHandleError(w, r.Body, &user) {return}
+			if utils.DecodePayloadAndHandleError(w, r.Body, &user) {return}
 
 			hashedPassword, err := hashing.HashPassword(user.Password)
 			if utils.HandleErrAndSendHttp(w, err, "Unable to hash password", http.StatusInternalServerError) {return}
@@ -39,7 +39,7 @@ func MakeLoginHandler(userRepo storage.UserRepository) http.HandlerFunc {
 		switch r.Method {
 		case http.MethodPost:
 			var login storage.Login
-			if utils.DecodePayloadHandleError(w, r.Body, &login) {return}
+			if utils.DecodePayloadAndHandleError(w, r.Body, &login) {return}
 
 			user, err := userRepo.FindByEmail(login.Email)
 			if utils.HandleRepoErr(w, err, "Failed to retrieve user") {return}

@@ -12,12 +12,7 @@ func MakeUserHandler(userRepo storage.UserRepository) http.HandlerFunc {
 		switch r.Method {
 		case http.MethodPost:
 			var user storage.User
-			if utils.HandleErrAndSendHttp(
-				w,
-				utils.DecodePayload(r.Body, &user),
-				"Invalid request body",
-				http.StatusBadRequest,
-			) {return}
+			if utils.DecodePayloadAndHandleError(w, r.Body, &user) {return}
 
 			id, err := userRepo.CreateUser(&user)
 			if utils.HandleRepoErr(w, err, "Failed to create user") {return}

@@ -13,12 +13,7 @@ func MakeKeyHandler(keyRepo storage.KeyRepository) http.HandlerFunc {
 		// TODO: Discard invalid request body
 		case http.MethodPost:
 			var newKey storage.Key
-			if utils.HandleErrAndSendHttp(
-				w, 
-				utils.DecodePayload(r.Body, &newKey), 
-				"Invalid request body", 
-				http.StatusBadRequest,
-			) {return}
+			if utils.DecodePayloadAndHandleError(w, r.Body, &newKey) {return}
 
 			id, err := keyRepo.CreateKey(&newKey)
 			if utils.HandleRepoErr(w, err, "Failed to create key") {return}

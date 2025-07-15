@@ -33,7 +33,7 @@ func ReturnMethodNotAllowed(w http.ResponseWriter) {
 	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }
 
-func DecodePayloadHandleError(w http.ResponseWriter, body io.ReadCloser, payload interface{}) bool {
+func DecodePayloadAndHandleError(w http.ResponseWriter, body io.ReadCloser, payload interface{}) bool {
 	return HandleErrAndSendHttp(
 		w, 
 		DecodePayload(body, payload),
