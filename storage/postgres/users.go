@@ -41,3 +41,10 @@ func (r *PostgresUserRepo) GetAll() ([]storage.User, error) {
 	}
 	return users, nil
 }
+
+func (r *PostgresUserRepo) FindByEmail(email string) (storage.User, error) {
+	query := "SELECT * FROM users WHERE email = $1"
+	var user storage.User
+	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.FName, &user.LName, &user.Password)
+	return user, err
+}

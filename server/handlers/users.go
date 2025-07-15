@@ -4,8 +4,6 @@ import (
 	"kms/storage"
 	"net/http"
 	"kms/utils"
-	"errors"
-	"database/sql"
 	"strconv"
 )
 
@@ -14,7 +12,7 @@ func MakeUserHandler(userRepo storage.UserRepository) http.HandlerFunc {
 		switch r.Method {
 		case http.MethodPost:
 			var user storage.User
-			if utils.HandleHttpErr(
+			if utils.HandleErrAndSendHttp(
 				w,
 				utils.DecodePayload(r.Body, &user),
 				"Invalid request body",
@@ -22,12 +20,7 @@ func MakeUserHandler(userRepo storage.UserRepository) http.HandlerFunc {
 			) {return}
 
 			id, err := userRepo.CreateUser(&user)
-
-			if errors.Is(err, sql.ErrNoRows) {
-				http.Error(w, "User not found", http.StatusNotFound)
-			}
-			// TODO: Handle unique constraint differently
-			if utils.HandleHttpErr(w, err, "Could not create user", http.StatusInternalServerError) {return}
+			if utils.HandleRepoErr(w, err, "Failed to create user") {return}
 
 			user.ID = id
 
@@ -36,13 +29,13 @@ func MakeUserHandler(userRepo storage.UserRepository) http.HandlerFunc {
 
 		case http.MethodGet:
 			users, err := userRepo.GetAll()
-			if utils.HandleHttpErr(w, err, "Failed to retrieve keys", http.StatusInternalServerError) {return}
+			if utils.HandleRepoErr(w, err, "Failed to retrieve users") {return}
 
 			utils.SendEncodedJSON(w, users)
 			return
 
 		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			utils.ReturnMethodNotAllowed(w)
 		}
 	}
 }
@@ -50,15 +43,15 @@ func MakeUserHandler(userRepo storage.UserRepository) http.HandlerFunc {
 func MakeUserByIDHandler(userRepo storage.UserRepository) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		idStr, err := utils.GetIDFromURL(r.URL.Path, 2, true)
-		if utils.HandleHttpErr(w, err, "Couldn't retrieve ID from URL", http.StatusBadRequest) {return}
+		if utils.HandleErrAndSendHttp(w, err, "Couldn't retrieve ID from URL", http.StatusBadRequest) {return}
 
 		id, err := strconv.Atoi(idStr)
-		if utils.HandleHttpErr(w, err, "ID must be a number", http.StatusBadRequest) {return}
+		if utils.HandleErrAndSendHttp(w, err, "ID must be a number", http.StatusBadRequest) {return}
 		
 		switch r.Method {
 		case http.MethodGet:
 			user, err := userRepo.GetUser(id)
-			if utils.HandleHttpErr(w, err, "Failed to retrieve user", http.StatusNotFound) {return}
+			if utils.HandleRepoErr(w, err, "Failed to retrieve user") {return}
 			
 			utils.SendEncodedJSON(w, user)
 			return
@@ -68,7 +61,7 @@ func MakeUserByIDHandler(userRepo storage.UserRepository) http.HandlerFunc {
 		case http.MethodDelete:
 			http.Error(w, "", http.StatusNotImplemented)
 		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			utils.ReturnMethodNotAllowed(w)
 		}
 	}
 }

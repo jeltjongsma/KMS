@@ -10,4 +10,5 @@ type UserRepository interface {
 	CreateUser(user *User) (int, error)
 	GetUser(id int) (User, error)
 	GetAll() ([]User, error)
+	FindByEmail(email string) (User, error)
 }

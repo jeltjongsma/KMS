@@ -4,6 +4,7 @@ import (
 	"strings"
 	"fmt"
 	"net/http"
+	"io"
 )
 
 // TODO: Sanitize
@@ -18,11 +19,25 @@ func GetIDFromURL(url string, idx int, enforceDepth bool) (string, error) {
 	return "", fmt.Errorf("No ID found at %v", idx)
 }
 
-func HandleHttpErr(w http.ResponseWriter, err error, msg string, status int) bool {
+func HandleErrAndSendHttp(w http.ResponseWriter, err error, msg string, status int) bool {
 	if err != nil {
+		// TODO: Replace with a log or something
 		fmt.Printf("Unexpected error: %w", err)
 		http.Error(w, msg, status)
 		return true
 	}
 	return false
+}
+
+func ReturnMethodNotAllowed(w http.ResponseWriter) {
+	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+}
+
+func DecodePayloadHandleError(w http.ResponseWriter, body io.ReadCloser, payload interface{}) bool {
+	return HandleErrAndSendHttp(
+		w, 
+		DecodePayload(body, payload),
+		"Invalid request body",
+		http.StatusBadRequest,
+	)
 }
