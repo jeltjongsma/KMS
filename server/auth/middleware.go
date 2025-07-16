@@ -43,3 +43,22 @@ func Authorize(cfg map[string]string, next http.HandlerFunc) http.HandlerFunc {
 		return
 	}
 }
+
+func RequireAdmin(next http.HandlerFunc) http.HandlerFunc {
+	return func (w http.ResponseWriter, r *http.Request) {
+		tokenStr := r.Context().Value(TokenCtxKey)
+		token, ok := tokenStr.(Token)
+
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		if token.Payload.Rol != "admin" {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		next(w, r)
+	}
+}

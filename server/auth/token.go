@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"fmt"
 	"time"
+	"kms/storage"
 )
 
 type Token struct {
@@ -24,12 +25,13 @@ type TokenHeader struct {
 
 type TokenPayload struct {
 	Sub 	int		`json:"sub"`
+	Rol 	string	`json:"rol"`
 	Ttl 	int64	`json:"ttl"`
 	Iat 	int64	`json:"iat"`
 	// Scp 	[]string	`json:"scp"`
 }
 
-func GenerateJWT(cfg map[string]string, userId int) (string, error) {
+func GenerateJWT(cfg map[string]string, user *storage.User) (string, error) {
 	header := TokenHeader{
 		Ver: "1",
 	}
@@ -38,7 +40,8 @@ func GenerateJWT(cfg map[string]string, userId int) (string, error) {
 		return "", err
 	}
 	payload := TokenPayload{
-		Sub: userId,
+		Sub: user.ID,
+		Rol: user.Role,
 		Ttl: ttl,
 		Iat: time.Now().UnixMilli(),
 	}

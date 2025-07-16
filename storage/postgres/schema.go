@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"strings"
 	"log"
+	"kms/utils/hashing"
 )
 
 type TableSchema struct {
@@ -37,6 +38,24 @@ func dropTable(db *sql.DB, name string) error {
 	return err
 }
 
+func ensureMasterAdmin(cfg map[string]string, db *sql.DB) error {
+	var count int 
+	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE role = 'admin'").Scan(&count)
+	if err != nil {return err}
+
+	if count == 0 {
+		hashedPw, err := hashing.HashPassword(cfg["MASTER_ADMIN_PASSWORD"])
+		if err != nil {return nil}
+		_, err = db.Exec(
+			"INSERT INTO users (email, password, role) VALUES ($1, $2, 'admin')", 
+			cfg["MASTER_ADMIN_EMAIL"],
+			hashedPw,
+		)
+		return err
+	}
+	return nil
+} 
+
 func InitSchema(cfg map[string]string, db *sql.DB, schemas []TableSchema) error {
 	clearTables := cfg["ENV"] == "dev" && cfg["CLEAR_DB"] == "true"
 	if clearTables {
@@ -50,6 +69,9 @@ func InitSchema(cfg map[string]string, db *sql.DB, schemas []TableSchema) error 
 		if err := createTable(db, &schema); err != nil {
 			return err
 		}
+	}
+	if cfg["ENV"] == "dev" {
+		if err := ensureMasterAdmin(cfg, db); err != nil {return err}
 	}
 	return nil
 }

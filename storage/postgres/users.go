@@ -23,7 +23,7 @@ func (r *PostgresUserRepo) CreateUser(user *storage.User) (int, error) {
 func (r *PostgresUserRepo) GetUser(id int) (storage.User, error) {
 	query := "SELECT * FROM users WHERE id = $1"
 	var user storage.User
-	err := r.db.QueryRow(query, id).Scan(&user.ID, &user.Email, &user.Password)
+	err := r.db.QueryRow(query, id).Scan(&user.ID, &user.Email, &user.Password, &user.Role)
 	return user, err
 }
 
@@ -35,7 +35,7 @@ func (r *PostgresUserRepo) GetAll() ([]storage.User, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var user storage.User
-		err := rows.Scan(&user.ID, &user.Email, &user.Password)
+		err := rows.Scan(&user.ID, &user.Email, &user.Password, &user.Role)
 		if err != nil {return users, err}
 		users = append(users, user)
 	}
@@ -45,6 +45,6 @@ func (r *PostgresUserRepo) GetAll() ([]storage.User, error) {
 func (r *PostgresUserRepo) FindByEmail(email string) (storage.User, error) {
 	query := "SELECT * FROM users WHERE email = $1"
 	var user storage.User
-	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password)
+	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password, &user.Role)
 	return user, err
 }

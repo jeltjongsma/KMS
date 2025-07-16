@@ -45,13 +45,15 @@ func main() {
 			Name: "users",
 			Fields: map[string]string{
 				"id": 	"SERIAL PRIMARY KEY",
-				"email": "TEXT UNIQUE",
-				"password": "TEXT",
+				"email": "TEXT UNIQUE NOT NULL",
+				"password": "TEXT NOT NULL",
+				"role": "TEXT NOT NULL DEFAULT 'user'",
 			},
 			Keys: []string{
 				"id",
 				"email",
 				"password",
+				"role",
 			},
 		},
 	}
@@ -63,8 +65,9 @@ func main() {
 	// TODO: Create AppContext for passing around repos and cfg
 	keyRepo := postgres.NewPostgresKeyRepo(db)
 	userRepo := postgres.NewPostgresUserRepo(db)
+	adminRepo := postgres.NewPostgresAdminRepo(db)
 	
-	server.RegisterRoutes(cfg, keyRepo, userRepo)
+	server.RegisterRoutes(cfg, keyRepo, userRepo, adminRepo)
 
 	http.ListenAndServe(fmt.Sprintf(":%v", cfg["SERVER_PORT"]), nil)
 }

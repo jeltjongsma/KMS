@@ -35,7 +35,7 @@ func MakeSignupHandler(cfg map[string]string, userRepo storage.UserRepository) h
 
 			user.ID = id
 
-			jwt, err := auth.GenerateJWT(cfg, user.ID)
+			jwt, err := auth.GenerateJWT(cfg, &user)
 			if utils.HandleErrAndSendHttp(w, err, "Failed to generate JWT", http.StatusInternalServerError) {return}
 
 			response := &dto.JWTResponse{
@@ -74,7 +74,7 @@ func MakeLoginHandler(cfg map[string]string, userRepo storage.UserRepository) ht
 				http.StatusUnauthorized,
 			) {return}
 
-			jwt, err := auth.GenerateJWT(cfg, user.ID)
+			jwt, err := auth.GenerateJWT(cfg, &user)
 			if utils.HandleErrAndSendHttp(w, err, "Failed to generate JWT", http.StatusInternalServerError) {return}
 
 			response := &dto.JWTResponse{

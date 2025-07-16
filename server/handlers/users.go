@@ -4,18 +4,11 @@ import (
 	"kms/storage"
 	"net/http"
 	"kms/utils"
-	"kms/server/auth"
 	"strconv"
 )
 
 func MakeUserHandler(userRepo storage.UserRepository) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
-		tokenVal := r.Context().Value(auth.TokenCtxKey)
-		_, ok := tokenVal.(auth.Token)
-		if !ok {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
 		switch r.Method {
 		case http.MethodPost:
 			var user storage.User
