@@ -3,13 +3,15 @@ package auth
 import (
 	"kms/utils"
 	"net/http"
+	"context"
 	"strings"
-	"log"
 )
 
-type AuthorizedHandlerFunc func(http.ResponseWriter, *http.Request, Token) 
+type contextKey string
 
-func Authorize(cfg map[string]string, next AuthorizedHandlerFunc) http.HandlerFunc {
+const TokenCtxKey contextKey = "token"
+
+func Authorize(cfg map[string]string, next http.HandlerFunc) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		bearer := strings.TrimSpace(r.Header.Get("Authorization"))
 		if bearer == "" {
@@ -35,6 +37,9 @@ func Authorize(cfg map[string]string, next AuthorizedHandlerFunc) http.HandlerFu
 			return
 		}
 
-		next(w, r, token)
+		ctx := context.WithValue(r.Context(), TokenCtxKey, token)
+
+		next(w, r.WithContext(ctx))
+		return
 	}
 }

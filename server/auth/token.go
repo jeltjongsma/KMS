@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"fmt"
 	"time"
-	"log"
 )
 
 type Token struct {
@@ -79,6 +78,7 @@ func signHMAC(message, secret []byte) string {
 }
 
 // TODO: Check if token has been revoked (logout, invalidation)
+// TODO: Invalidate tokens when server restarts
 func VerifyToken(jwt string, secret []byte) (Token, error) {
 	var token Token
 	parts := strings.Split(jwt, ".")
