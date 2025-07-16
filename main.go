@@ -56,7 +56,7 @@ func main() {
 		},
 	}
 
-	if err := postgres.InitSchema(db, schemas, true); err != nil {
+	if err := postgres.InitSchema(cfg, db, schemas); err != nil {
 		log.Fatal("Failed to create schema: ", err)
 	}
 

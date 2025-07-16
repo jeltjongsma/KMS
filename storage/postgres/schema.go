@@ -37,7 +37,8 @@ func dropTable(db *sql.DB, name string) error {
 	return err
 }
 
-func InitSchema(db *sql.DB, schemas []TableSchema, clearTables bool) error {
+func InitSchema(cfg map[string]string, db *sql.DB, schemas []TableSchema) error {
+	clearTables := cfg["ENV"] == "dev" && cfg["CLEAR_DB"] == "true"
 	if clearTables {
 		for _, schema := range schemas {
 			if err := dropTable(db, schema.Name); err != nil {
