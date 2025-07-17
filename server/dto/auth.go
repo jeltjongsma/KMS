@@ -23,7 +23,7 @@ func (c *Credentials) Lift() storage.User {
 
 func (c* Credentials) Validate() error {
 	if c.Email != "" && c.Password != "" {return nil}
-	return fmt.Errorf("Email and password should be non-empty")
+	return fmt.Errorf("Email and password should be non-empty\n")
 }
 
 type JWTResponse struct {

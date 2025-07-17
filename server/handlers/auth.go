@@ -7,10 +7,11 @@ import (
 	"kms/server/dto"
 	"net/http"
 	"kms/server/auth"
+	"kms/infra"
 )
 
 // TODO: Minimum password requirements
-func MakeSignupHandler(cfg map[string]string, userRepo storage.UserRepository) http.HandlerFunc {
+func MakeSignupHandler(cfg infra.KmsConfig, userRepo storage.UserRepository) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
@@ -51,7 +52,7 @@ func MakeSignupHandler(cfg map[string]string, userRepo storage.UserRepository) h
 	}
 }
 
-func MakeLoginHandler(cfg map[string]string, userRepo storage.UserRepository) http.HandlerFunc {
+func MakeLoginHandler(cfg infra.KmsConfig, userRepo storage.UserRepository) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:

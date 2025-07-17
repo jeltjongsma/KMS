@@ -7,7 +7,9 @@ import (
 	"fmt"
 )
 
-func LoadConfig(path string) (map[string]string, error) {
+type KmsConfig map[string]string
+
+func LoadConfig(path string) (KmsConfig, error) {
 	cfg := make(map[string]string)
 	file, err := os.Open(path)
 	if err != nil {return cfg, err}
@@ -36,5 +38,5 @@ func LoadConfig(path string) (map[string]string, error) {
 
 		cfg[key] = value
 	}
-	return cfg, nil
+	return KmsConfig(cfg), nil
 }

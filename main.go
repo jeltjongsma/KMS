@@ -62,12 +62,14 @@ func main() {
 		log.Fatal("Failed to create schema: ", err)
 	}
 
-	// TODO: Create AppContext for passing around repos and cfg
-	keyRepo := postgres.NewPostgresKeyRepo(db)
-	userRepo := postgres.NewPostgresUserRepo(db)
-	adminRepo := postgres.NewPostgresAdminRepo(db)
-	
-	server.RegisterRoutes(cfg, keyRepo, userRepo, adminRepo)
+	appCtx := &infra.AppContext{
+		Cfg: cfg,
+		KeyRepo: postgres.NewPostgresKeyRepo(db),
+		UserRepo: postgres.NewPostgresUserRepo(db),
+		AdminRepo: postgres.NewPostgresAdminRepo(db),
+	}
+
+	server.RegisterRoutes(appCtx)
 
 	http.ListenAndServe(fmt.Sprintf(":%v", cfg["SERVER_PORT"]), nil)
 }

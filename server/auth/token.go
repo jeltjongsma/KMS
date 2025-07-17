@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 	"kms/storage"
+	"kms/infra"
 )
 
 type Token struct {
@@ -31,7 +32,7 @@ type TokenPayload struct {
 	// Scp 	[]string	`json:"scp"`
 }
 
-func GenerateJWT(cfg map[string]string, user *storage.User) (string, error) {
+func GenerateJWT(cfg infra.KmsConfig, user *storage.User) (string, error) {
 	header := TokenHeader{
 		Ver: "1",
 	}

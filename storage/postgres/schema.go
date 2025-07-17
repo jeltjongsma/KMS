@@ -6,6 +6,7 @@ import (
 	"strings"
 	"log"
 	"kms/utils/hashing"
+	"kms/infra"
 )
 
 type TableSchema struct {
@@ -38,7 +39,7 @@ func dropTable(db *sql.DB, name string) error {
 	return err
 }
 
-func ensureMasterAdmin(cfg map[string]string, db *sql.DB) error {
+func ensureMasterAdmin(cfg infra.KmsConfig, db *sql.DB) error {
 	var count int 
 	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE role = 'admin'").Scan(&count)
 	if err != nil {return err}
@@ -56,7 +57,7 @@ func ensureMasterAdmin(cfg map[string]string, db *sql.DB) error {
 	return nil
 } 
 
-func InitSchema(cfg map[string]string, db *sql.DB, schemas []TableSchema) error {
+func InitSchema(cfg infra.KmsConfig, db *sql.DB, schemas []TableSchema) error {
 	clearTables := cfg["ENV"] == "dev" && cfg["CLEAR_DB"] == "true"
 	if clearTables {
 		for _, schema := range schemas {

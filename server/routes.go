@@ -4,26 +4,37 @@ import (
 	"net/http"
 	"kms/server/handlers"
 	"kms/server/auth"
-	"kms/storage"
+	"kms/server/router"
+	"kms/infra"
 )
 
-func RegisterRoutes(cfg map[string]string, 
-			keyRepo storage.KeyRepository, 
-			userRepo storage.UserRepository, 
-			adminRepo storage.AdminRepository,
-	) {
+func RegisterRoutes(ctx *infra.AppContext) {
 	// http.HandleFunc("/keys", Authorize(cfg, handlers.MakeKeyHandler(keyRepo)))
-	http.HandleFunc("/keys/", handlers.MakeKeyByIDHandler(keyRepo))
+	http.HandleFunc("/keys/", handlers.MakeKeyByIDHandler(ctx.KeyRepo))
 
-	http.HandleFunc("/auth/signup", handlers.MakeSignupHandler(cfg, userRepo))
-	http.HandleFunc("/auth/login", handlers.MakeLoginHandler(cfg, userRepo))
+	// Auth
+	http.HandleFunc("/auth/signup", handlers.MakeSignupHandler(ctx.Cfg, ctx.UserRepo))
+	http.HandleFunc("/auth/login", handlers.MakeLoginHandler(ctx.Cfg, ctx.UserRepo))
 
-	http.HandleFunc("/users", withAuth(cfg, handlers.MakeUserHandler(userRepo)))
-	http.HandleFunc("/users/", handlers.MakeUserByIDHandler(userRepo))
+	// Users
+	http.HandleFunc("/users", withAuth(ctx.Cfg, handlers.MakeUserHandler(ctx.UserRepo)))
+	http.HandleFunc("/users/", router.MakeRouter(
+		[]*router.Route{
+			router.NewRoute(
+				"POST", 
+				"/users/{id}/role", 
+				withAuth(ctx.Cfg, auth.RequireAdmin(handlers.MakeUserRoleHandler(ctx.UserRepo))),
+			),
+		},
+	))
+	// http.HandleFunc("/users/", handlers.MakeUserByIDHandler(ctx.UserRepo))
 
-	http.HandleFunc("/admin", withAuth(cfg, auth.RequireAdmin(handlers.MakeAdminHandler(adminRepo))))
+	// Admin
+	http.HandleFunc("/admin", withAuth(ctx.Cfg, auth.RequireAdmin(handlers.MakeAdminHandler(ctx.AdminRepo))))
+	// http.HandleFunc("/admin/", withAuth(ctx.Cfg, auth.RequireAdmin(handlers.MakeAdmin)))
 }
 
-func withAuth(cfg map[string]string, next http.HandlerFunc) http.HandlerFunc {
+func withAuth(cfg infra.KmsConfig, next http.HandlerFunc) http.HandlerFunc {
 	return auth.Authorize(cfg, next)
 }
+

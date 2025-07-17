@@ -41,3 +41,7 @@ func DecodePayloadAndHandleError(w http.ResponseWriter, body io.ReadCloser, payl
 		http.StatusBadRequest,
 	)
 }
+
+func ReturnOK(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusOK)
+} 

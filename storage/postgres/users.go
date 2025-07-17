@@ -3,6 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"kms/storage"
+	"kms/utils"
 )
 
 type PostgresUserRepo struct {
@@ -47,4 +48,21 @@ func (r *PostgresUserRepo) FindByEmail(email string) (storage.User, error) {
 	var user storage.User
 	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password, &user.Role)
 	return user, err
+}
+
+func (r *PostgresUserRepo) UpdateRole(id int, role string) error {
+	query := "UPDATE users SET role = $1 WHERE id = $2"
+	res, err := r.db.Exec(query, role, id)
+	if err != nil {
+		return err
+	}
+
+	nRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if nRows == 0 {
+		return utils.ErrNoRowsAffected
+	}
+	return nil
 }
