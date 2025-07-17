@@ -4,62 +4,69 @@ import (
 	"kms/utils"
 	"net/http"
 	"context"
-	"strings"
-	"kms/infra"
+	"strings"	
+	"kms/storage"
 )
 
 type contextKey string
 
 const TokenCtxKey contextKey = "token"
 
-func Authorize(cfg infra.KmsConfig, next http.HandlerFunc) http.HandlerFunc {
-	return func (w http.ResponseWriter, r *http.Request) {
-		bearer := strings.TrimSpace(r.Header.Get("Authorization"))
-		if bearer == "" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+func Authorize(jwtSecret []byte) func(http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			bearer := strings.TrimSpace(r.Header.Get("Authorization"))
+			if bearer == "" {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			parts := strings.Split(bearer, " ")
+			if len(parts) != 2 || parts[0] != "Bearer" {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			tokenStr := strings.TrimSpace(parts[1])
+			token, err := VerifyToken(tokenStr, jwtSecret)
+			if err != nil {
+				utils.HandleErrAndSendHttp(
+					w,
+					err,
+					"Unauthorized",
+					http.StatusUnauthorized,
+				)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), TokenCtxKey, token)
+
+			next(w, r.WithContext(ctx))
 			return
 		}
-
-		parts := strings.Split(bearer, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		tokenStr := strings.TrimSpace(parts[1])
-		token, err := VerifyToken(tokenStr, []byte(cfg["JWT_SECRET"]))
-		if err != nil {
-			utils.HandleErrAndSendHttp(
-				w,
-				err,
-				"Unauthorized",
-				http.StatusUnauthorized,
-			)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), TokenCtxKey, token)
-
-		next(w, r.WithContext(ctx))
-		return
 	}
 }
 
-func RequireAdmin(next http.HandlerFunc) http.HandlerFunc {
-	return func (w http.ResponseWriter, r *http.Request) {
-		tokenStr := r.Context().Value(TokenCtxKey)
-		token, ok := tokenStr.(Token)
+func RequireAdmin(userRepo storage.UserRepository) func(http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			tokenStr := r.Context().Value(TokenCtxKey)
+			token, ok := tokenStr.(Token)
 
-		if !ok {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
+			if !ok {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			role, err := userRepo.GetRole(token.Payload.Sub)
+			if utils.HandleRepoErr(w, err, "Failed to retrieve role") {return}
+
+			if role != "admin" {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				return
+			}
+
+			next(w, r)
 		}
-
-		if token.Payload.Rol != "admin" {
-			http.Error(w, "Forbidden", http.StatusForbidden)
-			return
-		}
-
-		next(w, r)
 	}
 }

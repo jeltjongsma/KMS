@@ -66,3 +66,10 @@ func (r *PostgresUserRepo) UpdateRole(id int, role string) error {
 	}
 	return nil
 }
+
+func (r *PostgresUserRepo) GetRole(id int) (string, error) {
+	query := "SELECT role FROM users WHERE id = $1"
+	var role string 
+	err := r.db.QueryRow(query, id).Scan(&role)
+	return role, err
+}

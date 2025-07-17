@@ -26,7 +26,6 @@ type TokenHeader struct {
 
 type TokenPayload struct {
 	Sub 	int		`json:"sub"`
-	Rol 	string	`json:"rol"`
 	Ttl 	int64	`json:"ttl"`
 	Iat 	int64	`json:"iat"`
 	// Scp 	[]string	`json:"scp"`
@@ -42,7 +41,6 @@ func GenerateJWT(cfg infra.KmsConfig, user *storage.User) (string, error) {
 	}
 	payload := TokenPayload{
 		Sub: user.ID,
-		Rol: user.Role,
 		Ttl: ttl,
 		Iat: time.Now().UnixMilli(),
 	}

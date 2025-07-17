@@ -12,6 +12,7 @@ type UserRepository interface {
 	GetAll() ([]User, error)
 	FindByEmail(email string) (User, error)
 	UpdateRole(id int, role string) error
+	GetRole(id int) (string, error)
 }
 
 type AdminRepository interface {
