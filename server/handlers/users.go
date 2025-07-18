@@ -34,29 +34,3 @@ func MakeUserHandler(userRepo storage.UserRepository) http.HandlerFunc {
 		}
 	}
 }
-
-func MakeUserByIDHandler(userRepo storage.UserRepository) http.HandlerFunc {
-	return func (w http.ResponseWriter, r *http.Request) {
-		idStr, err := utils.GetIDFromURL(r.URL.Path, 2, true)
-		if utils.HandleErrAndSendHttp(w, err, "Couldn't retrieve ID from URL", http.StatusBadRequest) {return}
-
-		id, err := strconv.Atoi(idStr)
-		if utils.HandleErrAndSendHttp(w, err, "ID must be a number", http.StatusBadRequest) {return}
-		
-		switch r.Method {
-		case http.MethodGet:
-			user, err := userRepo.GetUser(id)
-			if utils.HandleRepoErr(w, err, "Failed to retrieve user") {return}
-			
-			utils.SendEncodedJSON(w, user)
-			return
-
-		case http.MethodPut:
-			http.Error(w, "", http.StatusNotImplemented)
-		case http.MethodDelete:
-			http.Error(w, "", http.StatusNotImplemented)
-		default:
-			utils.ReturnMethodNotAllowed(w)
-		}
-	}
-}

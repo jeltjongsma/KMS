@@ -50,7 +50,12 @@ func GenerateJWT(cfg infra.KmsConfig, user *storage.User) (string, error) {
 		Payload: &payload,
 	}
 
-	return GenerateToken(token, []byte(cfg["JWT_SECRET"]))
+	jwtSecret, err := b64.RawURLEncoding.DecodeString(cfg["JWT_SECRET"])
+	if err != nil {
+		return "", err
+	}
+
+	return GenerateToken(token, jwtSecret)
 }
 
 func GenerateToken(token Token, secret []byte) (string, error) {

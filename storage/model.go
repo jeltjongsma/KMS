@@ -1,9 +1,11 @@
 package storage
 
 type Key struct {
-	ID		string 	`json:"id"`
-	DEK 	string 	`json:"dek"`
-	UserId	int32	`json:"userId"`
+	ID 				int 	`json:"id"`
+	SearchableId	string 	`json:"searchableId"`
+	DEK 			string 	`json:"dek"`
+	UserId			int		`json:"userId"`
+	Encoding 		string 	`json:"encoding"`
 }
 
 type User struct {

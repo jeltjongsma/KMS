@@ -7,19 +7,28 @@ import (
 	"kms/storage/postgres"
 	"kms/infra"
 	"fmt"
-)
+	b64 "encoding/base64"
+) 
 
 // TODO:
-// Authentication
-// Authorization
 // Event log
+// DB encryption
+// SQL migration
 
 func main() {
 	cfg, err := infra.LoadConfig(".env")
 	if err != nil {
 		log.Fatal("Unable to load config: ", err)
 	}
-	
+	jwtSecret, err := b64.RawURLEncoding.DecodeString(cfg["JWT_SECRET"])
+	if err != nil {
+		log.Fatal("Unable to decode JWT secret: ", err)
+	}
+	KEK, err := b64.RawURLEncoding.DecodeString(cfg["KEK"])
+	if err != nil {
+		log.Fatal("Unable to decode KEK: ", err)
+	}
+
 	db, err := infra.ConnectDatabase(cfg)
 	if err != nil {
 		log.Fatal("Unable to connect to database: ", err)
@@ -32,14 +41,19 @@ func main() {
 			Name: "keys",
 			Fields: map[string]string{
 				"id": 	"SERIAL PRIMARY KEY",
+				"searchableId": "TEXT",
 				"dek": 	"TEXT",
 				"userId": "INT",
+				"encoding": "TEXT",
 			},
 			Keys: []string{
 				"id",
+				"searchableId",
 				"dek",
 				"userId",
+				"encoding",
 			},
+			Unique: []string{"userId", "searchableId"},
 		},
 		postgres.TableSchema{
 			Name: "users",
@@ -64,12 +78,14 @@ func main() {
 
 	appCtx := &infra.AppContext{
 		Cfg: cfg,
+		JWTSecret: jwtSecret,
+		KEK: KEK,
 		KeyRepo: postgres.NewPostgresKeyRepo(db),
 		UserRepo: postgres.NewPostgresUserRepo(db),
 		AdminRepo: postgres.NewPostgresAdminRepo(db),
 	}
 
-	server.RegisterRoutes(appCtx)
+	server.RegisterRoutes(cfg, appCtx)
 
 	http.ListenAndServe(fmt.Sprintf(":%v", cfg["SERVER_PORT"]), nil)
 }

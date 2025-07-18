@@ -50,8 +50,7 @@ func Authorize(jwtSecret []byte) func(http.HandlerFunc) http.HandlerFunc {
 func RequireAdmin(userRepo storage.UserRepository) func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			tokenStr := r.Context().Value(TokenCtxKey)
-			token, ok := tokenStr.(Token)
+			token, ok := ExtractToken(r.Context())
 
 			if !ok {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -69,4 +68,10 @@ func RequireAdmin(userRepo storage.UserRepository) func(http.HandlerFunc) http.H
 			next(w, r)
 		}
 	}
+}
+
+func ExtractToken(ctx context.Context) (Token, bool) {
+	tokenStr := ctx.Value(TokenCtxKey)
+	token, ok := tokenStr.(Token)
+	return token, ok
 }

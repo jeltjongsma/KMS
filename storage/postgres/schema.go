@@ -13,6 +13,7 @@ type TableSchema struct {
 	Name	string 
 	Fields 	map[string]string
 	Keys 	[]string
+	Unique 	[]string
 }
 
 func createTable(db *sql.DB, schema *TableSchema) error {
@@ -27,6 +28,18 @@ func createTable(db *sql.DB, schema *TableSchema) error {
 			builder.WriteString(",")
 		}
 	}
+
+	if schema.Unique != nil {
+		builder.WriteString(",UNIQUE (")
+		for idx, key := range schema.Unique {
+			builder.WriteString(key)
+			if idx < len(schema.Unique) - 1 {
+				builder.WriteString(",")
+			}
+		}
+		builder.WriteString(")")
+	}
+
 	builder.WriteString(")")
 
 	_, err := db.Exec(builder.String())

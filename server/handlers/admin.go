@@ -32,7 +32,7 @@ func MakeAdminHandler(adminRepo storage.AdminRepository) http.HandlerFunc {
 func MakeUserRoleHandler(userRepo storage.UserRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Check if ID is valid
-		userIdStr, found := router.GetRouteParam(r, "id")
+		userIdStr, found := router.GetRouteParam(r.Context(), "id")
 		if !found {
 			http.Error(w, "Failed to retrieve 'ID' from context", http.StatusInternalServerError)
 		}

@@ -1,14 +1,14 @@
 package router
 
 import (
-	"net/http"
+	"context"
 )
 
 type contextKey string
 const RouteParamsCtxKey contextKey = "routeParams"
 
-func GetRouteParam(r *http.Request, key string) (string, bool) {
-	params, ok := r.Context().Value(RouteParamsCtxKey).(map[string]string)
+func GetRouteParam(ctx context.Context, key string) (string, bool) {
+	params, ok := ctx.Value(RouteParamsCtxKey).(map[string]string)
 	if !ok {
 		return "", false
 	}

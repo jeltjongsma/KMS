@@ -14,17 +14,17 @@ func NewPostgresKeyRepo(db *sql.DB) *PostgresKeyRepo {
 }
 
 // TODO: Replace queries with query builder
-func (r *PostgresKeyRepo) CreateKey(key *storage.Key) (string, error) {
-	query := "INSERT INTO keys (dek, userId) VALUES ($1, $2) RETURNING id"
-	var id string
-	err := r.db.QueryRow(query, key.DEK, key.UserId).Scan(&id)
+func (r *PostgresKeyRepo) CreateKey(key *storage.Key) (int, error) {
+	query := "INSERT INTO keys (searchableId, dek, userId, encoding) VALUES ($1, $2, $3, $4) RETURNING id"
+	var id int
+	err := r.db.QueryRow(query, key.SearchableId, key.DEK, key.UserId, key.Encoding).Scan(&id)
 	return id, err
 }
 
-func (r *PostgresKeyRepo) GetKey(id string) (storage.Key, error) {
-	query := "SELECT * FROM keys WHERE id = $1"
+func (r *PostgresKeyRepo) GetKey(userId int, searchableId string) (storage.Key, error) {
+	query := "SELECT * FROM keys WHERE userId = $1 AND searchableId = $2"
 	var key storage.Key
-	err := r.db.QueryRow(query, id).Scan(&key.ID, &key.DEK, &key.UserId)
+	err := r.db.QueryRow(query, userId, searchableId).Scan(&key.ID, &key.SearchableId, &key.DEK, &key.UserId, &key.Encoding)
 	return key, err
 }
 
@@ -37,7 +37,7 @@ func (r *PostgresKeyRepo) GetAll() ([]storage.Key, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var key storage.Key
-		err := rows.Scan(&key.ID, &key.DEK, &key.UserId)
+		err := rows.Scan(&key.ID, &key.SearchableId, &key.DEK, &key.UserId, &key.Encoding)
 		if err != nil {return keys, err}
 		keys = append(keys, key)
 	}
