@@ -3,16 +3,19 @@ import (
 	"net/http"
 	"strings"
 	"context"
+	"kms/server/httpkit"
+	"kms/utils/kmsErrors"
+	"fmt"
 )
 
 
 type Route struct {
 	Method 	string
 	Pattern	string
-	Handler http.HandlerFunc
+	Handler httpkit.AppHandler
 }
 
-func NewRoute(method, pattern string, handler http.HandlerFunc) *Route {
+func NewRoute(method, pattern string, handler httpkit.AppHandler) *Route {
 	return &Route{
 		Method: method,
 		Pattern: pattern,
@@ -20,16 +23,19 @@ func NewRoute(method, pattern string, handler http.HandlerFunc) *Route {
 	}
 } 
 
-func MakeRouter(routes []*Route) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func MakeRouter(routes []*Route) httpkit.AppHandler {
+	return func(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
 		for _, route := range routes {
 			if params, ok := matchPattern(route, r); ok {
 				ctx := context.WithValue(r.Context(), RouteParamsCtxKey, params)
-				route.Handler(w, r.WithContext(ctx))
-				return
+				return route.Handler(w, r.WithContext(ctx))
 			} 
 		}
-		http.NotFound(w, r)
+		return kmsErrors.NewAppError(
+			fmt.Errorf("Path does not exist: %v %v\n", r.Method, r.URL.Path),
+			"Not found",
+			404,
+		)
 	}
 }
 

@@ -41,19 +41,19 @@ func main() {
 			Name: "keys",
 			Fields: map[string]string{
 				"id": 	"SERIAL PRIMARY KEY",
-				"searchableId": "TEXT",
+				"keyReference": "TEXT",
 				"dek": 	"TEXT",
 				"userId": "INT",
 				"encoding": "TEXT",
 			},
 			Keys: []string{
 				"id",
-				"searchableId",
+				"keyReference",
 				"dek",
 				"userId",
 				"encoding",
 			},
-			Unique: []string{"userId", "searchableId"},
+			Unique: []string{"userId", "keyReference"},
 		},
 		postgres.TableSchema{
 			Name: "users",

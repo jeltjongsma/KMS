@@ -14,5 +14,5 @@ func (r *UpdateRoleRequest) Validate() error {
 }
 
 type GenerateKeyRequest struct {
-	SearchableId 	string 	`json:"searchableId"`
+	KeyReference 	string 	`json:"keyReference"`
 }

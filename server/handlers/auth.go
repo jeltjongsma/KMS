@@ -1,92 +1,64 @@
 package handlers
 
 import (
-	"kms/storage"
 	"kms/utils"
-	"kms/utils/hashing"
 	"kms/server/dto"
 	"net/http"
-	"kms/server/auth"
-	"kms/infra"
+	"kms/utils/kmsErrors"
+	"kms/server/services"
 )
 
-// TODO: Minimum password requirements
-func MakeSignupHandler(cfg infra.KmsConfig, userRepo storage.UserRepository) http.HandlerFunc {
-	return func (w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			var cred dto.Credentials
-			if utils.DecodePayloadAndHandleError(w, r.Body, &cred) {return}
-			if utils.HandleErrAndSendHttp(
-				w,
-				cred.Validate(),
-				"Missing credentials",
-				http.StatusBadRequest,
-			) {return}
+type AuthHandler struct {
+	AuthService 	*services.AuthService
+}
 
-			hashedPassword, err := hashing.HashPassword(cred.Password)
-			if utils.HandleErrAndSendHttp(w, err, "Unable to hash password", http.StatusInternalServerError) {return}
-
-			user := cred.Lift()
-
-			user.Password = hashedPassword
-			
-			id, err := userRepo.CreateUser(&user)
-			if utils.HandleRepoErr(w, err, "Failed to create user") {return}
-
-			user.ID = id
-
-			jwt, err := auth.GenerateJWT(cfg, &user)
-			if utils.HandleErrAndSendHttp(w, err, "Failed to generate JWT", http.StatusInternalServerError) {return}
-
-			response := &dto.JWTResponse{
-				JWT: jwt,
-			}
-
-			utils.SendEncodedJSON(w, response)
-			return
-
-		default:
-			utils.ReturnMethodNotAllowed(w)
-		}
+func NewAuthHandler(authService *services.AuthService) *AuthHandler {
+	return &AuthHandler{
+		AuthService: authService,
 	}
 }
 
-func MakeLoginHandler(cfg infra.KmsConfig, userRepo storage.UserRepository) http.HandlerFunc {
-	return func (w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			var cred dto.Credentials
-			if utils.DecodePayloadAndHandleError(w, r.Body, &cred) {return}
-			if utils.HandleErrAndSendHttp(
-				w,
-				cred.Validate(),
-				"Missing credentials",
-				http.StatusBadRequest,
-			) {return}
-
-			user, err := userRepo.FindByEmail(cred.Email)
-			if utils.HandleRepoErr(w, err, "Failed to retrieve user") {return}
-
-			if utils.HandleErrAndSendHttp(
-				w, 
-				hashing.CheckPassword(user.Password, cred.Password),
-				"Incorrect password",
-				http.StatusUnauthorized,
-			) {return}
-
-			jwt, err := auth.GenerateJWT(cfg, &user)
-			if utils.HandleErrAndSendHttp(w, err, "Failed to generate JWT", http.StatusInternalServerError) {return}
-
-			response := &dto.JWTResponse{
-				JWT: jwt,
-			}
-
-			utils.SendEncodedJSON(w, response)
-			return
-
-		default:
-			utils.ReturnMethodNotAllowed(w)
-		}
+// TODO: Minimum password requirements
+func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
+	var cred dto.Credentials 
+	if err := utils.ParseJSONBody(r.Body, &cred); err != nil {
+		return kmsErrors.NewAppError(err, "Invalid request body", 400)
 	}
+
+	if err := cred.Validate(); err != nil {
+		return kmsErrors.NewAppError(err, "Missing credentials", 400)
+	}
+
+	jwt, appErr := h.AuthService.Signup(&cred)
+	if appErr != nil {
+		return appErr
+	}
+
+	response := &dto.JWTResponse{
+		JWT: jwt,
+	}
+
+	return utils.WriteJSON(w, response)
+}
+
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
+	var cred dto.Credentials
+	if err := utils.ParseJSONBody(r.Body, &cred); err != nil {
+		return kmsErrors.NewAppError(err, "Invalid request body", 400)
+	}
+
+	if err := cred.Validate(); err != nil {
+		return kmsErrors.NewAppError(err, "Missing credentials", 400)
+	}
+
+	jwt, appErr := h.AuthService.Login(&cred)
+	if appErr != nil {
+		return appErr
+	}
+
+	response := &dto.JWTResponse{
+		JWT: jwt,
+	}
+
+	return utils.WriteJSON(w, response)
 }

@@ -2,7 +2,7 @@ package storage
 
 type Key struct {
 	ID 				int 	`json:"id"`
-	SearchableId	string 	`json:"searchableId"`
+	KeyReference	string 	`json:"keyReference"`
 	DEK 			string 	`json:"dek"`
 	UserId			int		`json:"userId"`
 	Encoding 		string 	`json:"encoding"`

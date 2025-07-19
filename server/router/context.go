@@ -2,17 +2,21 @@ package router
 
 import (
 	"context"
+	"fmt"
 )
 
 type contextKey string
 const RouteParamsCtxKey contextKey = "routeParams"
 
-func GetRouteParam(ctx context.Context, key string) (string, bool) {
+func GetRouteParam(ctx context.Context, key string) (string, error) {
 	params, ok := ctx.Value(RouteParamsCtxKey).(map[string]string)
 	if !ok {
-		return "", false
+		return "", fmt.Errorf("No route parameters specified")
 	}
 
 	val, found := params[key]
-	return val, found
+	if !found {
+		return "", fmt.Errorf("Param (%v) not in path", key)
+	}
+	return val, nil
 }

@@ -21,11 +21,11 @@ func (r *PostgresUserRepo) CreateUser(user *storage.User) (int, error) {
 	return id, err
 }
 
-func (r *PostgresUserRepo) GetUser(id int) (storage.User, error) {
+func (r *PostgresUserRepo) GetUser(id int) (*storage.User, error) {
 	query := "SELECT * FROM users WHERE id = $1"
 	var user storage.User
 	err := r.db.QueryRow(query, id).Scan(&user.ID, &user.Email, &user.Password, &user.Role)
-	return user, err
+	return &user, err
 }
 
 func (r *PostgresUserRepo) GetAll() ([]storage.User, error) {
@@ -43,16 +43,18 @@ func (r *PostgresUserRepo) GetAll() ([]storage.User, error) {
 	return users, nil
 }
 
-func (r *PostgresUserRepo) FindByEmail(email string) (storage.User, error) {
+func (r *PostgresUserRepo) FindByEmail(email string) (*storage.User, error) {
 	query := "SELECT * FROM users WHERE email = $1"
 	var user storage.User
 	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password, &user.Role)
-	return user, err
+	return &user, err
 }
 
 func (r *PostgresUserRepo) UpdateRole(id int, role string) error {
 	query := "UPDATE users SET role = $1 WHERE id = $2"
 	res, err := r.db.Exec(query, role, id)
+
+	// FIXME: Move error handling out of repository
 	if err != nil {
 		return err
 	}
