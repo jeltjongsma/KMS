@@ -5,6 +5,7 @@ import (
 	"log"
 	"kms/server"
 	"kms/storage/postgres"
+	"kms/storage"
 	"kms/infra"
 	"fmt"
 	b64 "encoding/base64"
@@ -76,11 +77,12 @@ func main() {
 		log.Fatal("Failed to create schema: ", err)
 	}
 
+	// TODO: Inject handlers
 	appCtx := &infra.AppContext{
 		Cfg: cfg,
 		JWTSecret: jwtSecret,
 		KEK: KEK,
-		KeyRepo: postgres.NewPostgresKeyRepo(db),
+		KeyRepo: storage.NewEncryptedKeyRepo(postgres.NewPostgresKeyRepo(db), KEK),
 		UserRepo: postgres.NewPostgresUserRepo(db),
 		AdminRepo: postgres.NewPostgresAdminRepo(db),
 	}
