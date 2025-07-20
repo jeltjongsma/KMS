@@ -7,10 +7,9 @@ import (
 	"kms/server/router"
 	"kms/infra"
 	"kms/server/services"
-	"kms/server/httpkit"
 )
 
-// TODO: Single http.HandleFunc() with custom router?
+// Single http.HandleFunc() with custom router?
 func RegisterRoutes(cfg infra.KmsConfig, ctx *infra.AppContext) {
 	var withAuth = auth.Authorize(ctx.JWTSecret) 
 	var adminOnly = auth.RequireAdmin(ctx.UserRepo) 
@@ -35,12 +34,12 @@ func RegisterRoutes(cfg infra.KmsConfig, ctx *infra.AppContext) {
 			router.NewRoute(
 				"POST",
 				"/keys/generate",
-				httpkit.AppHandler(withAuth(keyHandler.GenerateKey)),
+				withAuth(keyHandler.GenerateKey),
 			),
 			router.NewRoute(
 				"GET",
 				"/keys/{keyReference}",
-				httpkit.AppHandler(withAuth(keyHandler.GetKey)),
+				withAuth(keyHandler.GetKey),
 			),
 		},
 	))
@@ -51,12 +50,12 @@ func RegisterRoutes(cfg infra.KmsConfig, ctx *infra.AppContext) {
 			router.NewRoute(
 				"POST",
 				"/auth/signup",
-				httpkit.AppHandler(authHandler.Signup),
+				authHandler.Signup,
 			),
 			router.NewRoute(
 				"POST",
 				"/auth/login",
-				httpkit.AppHandler(authHandler.Login),
+				authHandler.Login,
 			),
 		},
 	))
@@ -67,12 +66,11 @@ func RegisterRoutes(cfg infra.KmsConfig, ctx *infra.AppContext) {
 			router.NewRoute(
 				"POST",
 				"/users/{id}/role",
-				httpkit.AppHandler(withAuth(adminOnly(adminHandler.UpdateRole))),
+				withAuth(adminOnly(adminHandler.UpdateRole)),
 			),
 		},
 	))
 
 	// Admin
-	http.Handle("/admin", httpkit.AppHandler(withAuth(adminOnly(adminHandler.Me))))
-	// http.HandleFunc("/admin", withAuth(adminOnly(handlers.MakeAdminHandler(ctx.AdminRepo))))
+	http.Handle("/admin", withAuth(adminOnly(adminHandler.Me)))
 }

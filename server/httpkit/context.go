@@ -10,7 +10,7 @@ type AppHandler func(http.ResponseWriter, *http.Request) *kmsErrors.AppError
 
 func (fn AppHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if appErr := fn(w, r); appErr != nil {
-		log.Printf("Error: %v\n", appErr)
+		log.Printf("Error:\n\tHTTP [%d] %v\n\t%v\n", appErr.Code, appErr.Message, appErr.Err)
 		http.Error(w, appErr.Message, appErr.Code)
 	}
 }

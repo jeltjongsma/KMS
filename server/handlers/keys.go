@@ -24,7 +24,7 @@ func NewKeyHandler(keyService *services.KeyService) *KeyHandler {
 func (h *KeyHandler) GenerateKey(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
 	token, err := auth.ExtractToken(r.Context())
 	if err != nil {
-		return kmsErrors.NewAppError(err, "Unauthorized", 401)
+		return kmsErrors.NewInternalServerError(err)
 	}
 
 	var requestBody dto.GenerateKeyRequest
@@ -48,12 +48,12 @@ func (h *KeyHandler) GenerateKey(w http.ResponseWriter, r *http.Request) *kmsErr
 func (h *KeyHandler) GetKey(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
 	token, err := auth.ExtractToken(r.Context())
 	if err != nil {
-		return kmsErrors.NewAppError(err, "Unauthorized", 401)
+		return kmsErrors.NewInternalServerError(err)
 	}
 
 	keyReference, err := router.GetRouteParam(r.Context(), "keyReference")
 	if err != nil {
-		return kmsErrors.NewAppError(err, "Missing key reference", 400)
+		return kmsErrors.NewInternalServerError(err)
 	}
 
 	key, appErr := h.KeyService.GetKey(token.Payload.Sub, keyReference)

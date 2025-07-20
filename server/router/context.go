@@ -11,7 +11,7 @@ const RouteParamsCtxKey contextKey = "routeParams"
 func GetRouteParam(ctx context.Context, key string) (string, error) {
 	params, ok := ctx.Value(RouteParamsCtxKey).(map[string]string)
 	if !ok {
-		return "", fmt.Errorf("No route parameters specified")
+		return "", fmt.Errorf("No route params in context")
 	}
 
 	val, found := params[key]

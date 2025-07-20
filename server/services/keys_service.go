@@ -44,7 +44,7 @@ func (s *KeyService) CreateKey(userId int, keyReference string) (*storage.Key, *
 	}
 	newKey, err := s.KeyRepo.CreateKey(key)
 	if err != nil {
-		return nil, kmsErrors.NewAppError(err, "Failed to store key", 500)
+		return nil, kmsErrors.MapRepoErr(err)
 	}
 
 	return newKey, nil
@@ -63,7 +63,7 @@ func validateKeyReference(keyReference string) error {
 func (s *KeyService) GetKey(userId int, keyReference string) (*storage.Key, *kmsErrors.AppError) {
 	key, err := s.KeyRepo.GetKey(userId, keyReference)
 	if err != nil {
-		return nil, kmsErrors.NewAppError(err, "Failed to retrieve key", 500)
+		return nil, kmsErrors.MapRepoErr(err)
 	}
 	return key, nil
 }

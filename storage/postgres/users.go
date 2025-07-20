@@ -3,7 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"kms/storage"
-	"kms/utils"
+	"kms/utils/kmsErrors"
 )
 
 type PostgresUserRepo struct {
@@ -54,7 +54,6 @@ func (r *PostgresUserRepo) UpdateRole(id int, role string) error {
 	query := "UPDATE users SET role = $1 WHERE id = $2"
 	res, err := r.db.Exec(query, role, id)
 
-	// FIXME: Move error handling out of repository
 	if err != nil {
 		return err
 	}
@@ -64,7 +63,10 @@ func (r *PostgresUserRepo) UpdateRole(id int, role string) error {
 		return err
 	}
 	if nRows == 0 {
-		return utils.ErrNoRowsAffected
+		return kmsErrors.WrapError(kmsErrors.ErrNoRowsAffected, map[string]interface{}{
+			"id": id,
+			"role": role,
+		})
 	}
 	return nil
 }

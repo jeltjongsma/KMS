@@ -32,7 +32,7 @@ func MakeRouter(routes []*Route) httpkit.AppHandler {
 			} 
 		}
 		return kmsErrors.NewAppError(
-			fmt.Errorf("Path does not exist: %v %v\n", r.Method, r.URL.Path),
+			fmt.Errorf("Path does not exist: [%v] %v\n", r.Method, r.URL.Path),
 			"Not found",
 			404,
 		)

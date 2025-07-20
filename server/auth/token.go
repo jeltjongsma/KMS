@@ -7,10 +7,10 @@ import (
 	"crypto/hmac"
 	"strings"
 	"strconv"
-	"fmt"
 	"time"
 	"kms/storage"
 	"kms/infra"
+	"kms/utils/kmsErrors"
 )
 
 type Token struct {
@@ -89,7 +89,12 @@ func signHMAC(message, secret []byte) string {
 func VerifyToken(jwt string, secret []byte) (Token, error) {
 	var token Token
 	parts := strings.Split(jwt, ".")
-	if len(parts) != 3 {return token, fmt.Errorf("Not a JWT")}
+	if len(parts) != 3 {
+		return token, kmsErrors.WrapError(kmsErrors.ErrInvalidToken, map[string]interface{}{
+			"msg": "Not a JWT",
+			"jwt": jwt,
+		})
+	}
 
 	message := parts[0] + "." + parts[1]
 	decodedSignature, err := b64.RawURLEncoding.DecodeString(parts[2])
@@ -98,7 +103,10 @@ func VerifyToken(jwt string, secret []byte) (Token, error) {
 	}
 
 	if !verifyHMAC([]byte(message), decodedSignature, secret) {
-		return token, fmt.Errorf("MACs don't match")
+		return token, kmsErrors.WrapError(kmsErrors.ErrInvalidToken, map[string]interface{}{
+			"msg": "MACs don't match",
+			"jwt": jwt,
+		})
 	}
 
 	decodedPayload, err := b64.RawURLEncoding.DecodeString(parts[1])
@@ -111,7 +119,10 @@ func VerifyToken(jwt string, secret []byte) (Token, error) {
 	}
 
 	if !verifyStillValid(&payload) {
-		return token, fmt.Errorf("TTL has passed")
+		return token, kmsErrors.WrapError(kmsErrors.ErrInvalidToken, map[string]interface{}{
+			"msg": "TTL has passed",
+			"jwt": jwt,
+		})
 	}
 
 	decodedHeader, err := b64.RawURLEncoding.DecodeString(parts[0])

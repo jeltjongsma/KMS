@@ -19,7 +19,7 @@ func NewAdminService(adminRepo storage.AdminRepository, userRepo storage.UserRep
 
 func (s *AdminService) UpdateRole(userId int, role string) *kmsErrors.AppError {
 	if err := s.UserRepo.UpdateRole(userId, role); err != nil {
-		return kmsErrors.NewAppError(err, "Failed to update role", 500)
+		return kmsErrors.MapRepoErr(err)
 	}
 	return nil
 }
@@ -27,7 +27,7 @@ func (s *AdminService) UpdateRole(userId int, role string) *kmsErrors.AppError {
 func (s *AdminService) Me(userId int) (*storage.User, *kmsErrors.AppError) {
 	admin, err := s.UserRepo.GetUser(userId)
 	if err != nil {
-		return nil, kmsErrors.NewAppError(err, "Failed to retrieve admin", 500)
+		return nil, kmsErrors.MapRepoErr(err)
 	}
 	return admin, nil
 }

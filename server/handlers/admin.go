@@ -24,7 +24,7 @@ func NewAdminHandler(adminService *services.AdminService) *AdminHandler {
 func (h *AdminHandler) UpdateRole(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
 	userIdStr, err := router.GetRouteParam(r.Context(), "id")
 	if err != nil {
-		return kmsErrors.NewAppError(err, "Missing route param", 500)
+		return kmsErrors.NewInternalServerError(err)
 	}
 
 	userId, err := strconv.Atoi(userIdStr)
@@ -37,7 +37,7 @@ func (h *AdminHandler) UpdateRole(w http.ResponseWriter, r *http.Request) *kmsEr
 		return kmsErrors.NewAppError(err, "Invalid request body", 400)
 	}
 
-	if appErr := h.AdminService.UpdateRole(userId, requestBody.Role); err != nil {
+	if appErr := h.AdminService.UpdateRole(userId, requestBody.Role); appErr != nil {
 		return appErr
 	}
 
@@ -48,7 +48,7 @@ func (h *AdminHandler) UpdateRole(w http.ResponseWriter, r *http.Request) *kmsEr
 func (h *AdminHandler) Me(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
 	token, err := auth.ExtractToken(r.Context())
 	if err != nil {
-		return kmsErrors.NewAppError(err, "Failed to extract token", 401)
+		return kmsErrors.NewInternalServerError(err)
 	}
 
 	admin, appErr := h.AdminService.Me(token.Payload.Sub)

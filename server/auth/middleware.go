@@ -38,7 +38,7 @@ func Authorize(jwtSecret []byte) func(httpkit.AppHandler) httpkit.AppHandler {
 			tokenStr := strings.TrimSpace(parts[1])
 			token, err := VerifyToken(tokenStr, jwtSecret)
 			if err != nil {
-				return kmsErrors.NewAppError(err, "Invalid token", 401)
+				return kmsErrors.MapVerifyTokenErr(err)
 			}
 
 			ctx := context.WithValue(r.Context(), TokenCtxKey, token)
@@ -53,17 +53,17 @@ func RequireAdmin(userRepo storage.UserRepository) func(httpkit.AppHandler) http
 		return func(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
 			token, err := ExtractToken(r.Context())
 			if err != nil {
-				return kmsErrors.NewAppError(err, "Failed to extract token", 500)
+				return kmsErrors.NewInternalServerError(err)
 			}
 
 			role, err := userRepo.GetRole(token.Payload.Sub)
 			if err != nil {
-				return kmsErrors.NewAppError(err, "Failed to retrieve role", 500)
+				return kmsErrors.MapRepoErr(err)
 			}
 
 			if role != "admin" {
 				return kmsErrors.NewAppError(
-					fmt.Errorf("Forbidden role (%v)", role),
+					fmt.Errorf("Forbidden role (%v)\n", role),
 					"Forbidden",
 					403,
 				)
@@ -78,7 +78,7 @@ func ExtractToken(ctx context.Context) (*Token, error) {
 	tokenStr := ctx.Value(TokenCtxKey)
 	token, ok := tokenStr.(Token)
 	if !ok {
-		return nil, fmt.Errorf("Invalid token\n")
+		return nil, fmt.Errorf("No token in context")
 	}
 	return &token, nil
 }
