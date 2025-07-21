@@ -55,11 +55,11 @@ func (s *AuthService) Signup(cred *dto.Credentials) (string, *kmsErrors.AppError
 }
 
 func (s *AuthService) Login(cred *dto.Credentials) (string, *kmsErrors.AppError) {
-	user, err := s.UserRepo.FindByEmail(cred.Email)
+	user, err := s.UserRepo.FindByUsername(cred.Username)
 	if err != nil {
 		// Check if err is "not found" to help prevent user enumeration attacks
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", kmsErrors.NewAppError(err, "Incorrect email or password", 401)
+			return "", kmsErrors.NewAppError(err, "Incorrect username or password", 401)
 		}
 		return "", kmsErrors.MapRepoErr(err)
 	}

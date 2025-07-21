@@ -10,20 +10,20 @@ type Validatable interface {
 }
 
 type Credentials struct {
-	Email 		string 	`json:"email"`
+	Username 	string 	`json:"username"`
 	Password	string 	`json:"password"`
 }
 
 func (c *Credentials) Lift() *storage.User {
 	var user storage.User
-	user.Email = c.Email
+	user.Username = c.Username
 	user.Password = c.Password
 	return &user
 }
 
 func (c* Credentials) Validate() error {
-	if c.Email != "" && c.Password != "" {return nil}
-	return fmt.Errorf("Email and password should be non-empty\n")
+	if c.Username != "" && c.Password != "" {return nil}
+	return fmt.Errorf("Username and password should be non-empty\n")
 }
 
 type JWTResponse struct {

@@ -10,7 +10,7 @@ type Key struct {
 
 type User struct {
 	ID 			int		`json:"id"`
-	Email		string 	`json:"email"` // TODO: Store deterministic hash to keep lookup functionality
+	Username	string 	`json:"username"` // TODO: Store deterministic hash to keep lookup functionality
 	Password	string 	`json:"password"`
 	Role 		string 	`json:"role" encrypt:"true"`
 }

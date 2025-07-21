@@ -32,7 +32,7 @@ func MapRepoErr(err error) *AppError {
 
 func MapHashErr(err error) *AppError {
 	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword ) {
-		return NewAppError(err, "Incorrect email or password", 401)
+		return NewAppError(err, "Incorrect username or password", 401)
 	}
 	
 	return NewInternalServerError(err)

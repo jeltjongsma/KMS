@@ -58,13 +58,13 @@ func main() {
 			Name: "users",
 			Fields: map[string]string{
 				"id": 	"SERIAL PRIMARY KEY",
-				"email": "TEXT UNIQUE NOT NULL",
+				"username": "TEXT UNIQUE NOT NULL",
 				"password": "TEXT NOT NULL",
 				"role": "TEXT NOT NULL DEFAULT 'user'",
 			},
 			Keys: []string{
 				"id",
-				"email",
+				"username",
 				"password",
 				"role",
 			},

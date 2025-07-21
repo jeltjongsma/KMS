@@ -45,8 +45,8 @@ func (r *EncryptedUserRepo) GetAll() ([]storage.User, error) {
 	return r.UserRepo.GetAll()
 }
 
-func (r *EncryptedUserRepo) FindByEmail(email string) (*storage.User, error) {
-	user, err := r.UserRepo.FindByEmail(email)
+func (r *EncryptedUserRepo) FindByUsername(email string) (*storage.User, error) {
+	user, err := r.UserRepo.FindByUsername(email)
 	if err != nil {
 		return nil, err
 	}

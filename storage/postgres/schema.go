@@ -55,6 +55,7 @@ func dropTable(db *sql.DB, name string) error {
 
 func ensureMasterAdmin(cfg infra.KmsConfig, db *sql.DB, key []byte) error {
 	var count int 
+	// FIXME: Will always fail
 	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE role = 'admin'").Scan(&count)
 	if err != nil {return err}
 
@@ -64,8 +65,8 @@ func ensureMasterAdmin(cfg infra.KmsConfig, db *sql.DB, key []byte) error {
 		encryptedAdmin, err := db_encryption.EncryptString("admin", key)
 		if err != nil {return err}
 		_, err = db.Exec(
-			"INSERT INTO users (email, password, role) VALUES ($1, $2, $3)", 
-			cfg["MASTER_ADMIN_EMAIL"],
+			"INSERT INTO users (username, password, role) VALUES ($1, $2, $3)", 
+			cfg["MASTER_ADMIN_USERNAME"],
 			hashedPw,
 			encryptedAdmin,
 		)

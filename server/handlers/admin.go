@@ -57,7 +57,7 @@ func (h *AdminHandler) Me(w http.ResponseWriter, r *http.Request) *kmsErrors.App
 	}
 
 	response := &dto.UserResponse{
-		Email: admin.Email,
+		Username: admin.Username,
 		Role: admin.Role,
 	}
 	
