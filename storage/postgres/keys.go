@@ -13,7 +13,6 @@ func NewPostgresKeyRepo(db *sql.DB) *PostgresKeyRepo {
 	return &PostgresKeyRepo{db: db}
 }
 
-// TODO: Replace queries with query builder
 func (r *PostgresKeyRepo) CreateKey(key *storage.Key) (*storage.Key, error) {
 	query := "INSERT INTO keys (keyReference, dek, userId, encoding) VALUES ($1, $2, $3, $4) RETURNING *"
 	var newKey storage.Key
