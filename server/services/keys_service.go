@@ -4,18 +4,22 @@ import (
 	"kms/storage"
 	"kms/utils/kmsErrors"
 	"kms/utils/encryption"
+	"kms/utils/hashing"
 	"fmt"
 	b64 "encoding/base64"
 	"unicode"
 )
 
 type KeyService struct {
-	KeyRepo storage.KeyRepository
-	KEK 	[]byte
+	KeyRepo 		storage.KeyRepository
+	KeyRefSecret	[]byte
 }
 
-func NewKeyService(keyRepo storage.KeyRepository) *KeyService {
-	return &KeyService{KeyRepo: keyRepo}
+func NewKeyService(keyRepo storage.KeyRepository, keyRefSecret []byte) *KeyService {
+	return &KeyService{
+		KeyRepo: keyRepo,
+		KeyRefSecret: keyRefSecret,
+	}
 }
 
 func (s *KeyService) CreateKey(userId int, keyReference string) (*storage.Key, *kmsErrors.AppError) {
@@ -28,16 +32,12 @@ func (s *KeyService) CreateKey(userId int, keyReference string) (*storage.Key, *
 		return nil, kmsErrors.NewAppError(err, "Failed to generate key", 500)
 	}
 
-	// encryptedDEKBytes, err := encryption.Encrypt(DEKBytes, s.KEK)
-	// if err != nil {
-	// 	return storage.Key{}, kmsErrors.NewAppError(err)
-	// }
-
+	// No need to check for collisions, since 'keyReference' column has unique constraint
+	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), s.KeyRefSecret)
 	DEKB64 := b64.RawURLEncoding.EncodeToString(DEKBytes)
 
 	key := &storage.Key{
-		KeyReference: keyReference,
-		// DEK: b64.RawURLEncoding.EncodeToString(encryptedDEKBytes),
+		KeyReference: hashedReference,
 		DEK: DEKB64,
 		UserId: userId,
 		Encoding: "base64url (RFC 4648)",
@@ -61,7 +61,8 @@ func validateKeyReference(keyReference string) error {
 }
 
 func (s *KeyService) GetKey(userId int, keyReference string) (*storage.Key, *kmsErrors.AppError) {
-	key, err := s.KeyRepo.GetKey(userId, keyReference)
+	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), s.KeyRefSecret)
+	key, err := s.KeyRepo.GetKey(userId, hashedReference)
 	if err != nil {
 		return nil, kmsErrors.MapRepoErr(err)
 	}

@@ -15,7 +15,7 @@ func RegisterRoutes(cfg infra.KmsConfig, ctx *infra.AppContext) {
 	var withAuth = auth.Authorize(ctx.JWTSecret) 
 	var adminOnly = auth.RequireAdmin(ctx.UserRepo) 
 
-	keyService := services.NewKeyService(ctx.KeyRepo)
+	keyService := services.NewKeyService(ctx.KeyRepo, ctx.KeyRefSecret)
 	keyHandler := handlers.NewKeyHandler(keyService)
 
 	authService := services.NewAuthService(ctx.Cfg, ctx.UserRepo)

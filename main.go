@@ -13,7 +13,6 @@ import (
 
 // TODO:
 // Event log
-// DB encryption
 // SQL migration
 
 func main() {
@@ -28,6 +27,10 @@ func main() {
 	KEK, err := b64.RawURLEncoding.DecodeString(cfg["KEK"])
 	if err != nil {
 		log.Fatal("Unable to decode KEK: ", err)
+	}
+	KeyRefSecret, err := b64.RawURLEncoding.DecodeString(cfg["KEY_REF_SECRET"])
+	if err != nil {
+		log.Fatal("Unable to decode keyRefSecret: ", er)
 	}
 
 	db, err := infra.ConnectDatabase(cfg)
@@ -82,6 +85,7 @@ func main() {
 		Cfg: cfg,
 		JWTSecret: jwtSecret,
 		KEK: KEK,
+		KeyRefSecret: keyRefSecret,
 		KeyRepo: encr.NewEncryptedKeyRepo(postgres.NewPostgresKeyRepo(db), KEK),
 		UserRepo: encr.NewEncryptedUserRepo(postgres.NewPostgresUserRepo(db), KEK),
 		AdminRepo: encr.NewEncryptedAdminRepo(postgres.NewPostgresAdminRepo(db), KEK),

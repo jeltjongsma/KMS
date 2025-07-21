@@ -11,6 +11,7 @@ import (
 	"kms/storage"
 	"kms/infra"
 	"kms/utils/kmsErrors"
+	"kms/utils/hashing"
 )
 
 type Token struct {
@@ -73,16 +74,11 @@ func GenerateToken(token Token, secret []byte) (string, error) {
 
 	message := headerB64 + "." + payloadB64
 
-	signature := signHMAC([]byte(message), secret)
+	signature := hashing.HashHS256ToB64([]byte(message), secret)
 	return message + "." + signature, nil
 } 
 
-func signHMAC(message, secret []byte) string {
-	h := hmac.New(sha256.New, secret)
-	h.Write(message)
-	signature := h.Sum(nil)
-	return b64.RawURLEncoding.EncodeToString(signature)
-}
+
 
 // TODO: Check if token has been revoked (logout, invalidation)
 // TODO: Invalidate tokens when server restarts
