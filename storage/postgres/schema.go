@@ -53,7 +53,7 @@ func dropTable(db *sql.DB, name string) error {
 	return err
 }
 
-func ensureMasterAdmin(cfg infra.KmsConfig, db *sql.DB, key []byte) error {
+func ensureMasterAdmin(cfg infra.KmsConfig, db *sql.DB, key []byte, usernameSecret []byte) error {
 	var count int 
 	// FIXME: Will always fail
 	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE role = 'admin'").Scan(&count)
@@ -64,9 +64,11 @@ func ensureMasterAdmin(cfg infra.KmsConfig, db *sql.DB, key []byte) error {
 		if err != nil {return err}
 		encryptedAdmin, err := db_encryption.EncryptString("admin", key)
 		if err != nil {return err}
+		encryptedUsername, err := db_encryption.EncryptString(cfg["MASTER_ADMIN_USERNAME"], key)
 		_, err = db.Exec(
-			"INSERT INTO users (username, password, role) VALUES ($1, $2, $3)", 
-			cfg["MASTER_ADMIN_USERNAME"],
+			"INSERT INTO users (username, hashedUsername, password, role) VALUES ($1, $2, $3, $4)", 
+			encryptedUsername,
+			hashing.HashHS256ToB64([]byte(cfg["MASTER_ADMIN_USERNAME"]), usernameSecret),
 			hashedPw,
 			encryptedAdmin,
 		)
@@ -75,7 +77,7 @@ func ensureMasterAdmin(cfg infra.KmsConfig, db *sql.DB, key []byte) error {
 	return nil
 } 
 
-func InitSchema(cfg infra.KmsConfig, db *sql.DB, schemas []TableSchema, key []byte) error {
+func InitSchema(cfg infra.KmsConfig, db *sql.DB, schemas []TableSchema, key []byte, usernameSecret []byte) error {
 	clearTables := cfg["ENV"] == "dev" && cfg["CLEAR_DB"] == "true"
 	if clearTables {
 		for _, schema := range schemas {
@@ -90,7 +92,7 @@ func InitSchema(cfg infra.KmsConfig, db *sql.DB, schemas []TableSchema, key []by
 		}
 	}
 	if cfg["ENV"] == "dev" {
-		if err := ensureMasterAdmin(cfg, db, key); err != nil {return err}
+		if err := ensureMasterAdmin(cfg, db, key, usernameSecret); err != nil {return err}
 	}
 	return nil
 }

@@ -59,19 +59,21 @@ func main() {
 			Fields: map[string]string{
 				"id": 	"SERIAL PRIMARY KEY",
 				"username": "TEXT UNIQUE NOT NULL",
+				"hashedUsername": "TEXT UNIQUE NOT NULL",
 				"password": "TEXT NOT NULL",
 				"role": "TEXT NOT NULL DEFAULT 'user'",
 			},
 			Keys: []string{
 				"id",
 				"username",
+				"hashedUsername",
 				"password",
 				"role",
 			},
 		},
 	}
 
-	if err := postgres.InitSchema(cfg, db, schemas, KEK); err != nil {
+	if err := postgres.InitSchema(cfg, db, schemas, KEK, keyRefSecret); err != nil {
 		log.Fatal("Failed to create schema: ", err)
 	}
 

@@ -37,7 +37,7 @@ func RegisterRoutes(ctx *infra.AppContext) error {
 		Typ: "jwt",
 	}
 
-	authService := services.NewAuthService(ctx.Cfg, userRepo, jwtGenInfo, jwtSecret)
+	authService := services.NewAuthService(ctx.Cfg, userRepo, jwtGenInfo, jwtSecret, ctx.KeyRefSecret)
 	authHandler := handlers.NewAuthHandler(authService)
 
 	keyService := services.NewKeyService(keyRepo, ctx.KeyRefSecret)

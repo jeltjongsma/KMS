@@ -16,6 +16,7 @@ type AuthService struct {
 	UserRepo 		storage.UserRepository
 	TokenGenInfo 	*auth.TokenGenInfo
 	TokenSecret		[]byte
+	UsernameSecret	[]byte
 }
 
 func NewAuthService(
@@ -23,12 +24,14 @@ func NewAuthService(
 	userRepo storage.UserRepository, 
 	tokenGenInfo *auth.TokenGenInfo,
 	tokenSecret []byte,
+	usernameSecret []byte,
 	) *AuthService {
 	return &AuthService{
 		Cfg: cfg,
 		UserRepo: userRepo,
 		TokenGenInfo: tokenGenInfo,
 		TokenSecret: tokenSecret,
+		UsernameSecret: usernameSecret,
 	}
 }
 
@@ -56,6 +59,7 @@ func (s *AuthService) Signup(cred *dto.SignupCredentials) (string, *kmsErrors.Ap
 
 	user := &storage.User{
 		Username: token.Payload.Sub,
+		HashedUsername: hashing.HashHS256ToB64([]byte(token.Payload.Sub), s.UsernameSecret),
 		Password: hashedPassword,
 		Role: s.Cfg["DEFAULT_ROLE"],
 	}
@@ -76,7 +80,8 @@ func (s *AuthService) Signup(cred *dto.SignupCredentials) (string, *kmsErrors.Ap
 }
 
 func (s *AuthService) Login(cred *dto.Credentials) (string, *kmsErrors.AppError) {
-	user, err := s.UserRepo.FindByUsername(cred.Username)
+	hashedUsername := hashing.HashHS256ToB64([]byte(cred.Username), s.UsernameSecret)
+	user, err := s.UserRepo.FindByHashedUsername(hashedUsername)
 	if err != nil {
 		// Check if err is "not found" to help prevent user enumeration attacks
 		if errors.Is(err, sql.ErrNoRows) {
