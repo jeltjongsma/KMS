@@ -5,15 +5,10 @@ import (
 	"log"
 	"kms/server"
 	"kms/storage/postgres"
-	encr "kms/storage/db_encryption"
 	"kms/infra"
 	"fmt"
 	b64 "encoding/base64"
 ) 
-
-// TODO:
-// Event log
-// SQL migration
 
 func main() {
 	cfg, err := infra.LoadConfig(".env")
@@ -28,9 +23,9 @@ func main() {
 	if err != nil {
 		log.Fatal("Unable to decode KEK: ", err)
 	}
-	KeyRefSecret, err := b64.RawURLEncoding.DecodeString(cfg["KEY_REF_SECRET"])
+	keyRefSecret, err := b64.RawURLEncoding.DecodeString(cfg["KEY_REF_SECRET"])
 	if err != nil {
-		log.Fatal("Unable to decode keyRefSecret: ", er)
+		log.Fatal("Unable to decode keyRefSecret: ", err)
 	}
 
 	db, err := infra.ConnectDatabase(cfg)
@@ -80,18 +75,17 @@ func main() {
 		log.Fatal("Failed to create schema: ", err)
 	}
 
-	// TODO: Inject handlers
+
+
 	appCtx := &infra.AppContext{
 		Cfg: cfg,
 		JWTSecret: jwtSecret,
 		KEK: KEK,
 		KeyRefSecret: keyRefSecret,
-		KeyRepo: encr.NewEncryptedKeyRepo(postgres.NewPostgresKeyRepo(db), KEK),
-		UserRepo: encr.NewEncryptedUserRepo(postgres.NewPostgresUserRepo(db), KEK),
-		AdminRepo: encr.NewEncryptedAdminRepo(postgres.NewPostgresAdminRepo(db), KEK),
+		DB: db,
 	}
 
-	server.RegisterRoutes(cfg, appCtx)
+	server.RegisterRoutes(appCtx)
 
 	http.ListenAndServe(fmt.Sprintf(":%v", cfg["SERVER_PORT"]), nil)
 }

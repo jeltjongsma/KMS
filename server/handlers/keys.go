@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"kms/storage"
 	"kms/server/dto"
 	"kms/utils"
 	"kms/server/auth"
@@ -69,19 +68,10 @@ func (h *KeyHandler) GetKey(w http.ResponseWriter, r *http.Request) *kmsErrors.A
 	return utils.WriteJSON(w, response)
 }
 
-// Dev only
-func MakeKeyHandler(keyRepo storage.KeyRepository) http.HandlerFunc {
-	return func (w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			keys, err := keyRepo.GetAll()
-			if utils.HandleErrAndSendHttp(w, err, "Failed to retrieve keys", http.StatusInternalServerError) {return}
-
-			utils.SendEncodedJSON(w, keys)
-			return
-
-		default:
-			utils.ReturnMethodNotAllowed(w)
-		}
+func (h *KeyHandler) GetAllDev(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
+	keys, appErr := h.KeyService.GetAll()
+	if appErr != nil {
+		return appErr
 	}
+	return utils.WriteJSON(w, keys)
 }

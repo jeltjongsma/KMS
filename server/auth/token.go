@@ -6,10 +6,8 @@ import (
 	"crypto/sha256"
 	"crypto/hmac"
 	"strings"
-	"strconv"
 	"time"
 	"kms/storage"
-	"kms/infra"
 	"kms/utils/kmsErrors"
 	"kms/utils/hashing"
 )
@@ -32,17 +30,22 @@ type TokenPayload struct {
 	// Scp 	[]string	`json:"scp"`
 }
 
-func GenerateJWT(cfg infra.KmsConfig, user *storage.User) (string, error) {
+type JWTGenInfo struct {
+	Ttl		int64
+	Secret 	[]byte
+}
+
+func GenerateJWT(genInfo *JWTGenInfo, user *storage.User) (string, error) {
 	header := TokenHeader{
 		Ver: "1",
 	}
-	ttl, err := strconv.ParseInt(cfg["JWT_TTL"], 0, 64)
-	if err != nil {
-		return "", err
-	}
+	// ttl, err := strconv.ParseInt(cfg["JWT_TTL"], 0, 64)
+	// if err != nil {
+	// 	return "", err
+	// }
 	payload := TokenPayload{
 		Sub: user.ID,
-		Ttl: ttl,
+		Ttl: genInfo.Ttl,
 		Iat: time.Now().UnixMilli(),
 	}
 
@@ -51,12 +54,12 @@ func GenerateJWT(cfg infra.KmsConfig, user *storage.User) (string, error) {
 		Payload: &payload,
 	}
 
-	jwtSecret, err := b64.RawURLEncoding.DecodeString(cfg["JWT_SECRET"])
-	if err != nil {
-		return "", err
-	}
+	// jwtSecret, err := b64.RawURLEncoding.DecodeString(cfg["JWT_SECRET"])
+	// if err != nil {
+	// 	return "", err
+	// }
 
-	return GenerateToken(token, jwtSecret)
+	return GenerateToken(token, genInfo.Secret)
 }
 
 func GenerateToken(token Token, secret []byte) (string, error) {

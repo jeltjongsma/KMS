@@ -7,27 +7,54 @@ import (
 	"kms/server/router"
 	"kms/infra"
 	"kms/server/services"
+	"kms/server/httpkit"
+	encr "kms/storage/db_encryption"
+	"strconv"
+	b64 "encoding/base64"
+	"kms/storage/postgres"
 )
 
 // Single http.HandleFunc() with custom router?
-func RegisterRoutes(cfg infra.KmsConfig, ctx *infra.AppContext) {
-	// FIXME: Refactor to inject handlers/services using ctx
-	var withAuth = auth.Authorize(ctx.JWTSecret) 
-	var adminOnly = auth.RequireAdmin(ctx.UserRepo) 
+func RegisterRoutes(ctx *infra.AppContext) error {
+	// TODO: Replace with separate key
+	keyRepo := encr.NewEncryptedKeyRepo(postgres.NewPostgresKeyRepo(ctx.DB), ctx.KEK)
+	adminRepo := encr.NewEncryptedAdminRepo(postgres.NewPostgresAdminRepo(ctx.DB), ctx.KEK)
+	userRepo := encr.NewEncryptedUserRepo(postgres.NewPostgresUserRepo(ctx.DB), ctx.KEK)
+	
+	jwtTtl, err := strconv.ParseInt(ctx.Cfg["JWT_TTL"], 0, 64)
+	if err != nil {
+		return err
+	}
 
-	keyService := services.NewKeyService(ctx.KeyRepo, ctx.KeyRefSecret)
-	keyHandler := handlers.NewKeyHandler(keyService)
+	jwtSecret, err := b64.RawURLEncoding.DecodeString(ctx.Cfg["JWT_SECRET"])
+	if err != nil {
+		return err
+	}
 
-	authService := services.NewAuthService(ctx.Cfg, ctx.UserRepo)
+	jwtGenInfo := &auth.JWTGenInfo{
+		Ttl: jwtTtl,
+		Secret: jwtSecret,
+	}
+
+	authService := services.NewAuthService(ctx.Cfg, userRepo, jwtGenInfo)
 	authHandler := handlers.NewAuthHandler(authService)
 
-	adminService := services.NewAdminService(ctx.AdminRepo, ctx.UserRepo) 
+	keyService := services.NewKeyService(keyRepo, ctx.KeyRefSecret)
+	keyHandler := handlers.NewKeyHandler(keyService)
+
+	adminService := services.NewAdminService(adminRepo, userRepo) 
 	adminHandler := handlers.NewAdminHandler(adminService)
 
+	userService := services.NewUserService(userRepo)
+	userHandler := handlers.NewUserHandler(userService)
+
+	var withAuth = auth.Authorize(ctx.JWTSecret) 
+	var adminOnly = auth.RequireAdmin(userRepo) 
+
 	// Register routes for dev only environment
-	if cfg["ENV"] == "dev" {
-		http.HandleFunc("/users", handlers.MakeUserHandler(ctx.UserRepo))
-		http.HandleFunc("/keys", handlers.MakeKeyHandler(ctx.KeyRepo))
+	if ctx.Cfg["ENV"] == "dev" {
+		http.Handle("/users", httpkit.AppHandler(userHandler.GetAllDev))
+		http.Handle("/keys", httpkit.AppHandler(keyHandler.GetAllDev))
 	}
 
 	http.Handle("/keys/", router.MakeRouter(
@@ -74,4 +101,6 @@ func RegisterRoutes(cfg infra.KmsConfig, ctx *infra.AppContext) {
 
 	// Admin
 	http.Handle("/admin", withAuth(adminOnly(adminHandler.Me)))
+	
+	return nil
 }

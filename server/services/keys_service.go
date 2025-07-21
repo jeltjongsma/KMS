@@ -68,3 +68,11 @@ func (s *KeyService) GetKey(userId int, keyReference string) (*storage.Key, *kms
 	}
 	return key, nil
 }
+
+func (s *KeyService) GetAll() ([]storage.Key, *kmsErrors.AppError) {
+	keys, err := s.KeyRepo.GetAll()
+	if err != nil {
+		return nil, kmsErrors.MapRepoErr(err)
+	}
+	return keys, nil
+}

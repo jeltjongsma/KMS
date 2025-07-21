@@ -1,14 +1,13 @@
 package infra
 
 import (
-	"kms/storage"
+	"database/sql"
 )
 
 type AppContext struct {
-	Cfg 		KmsConfig
-	JWTSecret 	[]byte
-	KEK			[]byte
-	KeyRepo 	storage.KeyRepository
-	UserRepo	storage.UserRepository
-	AdminRepo	storage.AdminRepository
+	Cfg		 		KmsConfig
+	JWTSecret 		[]byte
+	KEK				[]byte
+	KeyRefSecret	[]byte
+	DB 				*sql.DB
 }
