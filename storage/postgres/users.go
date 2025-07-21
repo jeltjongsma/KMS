@@ -15,9 +15,9 @@ func NewPostgresUserRepo(db *sql.DB) *PostgresUserRepo {
 }
 
 func (r *PostgresUserRepo) CreateUser(user *storage.User) (int, error) {
-	query := "INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id"
+	query := "INSERT INTO users (email, password, role) VALUES ($1, $2, $3) RETURNING id"
 	var id int
-	err := r.db.QueryRow(query, user.Email, user.Password).Scan(&id)
+	err := r.db.QueryRow(query, user.Email, user.Password, user.Role).Scan(&id)
 	return id, err
 }
 

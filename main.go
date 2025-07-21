@@ -5,7 +5,7 @@ import (
 	"log"
 	"kms/server"
 	"kms/storage/postgres"
-	"kms/storage"
+	encr "kms/storage/db_encryption"
 	"kms/infra"
 	"fmt"
 	b64 "encoding/base64"
@@ -73,7 +73,7 @@ func main() {
 		},
 	}
 
-	if err := postgres.InitSchema(cfg, db, schemas); err != nil {
+	if err := postgres.InitSchema(cfg, db, schemas, KEK); err != nil {
 		log.Fatal("Failed to create schema: ", err)
 	}
 
@@ -82,9 +82,9 @@ func main() {
 		Cfg: cfg,
 		JWTSecret: jwtSecret,
 		KEK: KEK,
-		KeyRepo: storage.NewEncryptedKeyRepo(postgres.NewPostgresKeyRepo(db), KEK),
-		UserRepo: postgres.NewPostgresUserRepo(db),
-		AdminRepo: postgres.NewPostgresAdminRepo(db),
+		KeyRepo: encr.NewEncryptedKeyRepo(postgres.NewPostgresKeyRepo(db), KEK),
+		UserRepo: encr.NewEncryptedUserRepo(postgres.NewPostgresUserRepo(db), KEK),
+		AdminRepo: encr.NewEncryptedAdminRepo(postgres.NewPostgresAdminRepo(db), KEK),
 	}
 
 	server.RegisterRoutes(cfg, appCtx)

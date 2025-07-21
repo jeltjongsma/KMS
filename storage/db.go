@@ -18,8 +18,3 @@ type UserRepository interface {
 type AdminRepository interface {
 	GetAdmin(id int) (*User, error)
 }
-
-type EncryptedRepository struct {
-	KEK 		[]byte
-	EncFields 	[]string
-}

@@ -11,6 +11,7 @@ import (
 
 // Single http.HandleFunc() with custom router?
 func RegisterRoutes(cfg infra.KmsConfig, ctx *infra.AppContext) {
+	// FIXME: Refactor to inject handlers/services using ctx
 	var withAuth = auth.Authorize(ctx.JWTSecret) 
 	var adminOnly = auth.RequireAdmin(ctx.UserRepo) 
 

@@ -32,15 +32,16 @@ func (s *AuthService) Signup(cred *dto.Credentials) (string, *kmsErrors.AppError
 	user := cred.Lift()
 
 	user.Password = hashedPassword
+	user.Role = s.Cfg["DEFAULT_ROLE"]
 	
-	id, err := s.UserRepo.CreateUser(&user)
+	id, err := s.UserRepo.CreateUser(user)
 	if err != nil {
 		return "", kmsErrors.MapRepoErr(err)
 	}
 
 	user.ID = id
 
-	jwt, err := auth.GenerateJWT(s.Cfg, &user)
+	jwt, err := auth.GenerateJWT(s.Cfg, user)
 	if err != nil {
 		return "", kmsErrors.NewInternalServerError(err)
 	}

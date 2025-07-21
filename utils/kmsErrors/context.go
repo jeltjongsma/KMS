@@ -21,11 +21,12 @@ func NewAppError(err error, msg string, code int) *AppError {
 
 var ErrNoRowsAffected = errors.New("No rows affected")
 var ErrInvalidToken = errors.New("Invalid token")
+var ErrRepoEncryption = errors.New("Database encryption wrapper failed")
 
 func WrapError(err error, data map[string]interface{}) error {
 	return fmt.Errorf("%w: %v", err, data)
 }
 
 func NewInternalServerError(err error) *AppError {
-	return NewAppError(err, "internal server error", 500)
+	return NewAppError(err, "Internal server error", 500)
 } 

@@ -7,6 +7,7 @@ import (
 	"log"
 	"kms/utils/hashing"
 	"kms/infra"
+	"kms/storage/db_encryption"
 )
 
 type TableSchema struct {
@@ -52,25 +53,28 @@ func dropTable(db *sql.DB, name string) error {
 	return err
 }
 
-func ensureMasterAdmin(cfg infra.KmsConfig, db *sql.DB) error {
+func ensureMasterAdmin(cfg infra.KmsConfig, db *sql.DB, key []byte) error {
 	var count int 
 	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE role = 'admin'").Scan(&count)
 	if err != nil {return err}
 
 	if count == 0 {
 		hashedPw, err := hashing.HashPassword(cfg["MASTER_ADMIN_PASSWORD"])
-		if err != nil {return nil}
+		if err != nil {return err}
+		encryptedAdmin, err := db_encryption.EncryptString("admin", key)
+		if err != nil {return err}
 		_, err = db.Exec(
-			"INSERT INTO users (email, password, role) VALUES ($1, $2, 'admin')", 
+			"INSERT INTO users (email, password, role) VALUES ($1, $2, $3)", 
 			cfg["MASTER_ADMIN_EMAIL"],
 			hashedPw,
+			encryptedAdmin,
 		)
 		return err
 	}
 	return nil
 } 
 
-func InitSchema(cfg infra.KmsConfig, db *sql.DB, schemas []TableSchema) error {
+func InitSchema(cfg infra.KmsConfig, db *sql.DB, schemas []TableSchema, key []byte) error {
 	clearTables := cfg["ENV"] == "dev" && cfg["CLEAR_DB"] == "true"
 	if clearTables {
 		for _, schema := range schemas {
@@ -85,7 +89,7 @@ func InitSchema(cfg infra.KmsConfig, db *sql.DB, schemas []TableSchema) error {
 		}
 	}
 	if cfg["ENV"] == "dev" {
-		if err := ensureMasterAdmin(cfg, db); err != nil {return err}
+		if err := ensureMasterAdmin(cfg, db, key); err != nil {return err}
 	}
 	return nil
 }

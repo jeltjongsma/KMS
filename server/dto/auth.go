@@ -14,11 +14,11 @@ type Credentials struct {
 	Password	string 	`json:"password"`
 }
 
-func (c *Credentials) Lift() storage.User {
+func (c *Credentials) Lift() *storage.User {
 	var user storage.User
 	user.Email = c.Email
 	user.Password = c.Password
-	return user
+	return &user
 }
 
 func (c* Credentials) Validate() error {
