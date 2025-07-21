@@ -34,3 +34,7 @@ func NewInternalServerError(err error) *AppError {
 func NewInvalidBodyError(err error) *AppError {
 	return NewAppError(err, "Invalid request body", 400)
 }
+
+func NewMissingCredentialsError(err error) *AppError {
+	return NewAppError(err, "Missing credentials", 400)
+}

@@ -12,29 +12,53 @@ import (
 )
 
 type AuthService struct {
-	Cfg 		infra.KmsConfig
-	UserRepo 	storage.UserRepository
+	Cfg 			infra.KmsConfig
+	UserRepo 		storage.UserRepository
 	TokenGenInfo 	*auth.TokenGenInfo
+	TokenSecret		[]byte
 }
 
-func NewAuthService(cfg infra.KmsConfig, userRepo storage.UserRepository, tokenGenInfo *auth.TokenGenInfo) *AuthService {
+func NewAuthService(
+	cfg infra.KmsConfig, 
+	userRepo storage.UserRepository, 
+	tokenGenInfo *auth.TokenGenInfo,
+	tokenSecret []byte,
+	) *AuthService {
 	return &AuthService{
 		Cfg: cfg,
 		UserRepo: userRepo,
 		TokenGenInfo: tokenGenInfo,
+		TokenSecret: tokenSecret,
 	}
 }
 
-func (s *AuthService) Signup(cred *dto.Credentials) (string, *kmsErrors.AppError) {
+func (s *AuthService) Signup(cred *dto.SignupCredentials) (string, *kmsErrors.AppError) {
+	token, err := auth.VerifyToken(cred.Token, s.TokenSecret)
+	if err != nil {
+		return "", kmsErrors.MapVerifyTokenErr(err)
+	}
+
+	if token.Header.Typ != "signup" {
+		return "", kmsErrors.NewAppError(
+			kmsErrors.WrapError(kmsErrors.ErrInvalidToken, map[string]interface{}{
+				"msg": "Token should be of type 'signup'",
+				"type": token.Header.Typ, 
+			}),
+			"Invalid token",
+			400,
+		)
+	}
+
 	hashedPassword, err := hashing.HashPassword(cred.Password)
 	if err != nil {
 		return "", kmsErrors.MapHashErr(err)
 	}
 
-	user := cred.Lift()
-
-	user.Password = hashedPassword
-	user.Role = s.Cfg["DEFAULT_ROLE"]
+	user := &storage.User{
+		Username: token.Payload.Sub,
+		Password: hashedPassword,
+		Role: s.Cfg["DEFAULT_ROLE"],
+	}
 	
 	id, err := s.UserRepo.CreateUser(user)
 	if err != nil {
@@ -42,8 +66,6 @@ func (s *AuthService) Signup(cred *dto.Credentials) (string, *kmsErrors.AppError
 	}
 
 	user.ID = id
-
-	
 
 	jwt, err := auth.GenerateJWT(s.TokenGenInfo, user)
 	if err != nil {

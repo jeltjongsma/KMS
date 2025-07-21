@@ -21,6 +21,18 @@ func (c *Credentials) Lift() *storage.User {
 	return &user
 }
 
+type SignupCredentials struct {
+	Token 		string 	`json:"token"`
+	Password	string 	`json:"password"`
+}
+
+func (c *SignupCredentials) Validate() error {
+	if c.Token == "" || c.Password == "" {
+		return fmt.Errorf("Token and password should be non-empty")
+	}
+	return nil
+}
+
 func (c* Credentials) Validate() error {
 	if c.Username != "" && c.Password != "" {return nil}
 	return fmt.Errorf("Username and password should be non-empty\n")

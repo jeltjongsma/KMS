@@ -20,13 +20,13 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 
 // TODO: Minimum password requirements
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
-	var cred dto.Credentials 
+	var cred dto.SignupCredentials 
 	if err := utils.ParseJSONBody(r.Body, &cred); err != nil {
 		return kmsErrors.NewInvalidBodyError(err)
 	}
 
 	if err := cred.Validate(); err != nil {
-		return kmsErrors.NewAppError(err, "Missing credentials", 400)
+		return kmsErrors.NewMissingCredentialsError(err)
 	}
 
 	jwt, appErr := h.AuthService.Signup(&cred)
@@ -48,7 +48,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) *kmsErrors.A
 	}
 
 	if err := cred.Validate(); err != nil {
-		return kmsErrors.NewAppError(err, "Missing credentials", 400)
+		return kmsErrors.NewMissingCredentialsError(err)
 	}
 
 	jwt, appErr := h.AuthService.Login(&cred)
