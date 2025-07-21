@@ -22,7 +22,7 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
 	var cred dto.Credentials 
 	if err := utils.ParseJSONBody(r.Body, &cred); err != nil {
-		return kmsErrors.NewAppError(err, "Invalid request body", 400)
+		return kmsErrors.NewInvalidBodyError(err)
 	}
 
 	if err := cred.Validate(); err != nil {
@@ -34,8 +34,8 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) *kmsErrors.
 		return appErr
 	}
 
-	response := &dto.JWTResponse{
-		JWT: jwt,
+	response := &dto.TokenResponse{
+		Token: jwt,
 	}
 
 	return utils.WriteJSON(w, response)
@@ -44,7 +44,7 @@ func (h *AuthHandler) Signup(w http.ResponseWriter, r *http.Request) *kmsErrors.
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
 	var cred dto.Credentials
 	if err := utils.ParseJSONBody(r.Body, &cred); err != nil {
-		return kmsErrors.NewAppError(err, "Invalid request body", 400)
+		return kmsErrors.NewInvalidBodyError(err)
 	}
 
 	if err := cred.Validate(); err != nil {
@@ -56,8 +56,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) *kmsErrors.A
 		return appErr
 	}
 
-	response := &dto.JWTResponse{
-		JWT: jwt,
+	response := &dto.TokenResponse{
+		Token: jwt,
 	}
 
 	return utils.WriteJSON(w, response)

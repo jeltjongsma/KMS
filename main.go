@@ -75,8 +75,6 @@ func main() {
 		log.Fatal("Failed to create schema: ", err)
 	}
 
-
-
 	appCtx := &infra.AppContext{
 		Cfg: cfg,
 		JWTSecret: jwtSecret,

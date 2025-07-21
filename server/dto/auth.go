@@ -26,6 +26,6 @@ func (c* Credentials) Validate() error {
 	return fmt.Errorf("Username and password should be non-empty\n")
 }
 
-type JWTResponse struct {
-	JWT 		string 	`json:"jwt"`
+type TokenResponse struct {
+	Token 		string 	`json:"token"`
 }

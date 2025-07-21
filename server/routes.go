@@ -31,9 +31,10 @@ func RegisterRoutes(ctx *infra.AppContext) error {
 		return err
 	}
 
-	jwtGenInfo := &auth.JWTGenInfo{
+	jwtGenInfo := &auth.TokenGenInfo{
 		Ttl: jwtTtl,
 		Secret: jwtSecret,
+		Typ: "jwt",
 	}
 
 	authService := services.NewAuthService(ctx.Cfg, userRepo, jwtGenInfo)
@@ -42,7 +43,7 @@ func RegisterRoutes(ctx *infra.AppContext) error {
 	keyService := services.NewKeyService(keyRepo, ctx.KeyRefSecret)
 	keyHandler := handlers.NewKeyHandler(keyService)
 
-	adminService := services.NewAdminService(adminRepo, userRepo) 
+	adminService := services.NewAdminService(adminRepo, userRepo, jwtSecret) 
 	adminHandler := handlers.NewAdminHandler(adminService)
 
 	userService := services.NewUserService(userRepo)
@@ -51,7 +52,7 @@ func RegisterRoutes(ctx *infra.AppContext) error {
 	var withAuth = auth.Authorize(ctx.JWTSecret) 
 	var adminOnly = auth.RequireAdmin(userRepo) 
 
-	// Register routes for dev only environment
+	// Register routes for dev-only environment
 	if ctx.Cfg["ENV"] == "dev" {
 		http.Handle("/users", httpkit.AppHandler(userHandler.GetAllDev))
 		http.Handle("/keys", httpkit.AppHandler(keyHandler.GetAllDev))
@@ -95,6 +96,11 @@ func RegisterRoutes(ctx *infra.AppContext) error {
 				"POST",
 				"/users/{id}/role",
 				withAuth(adminOnly(adminHandler.UpdateRole)),
+			),
+			router.NewRoute(
+				"POST",
+				"/users/tokens/generate",
+				withAuth(adminOnly(adminHandler.GenerateSignupToken)),
 			),
 		},
 	))

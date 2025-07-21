@@ -16,3 +16,15 @@ func (r *UpdateRoleRequest) Validate() error {
 type GenerateKeyRequest struct {
 	KeyReference 	string 	`json:"keyReference"`
 }
+
+type GenerateSignupTokenRequest struct {
+	Username 		string	`json:"username"`
+	Ttl 			int64	`json:"ttl"`
+}
+
+func (r *GenerateSignupTokenRequest) Validate() error {
+	if r.Username == "" || r.Ttl == 0 {
+		return fmt.Errorf("Username and ttl should be non-empty")
+	}
+	return nil
+}

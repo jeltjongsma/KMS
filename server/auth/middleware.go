@@ -8,6 +8,7 @@ import (
 	"kms/utils/kmsErrors"
 	"kms/server/httpkit"
 	"fmt"
+	"strconv"
 )
 
 type contextKey string
@@ -41,6 +42,17 @@ func Authorize(jwtSecret []byte) func(httpkit.AppHandler) httpkit.AppHandler {
 				return kmsErrors.MapVerifyTokenErr(err)
 			}
 
+			if token.Header.Typ != "jwt" {
+				return kmsErrors.NewAppError(
+					kmsErrors.WrapError(kmsErrors.ErrInvalidToken, map[string]interface{}{
+						"msg": "Token should be of type 'jwt'",
+						"typ": token.Header.Typ,
+					}),
+					"Unauthorized", 
+					401,
+				)
+			}
+
 			ctx := context.WithValue(r.Context(), TokenCtxKey, token)
 
 			return next(w, r.WithContext(ctx))
@@ -56,7 +68,12 @@ func RequireAdmin(userRepo storage.UserRepository) func(httpkit.AppHandler) http
 				return kmsErrors.NewInternalServerError(err)
 			}
 
-			role, err := userRepo.GetRole(token.Payload.Sub)
+			userId, err := strconv.Atoi(token.Payload.Sub)
+			if err != nil {
+				return kmsErrors.NewInternalServerError(err)
+			}
+
+			role, err := userRepo.GetRole(userId)
 			if err != nil {
 				return kmsErrors.MapRepoErr(err)
 			}

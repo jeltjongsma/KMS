@@ -51,7 +51,11 @@ func (h *AdminHandler) Me(w http.ResponseWriter, r *http.Request) *kmsErrors.App
 		return kmsErrors.NewInternalServerError(err)
 	}
 
-	admin, appErr := h.AdminService.Me(token.Payload.Sub)
+	userId, err := strconv.Atoi(token.Payload.Sub)
+	if err != nil {
+		return kmsErrors.NewInternalServerError(err)
+	}
+	admin, appErr := h.AdminService.Me(userId)
 	if appErr != nil {
 		return appErr
 	}
@@ -61,5 +65,27 @@ func (h *AdminHandler) Me(w http.ResponseWriter, r *http.Request) *kmsErrors.App
 		Role: admin.Role,
 	}
 	
+	return utils.WriteJSON(w, response)
+}
+
+func (h *AdminHandler) GenerateSignupToken(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
+	var body dto.GenerateSignupTokenRequest
+	if err := utils.ParseJSONBody(r.Body, &body); err != nil {
+		return kmsErrors.NewInvalidBodyError(err)
+	}
+
+	if err := body.Validate(); err != nil {
+		return kmsErrors.NewInvalidBodyError(err)
+	}
+
+	token, appErr := h.AdminService.GenerateSignupToken(&body)
+	if appErr != nil {
+		return appErr
+	}
+
+	response := &dto.TokenResponse{
+		Token: token,
+	}
+
 	return utils.WriteJSON(w, response)
 }

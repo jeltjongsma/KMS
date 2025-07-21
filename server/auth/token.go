@@ -10,6 +10,7 @@ import (
 	"kms/storage"
 	"kms/utils/kmsErrors"
 	"kms/utils/hashing"
+	"strconv"
 )
 
 type Token struct {
@@ -19,32 +20,31 @@ type Token struct {
 
 type TokenHeader struct {
 	// Alg 	string	`json:"alg"`
-	// Typ 	string 	`json:"type"`
+	Typ 	string 	`json:"type"`
 	Ver 	string	`json:"ver"`
 }
 
 type TokenPayload struct {
-	Sub 	int		`json:"sub"`
+	Sub 	string	`json:"sub"`
 	Ttl 	int64	`json:"ttl"`
 	Iat 	int64	`json:"iat"`
 	// Scp 	[]string	`json:"scp"`
 }
 
-type JWTGenInfo struct {
+type TokenGenInfo struct {
 	Ttl		int64
 	Secret 	[]byte
+	Typ 	string
 }
 
-func GenerateJWT(genInfo *JWTGenInfo, user *storage.User) (string, error) {
+func GenerateJWT(genInfo *TokenGenInfo, user *storage.User) (string, error) {
 	header := TokenHeader{
 		Ver: "1",
+		Typ: genInfo.Typ,
 	}
-	// ttl, err := strconv.ParseInt(cfg["JWT_TTL"], 0, 64)
-	// if err != nil {
-	// 	return "", err
-	// }
+
 	payload := TokenPayload{
-		Sub: user.ID,
+		Sub: strconv.Itoa(user.ID),
 		Ttl: genInfo.Ttl,
 		Iat: time.Now().UnixMilli(),
 	}
@@ -54,15 +54,30 @@ func GenerateJWT(genInfo *JWTGenInfo, user *storage.User) (string, error) {
 		Payload: &payload,
 	}
 
-	// jwtSecret, err := b64.RawURLEncoding.DecodeString(cfg["JWT_SECRET"])
-	// if err != nil {
-	// 	return "", err
-	// }
-
-	return GenerateToken(token, genInfo.Secret)
+	return GenerateToken(&token, genInfo.Secret)
 }
 
-func GenerateToken(token Token, secret []byte) (string, error) {
+func GenerateSignupToken(genInfo *TokenGenInfo, username string) (string, error) {
+	header := TokenHeader{
+		Ver: "1",
+		Typ: genInfo.Typ,
+	}
+
+	payload := TokenPayload{
+		Sub: username,
+		Ttl: genInfo.Ttl,
+		Iat: time.Now().UnixMilli(),
+	}
+
+	token := Token{
+		Header: &header,
+		Payload: &payload,
+	}
+
+	return GenerateToken(&token, genInfo.Secret)
+}
+
+func GenerateToken(token *Token, secret []byte) (string, error) {
 	headerBytes, err := json.Marshal(*token.Header)
 	if err != nil {
 		return "", err

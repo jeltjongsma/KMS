@@ -14,15 +14,14 @@ import (
 type AuthService struct {
 	Cfg 		infra.KmsConfig
 	UserRepo 	storage.UserRepository
-	JWTGenInfo 	*auth.JWTGenInfo
+	TokenGenInfo 	*auth.TokenGenInfo
 }
 
-func NewAuthService(cfg infra.KmsConfig, userRepo storage.UserRepository, jwtGenInfo *auth.JWTGenInfo) *AuthService {
-	
+func NewAuthService(cfg infra.KmsConfig, userRepo storage.UserRepository, tokenGenInfo *auth.TokenGenInfo) *AuthService {
 	return &AuthService{
 		Cfg: cfg,
 		UserRepo: userRepo,
-		JWTGenInfo: jwtGenInfo,
+		TokenGenInfo: tokenGenInfo,
 	}
 }
 
@@ -46,7 +45,7 @@ func (s *AuthService) Signup(cred *dto.Credentials) (string, *kmsErrors.AppError
 
 	
 
-	jwt, err := auth.GenerateJWT(s.JWTGenInfo, user)
+	jwt, err := auth.GenerateJWT(s.TokenGenInfo, user)
 	if err != nil {
 		return "", kmsErrors.NewInternalServerError(err)
 	}
@@ -68,7 +67,7 @@ func (s *AuthService) Login(cred *dto.Credentials) (string, *kmsErrors.AppError)
 		return "", kmsErrors.MapHashErr(err)
 	}
 
-	jwt, err := auth.GenerateJWT(s.JWTGenInfo, user) 
+	jwt, err := auth.GenerateJWT(s.TokenGenInfo, user) 
 	if err != nil {
 		return "", kmsErrors.NewInternalServerError(err)
 	}

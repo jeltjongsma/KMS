@@ -30,3 +30,7 @@ func WrapError(err error, data map[string]interface{}) error {
 func NewInternalServerError(err error) *AppError {
 	return NewAppError(err, "Internal server error", 500)
 } 
+
+func NewInvalidBodyError(err error) *AppError {
+	return NewAppError(err, "Invalid request body", 400)
+}
