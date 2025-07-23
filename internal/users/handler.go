@@ -4,14 +4,19 @@ import (
 	"net/http"
 	kmsErrors "kms/pkg/errors"
 	pkgHttp "kms/pkg/http"
+	c "kms/internal/bootstrap/context"
 )
 
 type Handler struct {
 	Service 	*Service
+	Logger 		c.Logger
 }
 
-func NewHandler(userService *Service) *Handler {
-	return &Handler{Service: userService}
+func NewHandler(userService *Service, logger c.Logger) *Handler {
+	return &Handler{
+		Service: userService,
+		Logger: logger,
+	}
 }
 
 func (h *Handler) GetAllDev(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {

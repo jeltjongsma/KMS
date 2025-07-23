@@ -8,19 +8,27 @@ import (
 	"kms/internal/api/dto"
 	"kms/pkg/json"
 	pkgHttp "kms/pkg/http"
+	c "kms/internal/bootstrap/context"
 )
 
 type Handler struct {
 	Service 	*Service
+	Logger 		c.Logger
 }
 
-func NewHandler(adminService *Service) *Handler {
+func NewHandler(adminService *Service, logger c.Logger) *Handler {
 	return &Handler{
 		Service: adminService,
+		Logger: logger,
 	}
 }
 
 func (h *Handler) UpdateRole(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
+	token, err := httpctx.ExtractToken(r.Context())
+	if err != nil {
+		return kmsErrors.NewInternalServerError(err)
+	}
+
 	userIdStr, err := httpctx.GetRouteParam(r.Context(), "id")
 	if err != nil {
 		return kmsErrors.NewInternalServerError(err)
@@ -36,7 +44,7 @@ func (h *Handler) UpdateRole(w http.ResponseWriter, r *http.Request) *kmsErrors.
 		return kmsErrors.NewAppError(err, "Invalid request body", 400)
 	}
 
-	if appErr := h.Service.UpdateRole(userId, requestBody.Role); appErr != nil {
+	if appErr := h.Service.UpdateRole(userId, requestBody.Role, token.Payload.Sub); appErr != nil {
 		return appErr
 	}
 
@@ -68,6 +76,11 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError
 }
 
 func (h *Handler) GenerateSignupToken(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
+	adminToken, err := httpctx.ExtractToken(r.Context())
+	if err != nil {
+		return kmsErrors.NewInternalServerError(err)
+	}
+
 	var body GenerateSignupTokenRequest
 	if err := json.ParseBody(r.Body, &body); err != nil {
 		return kmsErrors.NewInvalidBodyError(err)
@@ -77,7 +90,7 @@ func (h *Handler) GenerateSignupToken(w http.ResponseWriter, r *http.Request) *k
 		return kmsErrors.NewInvalidBodyError(err)
 	}
 
-	token, appErr := h.Service.GenerateSignupToken(&body)
+	token, appErr := h.Service.GenerateSignupToken(&body, adminToken.Payload.Sub)
 	if appErr != nil {
 		return appErr
 	}

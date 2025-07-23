@@ -2,14 +2,19 @@ package users
 
 import (
 	kmsErrors "kms/pkg/errors"
+	c "kms/internal/bootstrap/context"
 )
 
 type Service struct {
 	UserRepo 	UserRepository
+	Logger 		c.Logger
 }
 
-func NewService(userRepo UserRepository) *Service {
-	return &Service{UserRepo: userRepo}
+func NewService(userRepo UserRepository, logger c.Logger) *Service {
+	return &Service{
+		UserRepo: userRepo,
+		Logger: logger,
+	}
 }
 
 type UserRepository interface {

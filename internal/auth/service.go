@@ -14,6 +14,7 @@ type Service struct {
 	UserRepo 		users.UserRepository
 	TokenGenInfo 	*TokenGenInfo
 	KeyManager 		c.KeyManager
+	Logger 			c.Logger
 }
 
 func NewService(
@@ -21,12 +22,14 @@ func NewService(
 	userRepo users.UserRepository, 
 	tokenGenInfo *TokenGenInfo,
 	keyManager c.KeyManager,
+	logger c.Logger,
 	) *Service {
 	return &Service{
 		Cfg: cfg,
 		UserRepo: userRepo,
 		TokenGenInfo: tokenGenInfo,
 		KeyManager: keyManager,
+		Logger: logger,
 	}
 }
 

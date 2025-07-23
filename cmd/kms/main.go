@@ -21,6 +21,11 @@ func main() {
 		log.Fatal("Unable to initialise key manager: ", err)
 	}
 
+	consoleLogger, err := bootstrap.InitConsoleLogger("info")
+	if err != nil {
+		log.Fatal("Unable to initialise loggerL ", err)
+	}
+
 	db, err := bootstrap.ConnectDatabase(cfg)
 	if err != nil {
 		log.Fatal("Unable to connect to database: ", err)
@@ -77,13 +82,16 @@ func main() {
 	appCtx := &bootstrap.AppContext{
 		Cfg: cfg,
 		KeyManager: keyManager,
+		Logger: consoleLogger,
 		DB: db,
 		UserRepo: userRepo,
 		KeyRepo: keyRepo,
 		AdminRepo: adminRepo,
 	}
 
-	api.RegisterRoutes(appCtx)
+	if err := api.RegisterRoutes(appCtx); err != nil {
+		log.Fatal("Unable to register routes: ", err)
+	}
 
 	http.ListenAndServe(fmt.Sprintf(":%v", cfg["SERVER_PORT"]), nil)
 }

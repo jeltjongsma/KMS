@@ -13,8 +13,8 @@ type Logger interface {
 	Info(string, ...any)
 	Notice(string, ...any)
 	Warn(string, ...any)
-	Warn(string, ...any)
 	Error(string, ...any)
 	Critical(string, ...any)
+	Alert(string, ...any)
 	Emergency(string, ...any)
 }

@@ -27,28 +27,29 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 		Typ: "jwt",
 	}
 
-	authService := auth.NewService(ctx.Cfg, ctx.UserRepo, jwtGenInfo, ctx.KeyManager)
-	authHandler := auth.NewHandler(authService)
+	authService := auth.NewService(ctx.Cfg, ctx.UserRepo, jwtGenInfo, ctx.KeyManager, ctx.Logger)
+	authHandler := auth.NewHandler(authService, ctx.Logger)
 
-	keyService := keys.NewService(ctx.KeyRepo, ctx.KeyManager)
-	keyHandler := keys.NewHandler(keyService)
+	keyService := keys.NewService(ctx.KeyRepo, ctx.KeyManager, ctx.Logger)
+	keyHandler := keys.NewHandler(keyService, ctx.Logger)
 
-	adminService := admin.NewService(ctx.AdminRepo, ctx.UserRepo, ctx.KeyManager) 
-	adminHandler := admin.NewHandler(adminService)
+	adminService := admin.NewService(ctx.AdminRepo, ctx.UserRepo, ctx.KeyManager, ctx.Logger) 
+	adminHandler := admin.NewHandler(adminService, ctx.Logger)
 
-	userService := users.NewService(ctx.UserRepo)
-	userHandler := users.NewHandler(userService)
+	userService := users.NewService(ctx.UserRepo, ctx.Logger)
+	userHandler := users.NewHandler(userService, ctx.Logger)
 
 	var withAuth = mw.Authorize(ctx.KeyManager.JWTKey()) 
 	var adminOnly = mw.RequireAdmin(ctx.UserRepo) 
+	var logged = httpctx.WithLogging(ctx.Logger)
 
 	// Register routes for dev-only environment
 	if ctx.Cfg["ENV"] == "dev" {
-		http.Handle("/users", httpctx.AppHandler(userHandler.GetAllDev))
-		http.Handle("/keys", httpctx.AppHandler(keyHandler.GetAllDev))
+		http.Handle("/users", logged(httpctx.AppHandler(userHandler.GetAllDev)))
+		http.Handle("/keys", logged(httpctx.AppHandler(keyHandler.GetAllDev)))
 	}
 
-	http.Handle("/keys/", mw.MakeRouter(
+	http.Handle("/keys/", logged(mw.MakeRouter(
 		[]*mw.Route{
 			mw.NewRoute(
 				"POST",
@@ -61,10 +62,10 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 				withAuth(keyHandler.GetKey),
 			),
 		},
-	))
+	)))
 
 	// Auth
-	http.Handle("/auth/", mw.MakeRouter(
+	http.Handle("/auth/", logged(mw.MakeRouter(
 		[]*mw.Route{
 			mw.NewRoute(
 				"POST",
@@ -77,10 +78,10 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 				authHandler.Login,
 			),
 		},
-	))
+	)))
 
 	// Users
-	http.Handle("/users/", mw.MakeRouter(
+	http.Handle("/users/", logged(mw.MakeRouter(
 		[]*mw.Route{
 			mw.NewRoute(
 				"POST",
@@ -93,10 +94,10 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 				withAuth(adminOnly(adminHandler.GenerateSignupToken)),
 			),
 		},
-	))
+	)))
 
 	// Admin
-	http.Handle("/admin", withAuth(adminOnly(adminHandler.Me)))
+	http.Handle("/admin", logged(withAuth(adminOnly(adminHandler.Me))))
 	
 	return nil
 }

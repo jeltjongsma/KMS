@@ -7,15 +7,18 @@ import (
 	pkgHttp "kms/pkg/http"
 	"kms/pkg/json"
 	"kms/internal/httpctx"
+	c "kms/internal/bootstrap/context"
 )
 
 type Handler struct {
 	Service 	*Service
+	Logger 		c.Logger
 }
 
-func NewHandler(keyService *Service) *Handler {
+func NewHandler(keyService *Service, logger c.Logger) *Handler {
 	return &Handler{
 		Service: keyService,
+		Logger: logger,
 	}
 }
 

@@ -2,11 +2,11 @@ package httpctx
 
 import (
 	"net/http"
-	"log"
 	kmsErrors "kms/pkg/errors"
 	"context"
 	"fmt"
 	"kms/internal/auth"
+	c "kms/internal/bootstrap/context"
 )
 
 type contextKey string
@@ -15,11 +15,29 @@ const TokenCtxKey contextKey = "token"
 
 type AppHandler func(http.ResponseWriter, *http.Request) *kmsErrors.AppError
 
-func (fn AppHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if appErr := fn(w, r); appErr != nil {
-		log.Printf("Error:\n\tHTTP [%d] %v\n\t%v\n", appErr.Code, appErr.Message, appErr.Err)
-		http.Error(w, appErr.Message, appErr.Code)
+func WithLogging(logger c.Logger) func(AppHandler) http.Handler {
+	return func(handler AppHandler) http.Handler {
+		return NewAppHandler(logger, handler)
 	}
+}
+
+func NewAppHandler(logger c.Logger, handler AppHandler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if appErr := handler(w, r); appErr != nil {
+			entry := []any{
+				"path", r.URL.Path,
+				"code", appErr.Code,
+				"message", appErr.Message,
+				"error", appErr.Err,
+			}
+			if appErr.Code >= 500 {
+				logger.Error("HTTP handler", entry...)
+			} else {
+				logger.Warn("HTTP handler", entry...)
+			}
+			http.Error(w, appErr.Message, appErr.Code)
+		}
+	})	
 }
 
 func GetRouteParam(ctx context.Context, key string) (string, error) {

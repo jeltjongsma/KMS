@@ -13,12 +13,14 @@ import (
 type Service struct {
 	KeyRepo 		KeyRepository
 	KeyManager 		c.KeyManager
+	Logger 			c.Logger
 }
 
-func NewService(keyRepo KeyRepository, keyManager c.KeyManager) *Service {
+func NewService(keyRepo KeyRepository, keyManager c.KeyManager, logger c.Logger) *Service {
 	return &Service{
 		KeyRepo: keyRepo,
 		KeyManager: keyManager,
+		Logger: logger,
 	}
 }
 

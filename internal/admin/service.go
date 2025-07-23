@@ -11,13 +11,15 @@ type Service struct {
 	AdminRepo 	AdminRepository
 	UserRepo 	users.UserRepository
 	KeyManager  c.KeyManager
+	Logger 		c.Logger
 }
 
-func NewService(adminRepo AdminRepository, userRepo users.UserRepository, keyManager c.KeyManager) *Service {
+func NewService(adminRepo AdminRepository, userRepo users.UserRepository, keyManager c.KeyManager, logger c.Logger) *Service {
 	return &Service{
 		AdminRepo: adminRepo,
 		UserRepo: userRepo,
 		KeyManager: keyManager,
+		Logger: logger,
 	}
 }
 
@@ -25,10 +27,18 @@ type AdminRepository interface {
 	GetAdmin(id int) (*users.User, error)
 }
 
-func (s *Service) UpdateRole(userId int, role string) *kmsErrors.AppError {
+func (s *Service) UpdateRole(userId int, role string, adminId string) *kmsErrors.AppError {
+	oldRole, err := s.UserRepo.GetRole(userId) 
+	if err != nil {
+		return kmsErrors.MapRepoErr(err)
+	}
+
 	if err := s.UserRepo.UpdateRole(userId, role); err != nil {
 		return kmsErrors.MapRepoErr(err)
 	}
+	
+	s.Logger.Info("User role updated", "userId", userId, "oldRole", oldRole, "newRole", role)
+
 	return nil
 }
 
@@ -40,7 +50,7 @@ func (s *Service) Me(userId int) (*users.User, *kmsErrors.AppError) {
 	return admin, nil
 }
 
-func (s *Service) GenerateSignupToken(body *GenerateSignupTokenRequest) (string, *kmsErrors.AppError) {
+func (s *Service) GenerateSignupToken(body *GenerateSignupTokenRequest, adminId string) (string, *kmsErrors.AppError) {
 	tokenGenInfo := &auth.TokenGenInfo{
 		Ttl: body.Ttl,
 		Secret: s.KeyManager.SignupKey(),
@@ -51,6 +61,8 @@ func (s *Service) GenerateSignupToken(body *GenerateSignupTokenRequest) (string,
 	if err != nil {
 		return "", kmsErrors.NewInternalServerError(err)
 	}
+
+	s.Logger.Info("Generated signup token", "adminId", adminId, "username", body.Username)
 
 	return token, nil
 }

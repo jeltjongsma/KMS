@@ -2,6 +2,8 @@ package bootstrap
 
 import (
 	"log"
+	"fmt"
+	"strings"
 )
 
 type ConsoleLogger struct {
@@ -42,49 +44,63 @@ func mapLogLevel(logLevel string) (int, error) {
 }
 
 func (l *ConsoleLogger) Debug(msg string, args ...any) {
-	if l.LogLevel >= 0 {
-		log.Printf("[DEBUG] %s:\n\t%v", msg, args)
+	if l.LogLevel <= 0 {
+		log.Printf("[DEBUG] %s: %v", msg, prettyPrint(args))
 	}
 }
 
 func (l *ConsoleLogger) Info(msg string, args ...any) {
-	if l.LogLevel >= 1 {
-		log.Printf("[INFO] %s:\n\t%v", msg, args)
+	if l.LogLevel <= 1 {
+		log.Printf("[INFO] %s: %v", msg, prettyPrint(args))
 	}
 }
 
 func (l *ConsoleLogger) Notice(msg string, args ...any) {
-	if l.LogLevel >= 2 {
-		log.Printf("[NOTICE] %s:\n\t%v", msg, args)
+	if l.LogLevel <= 2 {
+		log.Printf("[NOTICE] %s: %v", msg, prettyPrint(args))
 	}
 }
 
 func (l *ConsoleLogger) Warn(msg string, args ...any) {
-	if l.LogLevel >= 3 {
-		log.Printf("[WARN] %s:\n\t%v", msg, args)
+	if l.LogLevel <= 3 {
+		log.Printf("[WARN] %s: %v", msg, prettyPrint(args))
 	}
 }
 
 func (l *ConsoleLogger) Error(msg string, args ...any) {
-	if l.LogLevel >= 4 {
-		log.Printf("[ERROR] %s:\n\t%v", msg, args)
+	if l.LogLevel <= 4 {
+		log.Printf("[ERROR] %s: %v", msg, prettyPrint(args))
 	}
 }
 
 func (l *ConsoleLogger) Critical(msg string, args ...any) {
-	if l.LogLevel >= 5 {
-		log.Printf("[CRITICAL] %s:\n\t%v", msg, args)
+	if l.LogLevel <= 5 {
+		log.Printf("[CRITICAL] %s: %v", msg, prettyPrint(args))
 	}
 }
 
 func (l *ConsoleLogger) Alert(msg string, args ...any) {
-	if l.LogLevel >= 6 {
-		log.Printf("[ALERT] %s:\n\t%v", msg, args)
+	if l.LogLevel <= 6 {
+		log.Printf("[ALERT] %s: %v", msg, prettyPrint(args))
 	}
 }
 
 func (l *ConsoleLogger) Emergency(msg string, args ...any) {
-	if l.LogLevel >= 7 {
-		log.Fatalf("[EMERGENCY] %s:\n\t%v", msg, args)
+	if l.LogLevel <= 7 {
+		log.Fatalf("[EMERGENCY] %s: %v", msg, prettyPrint(args))
 	}
+}
+
+func prettyPrint(args []any) string {
+	var b strings.Builder
+	b.WriteString("[ ")
+	for idx, arg := range args {
+		if idx % 2 == 0 {
+			b.WriteString(fmt.Sprintf(" %v=", arg))
+		} else {
+			b.WriteString(fmt.Sprintf("%v ", arg))
+		}
+	}
+	b.WriteString("]")
+	return b.String()
 }
