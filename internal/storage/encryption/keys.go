@@ -2,23 +2,24 @@ package encryption
 
 import (
 	"kms/internal/keys"
+	c "kms/internal/bootstrap/context"
 )
 
 type EncryptedKeyRepo struct {
 	KeyRepo 	keys.KeyRepository 
-	KEK 		[]byte
+	KeyManager 	c.KeyManager
 }
 
-func NewEncryptedKeyRepo(keyRepo keys.KeyRepository, kek []byte) *EncryptedKeyRepo {
+func NewEncryptedKeyRepo(keyRepo keys.KeyRepository, keyManager c.KeyManager) *EncryptedKeyRepo {
 	return &EncryptedKeyRepo{
 		KeyRepo: keyRepo,
-		KEK: kek,
+		KeyManager: keyManager,
 	}
 }
 
 func (r *EncryptedKeyRepo) CreateKey(key *keys.Key) (*keys.Key, error) {
 	encKey := &keys.Key{}
-	if err := EncryptFields(encKey, key, r.KEK); err != nil {
+	if err := EncryptFields(encKey, key, r.KeyManager); err != nil {
 		return nil, err
 	}
 	stored, err := r.KeyRepo.CreateKey(encKey)
@@ -26,7 +27,7 @@ func (r *EncryptedKeyRepo) CreateKey(key *keys.Key) (*keys.Key, error) {
 		return nil, err
 	}
 	retKey := &keys.Key{}
-	if err := DecryptFields(retKey, stored, r.KEK); err != nil {
+	if err := DecryptFields(retKey, stored, r.KeyManager); err != nil {
 		return nil, err
 	}
 	return retKey, nil
@@ -39,7 +40,7 @@ func (r *EncryptedKeyRepo) GetKey(id int, keyReference string) (*keys.Key, error
 	}
 
 	retKey := &keys.Key{}
-	if err := DecryptFields(retKey, key, r.KEK); err != nil {
+	if err := DecryptFields(retKey, key, r.KeyManager); err != nil {
 		return nil, err
 	}
 

@@ -5,10 +5,10 @@ import (
 	_ "github.com/lib/pq"
 	"log"
 	"fmt"
-	t "kms/internal/types"
+	c "kms/internal/bootstrap/context"
 )
 
-func ConnectDatabase(cfg t.KmsConfig) (*sql.DB, error) {
+func ConnectDatabase(cfg c.KmsConfig) (*sql.DB, error) {
 	connStr := fmt.Sprintf("port=%v user=%v password=%v dbname=%v sslmode=%v", 
 			cfg["DB_PORT"], cfg["DB_USER"], cfg["DB_PASSWORD"], cfg["DB_NAME"], cfg["DB_SSLMODE"])
 	db, err := sql.Open("postgres", connStr)

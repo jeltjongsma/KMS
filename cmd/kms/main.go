@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"log"
 	"fmt"
-	b64 "encoding/base64"
 	"kms/internal/bootstrap"
 	"kms/internal/storage/postgres"
 	"kms/internal/api"
@@ -16,17 +15,10 @@ func main() {
 	if err != nil {
 		log.Fatal("Unable to load config: ", err)
 	}
-	jwtSecret, err := b64.RawURLEncoding.DecodeString(cfg["JWT_SECRET"])
+
+	keyManager, err := bootstrap.InitStaticKeyManager(cfg)
 	if err != nil {
-		log.Fatal("Unable to decode JWT secret: ", err)
-	}
-	KEK, err := b64.RawURLEncoding.DecodeString(cfg["KEK"])
-	if err != nil {
-		log.Fatal("Unable to decode KEK: ", err)
-	}
-	keyRefSecret, err := b64.RawURLEncoding.DecodeString(cfg["KEY_REF_SECRET"])
-	if err != nil {
-		log.Fatal("Unable to decode keyRefSecret: ", err)
+		log.Fatal("Unable to initialise key manager: ", err)
 	}
 
 	db, err := bootstrap.ConnectDatabase(cfg)
@@ -40,7 +32,7 @@ func main() {
 		postgres.TableSchema{
 			Name: "keys",
 			Fields: map[string]string{
-				"id": 	"SERIAL PRIMARY KEY",
+				"id": "SERIAL PRIMARY KEY",
 				"keyReference": "TEXT",
 				"dek": 	"TEXT",
 				"userId": "INT",
@@ -74,19 +66,17 @@ func main() {
 		},
 	}
 
-	if err := postgres.InitSchema(cfg, db, schemas, KEK, keyRefSecret); err != nil {
+	if err := postgres.InitSchema(cfg, db, schemas, keyManager); err != nil {
 		log.Fatal("Failed to create schema: ", err)
 	}
 
-	keyRepo := dbEncr.NewEncryptedKeyRepo(postgres.NewPostgresKeyRepo(db), KEK)
-	adminRepo := dbEncr.NewEncryptedAdminRepo(postgres.NewPostgresAdminRepo(db), KEK)
-	userRepo := dbEncr.NewEncryptedUserRepo(postgres.NewPostgresUserRepo(db), KEK)
+	keyRepo := dbEncr.NewEncryptedKeyRepo(postgres.NewPostgresKeyRepo(db), keyManager)
+	adminRepo := dbEncr.NewEncryptedAdminRepo(postgres.NewPostgresAdminRepo(db), keyManager)
+	userRepo := dbEncr.NewEncryptedUserRepo(postgres.NewPostgresUserRepo(db), keyManager)
 
 	appCtx := &bootstrap.AppContext{
 		Cfg: cfg,
-		JWTSecret: jwtSecret,
-		KEK: KEK,
-		KeyRefSecret: keyRefSecret,
+		KeyManager: keyManager,
 		DB: db,
 		UserRepo: userRepo,
 		KeyRepo: keyRepo,

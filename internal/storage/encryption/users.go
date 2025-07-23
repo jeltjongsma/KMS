@@ -2,23 +2,24 @@ package encryption
 
 import (
 	"kms/internal/users"
+	c "kms/internal/bootstrap/context"
 )
 
 type EncryptedUserRepo struct {
 	UserRepo 	users.UserRepository
-	Key			[]byte
+	KeyManager  c.KeyManager
 }
 
-func NewEncryptedUserRepo(userRepo users.UserRepository, key []byte) *EncryptedUserRepo {
+func NewEncryptedUserRepo(userRepo users.UserRepository, keyManager c.KeyManager) *EncryptedUserRepo {
 	return &EncryptedUserRepo{
 		UserRepo: userRepo,
-		Key: key,
+		KeyManager: keyManager,
 	}
 }
 
 func (r *EncryptedUserRepo) CreateUser(user *users.User) (int, error) {
 	encUser := &users.User{}
-	if err := EncryptFields(encUser, user, r.Key); err != nil {
+	if err := EncryptFields(encUser, user, r.KeyManager); err != nil {
 		return 0, err
 	}
 	id, err := r.UserRepo.CreateUser(encUser)
@@ -34,7 +35,7 @@ func (r *EncryptedUserRepo) GetUser(id int) (*users.User, error) {
 		return nil, err
 	}
 	decUser := &users.User{}
-	if err := DecryptFields(decUser, user, r.Key); err != nil {
+	if err := DecryptFields(decUser, user, r.KeyManager); err != nil {
 		return nil, err
 	}
 	return decUser, nil
@@ -51,14 +52,14 @@ func (r *EncryptedUserRepo) FindByHashedUsername(email string) (*users.User, err
 		return nil, err
 	}
 	decUser := &users.User{}
-	if err := DecryptFields(decUser, user, r.Key); err != nil {
+	if err := DecryptFields(decUser, user, r.KeyManager); err != nil {
 		return nil, err
 	}
 	return decUser, nil
 }
 
 func (r *EncryptedUserRepo) UpdateRole(id int, role string) error {
-	encRole, err := EncryptString(role, r.Key)
+	encRole, err := EncryptString(role, r.KeyManager.DBKey())
 	if err != nil {
 		return err
 	}
@@ -70,7 +71,7 @@ func (r *EncryptedUserRepo) GetRole(id int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	role, err := DecryptString(encRole, r.Key)
+	role, err := DecryptString(encRole, r.KeyManager.DBKey())
 	if err != nil {
 		return "", err
 	}

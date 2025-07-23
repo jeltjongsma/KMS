@@ -5,14 +5,12 @@ import (
 	"kms/internal/keys"
 	"kms/internal/users"
 	"kms/internal/admin"
-	t "kms/internal/types"
+	c "kms/internal/bootstrap/context"
 )
 
 type AppContext struct {
-	Cfg		 		t.KmsConfig
-	JWTSecret 		[]byte
-	KEK				[]byte
-	KeyRefSecret	[]byte
+	Cfg		 		c.KmsConfig
+	KeyManager		c.KeyManager
 	DB 				*sql.DB
 	KeyRepo 		keys.KeyRepository
 	UserRepo		users.UserRepository

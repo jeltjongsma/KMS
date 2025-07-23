@@ -1,3 +1,3 @@
-package types
+package context
 
 type KmsConfig map[string]string

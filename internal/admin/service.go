@@ -4,19 +4,20 @@ import (
 	"kms/internal/users"
 	kmsErrors "kms/pkg/errors"
 	"kms/internal/auth"
+	c "kms/internal/bootstrap/context"
 )
 
 type Service struct {
 	AdminRepo 	AdminRepository
 	UserRepo 	users.UserRepository
-	TokenSecret []byte
+	KeyManager  c.KeyManager
 }
 
-func NewService(adminRepo AdminRepository, userRepo users.UserRepository, tokenSecret []byte) *Service {
+func NewService(adminRepo AdminRepository, userRepo users.UserRepository, keyManager c.KeyManager) *Service {
 	return &Service{
 		AdminRepo: adminRepo,
 		UserRepo: userRepo,
-		TokenSecret: tokenSecret,
+		KeyManager: keyManager,
 	}
 }
 
@@ -42,7 +43,7 @@ func (s *Service) Me(userId int) (*users.User, *kmsErrors.AppError) {
 func (s *Service) GenerateSignupToken(body *GenerateSignupTokenRequest) (string, *kmsErrors.AppError) {
 	tokenGenInfo := &auth.TokenGenInfo{
 		Ttl: body.Ttl,
-		Secret: s.TokenSecret,
+		Secret: s.KeyManager.SignupKey(),
 		Typ: "signup",
 	}
 

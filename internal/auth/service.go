@@ -4,37 +4,34 @@ import (
 	"database/sql"
 	"errors"
 	kmsErrors "kms/pkg/errors"
-	t "kms/internal/types"
+	c "kms/internal/bootstrap/context"
 	"kms/internal/users"
 	"kms/pkg/hashing"
 )
 
 type Service struct {
-	Cfg 			t.KmsConfig
+	Cfg 			c.KmsConfig
 	UserRepo 		users.UserRepository
 	TokenGenInfo 	*TokenGenInfo
-	TokenSecret		[]byte
-	UsernameSecret	[]byte
+	KeyManager 		c.KeyManager
 }
 
 func NewService(
-	cfg t.KmsConfig, 
+	cfg c.KmsConfig, 
 	userRepo users.UserRepository, 
 	tokenGenInfo *TokenGenInfo,
-	tokenSecret []byte,
-	usernameSecret []byte,
+	keyManager c.KeyManager,
 	) *Service {
 	return &Service{
 		Cfg: cfg,
 		UserRepo: userRepo,
 		TokenGenInfo: tokenGenInfo,
-		TokenSecret: tokenSecret,
-		UsernameSecret: usernameSecret,
+		KeyManager: keyManager,
 	}
 }
 
 func (s *Service) Signup(cred *SignupCredentials) (string, *kmsErrors.AppError) {
-	token, err := VerifyToken(cred.Token, s.TokenSecret)
+	token, err := VerifyToken(cred.Token, s.KeyManager.SignupKey())
 	if err != nil {
 		return "", kmsErrors.MapVerifyTokenErr(err)
 	}
@@ -55,9 +52,14 @@ func (s *Service) Signup(cred *SignupCredentials) (string, *kmsErrors.AppError) 
 		return "", kmsErrors.MapHashErr(err)
 	}
 
+	usernameSecret, err := s.KeyManager.HashKey("username")
+	if err != nil {
+		return "", kmsErrors.NewInternalServerError(err)
+	}
+
 	user := &users.User{
 		Username: token.Payload.Sub,
-		HashedUsername: hashing.HashHS256ToB64([]byte(token.Payload.Sub), s.UsernameSecret),
+		HashedUsername: hashing.HashHS256ToB64([]byte(token.Payload.Sub), usernameSecret),
 		Password: hashedPassword,
 		Role: s.Cfg["DEFAULT_ROLE"],
 	}
@@ -78,7 +80,12 @@ func (s *Service) Signup(cred *SignupCredentials) (string, *kmsErrors.AppError) 
 }
 
 func (s *Service) Login(cred *Credentials) (string, *kmsErrors.AppError) {
-	hashedUsername := hashing.HashHS256ToB64([]byte(cred.Username), s.UsernameSecret)
+	usernameSecret, err := s.KeyManager.HashKey("username")
+	if err != nil {
+		return "", kmsErrors.NewInternalServerError(err)
+	}
+
+	hashedUsername := hashing.HashHS256ToB64([]byte(cred.Username), usernameSecret)
 	user, err := s.UserRepo.FindByHashedUsername(hashedUsername)
 	if err != nil {
 		// Check if err is "not found" to help prevent user enumeration attacks

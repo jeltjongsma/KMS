@@ -3,7 +3,7 @@ package keys
 type Key struct {
 	ID 				int 	`json:"id"`
 	KeyReference	string 	`json:"keyReference"` 
-	DEK 			string 	`json:"dek" encrypt:"true" encoded:"true"`
+	DEK 			string 	`json:"dek" encrypt:"true" encoded:"true" key:"kek"`
 	UserId			int		`json:"userId"`
 	Encoding 		string 	`json:"encoding" encrypt:"true"`
 }

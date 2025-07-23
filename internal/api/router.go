@@ -3,7 +3,6 @@ package api
 import (
 	"net/http"
 	"strconv"
-	b64 "encoding/base64"
 	"kms/internal/bootstrap"
 	"kms/internal/users"
 	"kms/internal/admin"
@@ -15,7 +14,6 @@ import (
 
 // Single http.HandleFunc() with custom router?
 func RegisterRoutes(ctx *bootstrap.AppContext) error {
-	// TODO: Replace with separate key
 	// TODO: Clean this mess
 	
 	jwtTtl, err := strconv.ParseInt(ctx.Cfg["JWT_TTL"], 0, 64)
@@ -23,30 +21,25 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 		return err
 	}
 
-	jwtSecret, err := b64.RawURLEncoding.DecodeString(ctx.Cfg["JWT_SECRET"])
-	if err != nil {
-		return err
-	}
-
 	jwtGenInfo := &auth.TokenGenInfo{
 		Ttl: jwtTtl,
-		Secret: jwtSecret,
+		Secret: ctx.KeyManager.JWTKey(),
 		Typ: "jwt",
 	}
 
-	authService := auth.NewService(ctx.Cfg, ctx.UserRepo, jwtGenInfo, jwtSecret, ctx.KeyRefSecret)
+	authService := auth.NewService(ctx.Cfg, ctx.UserRepo, jwtGenInfo, ctx.KeyManager)
 	authHandler := auth.NewHandler(authService)
 
-	keyService := keys.NewService(ctx.KeyRepo, ctx.KeyRefSecret)
+	keyService := keys.NewService(ctx.KeyRepo, ctx.KeyManager)
 	keyHandler := keys.NewHandler(keyService)
 
-	adminService := admin.NewService(ctx.AdminRepo, ctx.UserRepo, jwtSecret) 
+	adminService := admin.NewService(ctx.AdminRepo, ctx.UserRepo, ctx.KeyManager) 
 	adminHandler := admin.NewHandler(adminService)
 
 	userService := users.NewService(ctx.UserRepo)
 	userHandler := users.NewHandler(userService)
 
-	var withAuth = mw.Authorize(ctx.JWTSecret) 
+	var withAuth = mw.Authorize(ctx.KeyManager.JWTKey()) 
 	var adminOnly = mw.RequireAdmin(ctx.UserRepo) 
 
 	// Register routes for dev-only environment

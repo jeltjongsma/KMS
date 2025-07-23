@@ -7,17 +7,18 @@ import (
 	kmsErrors "kms/pkg/errors"
 	"kms/pkg/encryption"
 	"kms/pkg/hashing"
+	c "kms/internal/bootstrap/context"
 )
 
 type Service struct {
 	KeyRepo 		KeyRepository
-	KeyRefSecret	[]byte
+	KeyManager 		c.KeyManager
 }
 
-func NewService(keyRepo KeyRepository, keyRefSecret []byte) *Service {
+func NewService(keyRepo KeyRepository, keyManager c.KeyManager) *Service {
 	return &Service{
 		KeyRepo: keyRepo,
-		KeyRefSecret: keyRefSecret,
+		KeyManager: keyManager,
 	}
 }
 
@@ -37,8 +38,13 @@ func (s *Service) CreateKey(userId int, keyReference string) (*Key, *kmsErrors.A
 		return nil, kmsErrors.NewAppError(err, "Failed to generate key", 500)
 	}
 
+	keyRefSecret, err := s.KeyManager.HashKey("keyReference")
+	if err != nil {
+		return nil, kmsErrors.NewInternalServerError(err)
+	}
+
 	// No need to check for collisions, since 'keyReference' column has unique constraint
-	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), s.KeyRefSecret)
+	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), keyRefSecret)
 	DEKB64 := b64.RawURLEncoding.EncodeToString(DEKBytes)
 
 	key := &Key{
@@ -66,7 +72,12 @@ func validateKeyReference(keyReference string) error {
 }
 
 func (s *Service) GetKey(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
-	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), s.KeyRefSecret)
+	keyRefSecret, err := s.KeyManager.HashKey("keyReference")
+	if err != nil {
+		return nil, kmsErrors.NewInternalServerError(err)
+	}
+
+	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), keyRefSecret)
 	key, err := s.KeyRepo.GetKey(userId, hashedReference)
 	if err != nil {
 		return nil, kmsErrors.MapRepoErr(err)

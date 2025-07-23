@@ -5,10 +5,11 @@ import (
 	b64 "encoding/base64"
 	kmsErrors "kms/pkg/errors"
 	"kms/pkg/encryption"
+	c "kms/internal/bootstrap/context"
 )
 
 
-func EncryptFields(dst, src any, kek []byte) error {
+func EncryptFields(dst, src any, keyManager c.KeyManager) error {
 	vSrc := reflect.ValueOf(src)
 	vDst := reflect.ValueOf(dst)
 	if vSrc.Kind() != reflect.Ptr || vDst.Kind() != reflect.Ptr {
@@ -72,7 +73,12 @@ func EncryptFields(dst, src any, kek []byte) error {
 				decoded = []byte(toEncrypt)
 			}
 
-			encrypted, err := encryption.Encrypt(decoded, kek)
+			var encrypted []byte
+			if tSrcField.Tag.Get("key") == "kek" {
+				encrypted, err = encryption.Encrypt(decoded, keyManager.KEK())
+			} else {
+				encrypted, err = encryption.Encrypt(decoded, keyManager.DBKey())
+			}
 			if err != nil {
 				return kmsErrors.WrapError(kmsErrors.ErrRepoEncryption, map[string]interface{}{
 					"msg": "Failed to encrypt field",
@@ -93,7 +99,7 @@ func EncryptFields(dst, src any, kek []byte) error {
 	return nil
 }
 
-func DecryptFields(dst, src any, kek []byte) error {
+func DecryptFields(dst, src any, keyManager c.KeyManager) error {
 	vSrc := reflect.ValueOf(src)
 	vDst := reflect.ValueOf(dst)
 	if vSrc.Kind() != reflect.Ptr || vDst.Kind() != reflect.Ptr {
@@ -150,7 +156,12 @@ func DecryptFields(dst, src any, kek []byte) error {
 				})
 			}
 
-			decrypted, err := encryption.Decrypt(decoded, kek)
+			var decrypted []byte
+			if tSrcField.Tag.Get("key") == "kek" {
+				decrypted, err = encryption.Decrypt(decoded, keyManager.KEK())
+			} else {
+				decrypted, err = encryption.Decrypt(decoded, keyManager.DBKey())
+			}
 			if err != nil {
 				return kmsErrors.WrapError(kmsErrors.ErrRepoEncryption, map[string]interface{}{
 					"msg": "Failed to decrypt field",

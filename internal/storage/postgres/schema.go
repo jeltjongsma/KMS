@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"strings"
 	"log"
-	t "kms/internal/types"
+	c "kms/internal/bootstrap/context"
 	"kms/pkg/hashing"
 	"kms/internal/storage/encryption"
 )
@@ -53,7 +53,7 @@ func dropTable(db *sql.DB, name string) error {
 	return err
 }
 
-func ensureMasterAdmin(cfg t.KmsConfig, db *sql.DB, key []byte, usernameSecret []byte) error {
+func ensureMasterAdmin(cfg c.KmsConfig, db *sql.DB, keyManager c.KeyManager) error {
 	var count int 
 	// FIXME: Will always fail
 	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE role = 'admin'").Scan(&count)
@@ -62,9 +62,13 @@ func ensureMasterAdmin(cfg t.KmsConfig, db *sql.DB, key []byte, usernameSecret [
 	if count == 0 {
 		hashedPw, err := hashing.HashPassword(cfg["MASTER_ADMIN_PASSWORD"])
 		if err != nil {return err}
-		encryptedAdmin, err := encryption.EncryptString("admin", key)
+		encryptedAdmin, err := encryption.EncryptString("admin", keyManager.DBKey())
 		if err != nil {return err}
-		encryptedUsername, err := encryption.EncryptString(cfg["MASTER_ADMIN_USERNAME"], key)
+		encryptedUsername, err := encryption.EncryptString(cfg["MASTER_ADMIN_USERNAME"], keyManager.DBKey())
+		usernameSecret, err := keyManager.HashKey("username")
+		if err != nil {
+			return err
+		}
 		_, err = db.Exec(
 			"INSERT INTO users (username, hashedUsername, password, role) VALUES ($1, $2, $3, $4)", 
 			encryptedUsername,
@@ -77,7 +81,7 @@ func ensureMasterAdmin(cfg t.KmsConfig, db *sql.DB, key []byte, usernameSecret [
 	return nil
 } 
 
-func InitSchema(cfg t.KmsConfig, db *sql.DB, schemas []TableSchema, key []byte, usernameSecret []byte) error {
+func InitSchema(cfg c.KmsConfig, db *sql.DB, schemas []TableSchema, keyManager c.KeyManager) error {
 	clearTables := cfg["ENV"] == "dev" && cfg["CLEAR_DB"] == "true"
 	if clearTables {
 		for _, schema := range schemas {
@@ -92,7 +96,7 @@ func InitSchema(cfg t.KmsConfig, db *sql.DB, schemas []TableSchema, key []byte, 
 		}
 	}
 	if cfg["ENV"] == "dev" {
-		if err := ensureMasterAdmin(cfg, db, key, usernameSecret); err != nil {return err}
+		if err := ensureMasterAdmin(cfg, db, keyManager); err != nil {return err}
 	}
 	return nil
 }

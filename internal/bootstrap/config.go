@@ -5,11 +5,11 @@ import (
 	"bufio"
 	"strings"
 	"fmt"
-	t "kms/internal/types"
+	c "kms/internal/bootstrap/context"
 )
 
 
-func LoadConfig(path string) (t.KmsConfig, error) {
+func LoadConfig(path string) (c.KmsConfig, error) {
 	cfg := make(map[string]string)
 	file, err := os.Open(path)
 	if err != nil {return cfg, err}
@@ -38,5 +38,5 @@ func LoadConfig(path string) (t.KmsConfig, error) {
 
 		cfg[key] = value
 	}
-	return t.KmsConfig(cfg), nil
+	return c.KmsConfig(cfg), nil
 }
