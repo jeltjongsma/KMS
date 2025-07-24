@@ -3,7 +3,7 @@ package auth
 import (
 	"net/http"
 	kmsErrors "kms/pkg/errors"
-	pkgHttp "kms/pkg/http"
+	pHttp "kms/pkg/http"
 	"kms/internal/api/dto"
 	"kms/pkg/json"
 	c "kms/internal/bootstrap/context"
@@ -41,7 +41,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) *kmsErrors.AppE
 		Token: jwt,
 	}
 
-	return pkgHttp.WriteJSON(w, response)
+	return pHttp.WriteJSON(w, response)
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
@@ -63,5 +63,5 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) *kmsErrors.AppEr
 		Token: jwt,
 	}
 
-	return pkgHttp.WriteJSON(w, response)
+	return pHttp.WriteJSON(w, response)
 }

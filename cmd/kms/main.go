@@ -21,7 +21,7 @@ func main() {
 		log.Fatal("Unable to initialise key manager: ", err)
 	}
 
-	consoleLogger, err := bootstrap.InitConsoleLogger("info")
+	consoleLogger, err := bootstrap.InitConsoleLogger(cfg["LOG_LEVEL"])
 	if err != nil {
 		log.Fatal("Unable to initialise loggerL ", err)
 	}

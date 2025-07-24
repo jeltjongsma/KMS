@@ -60,6 +60,8 @@ func (s *Service) CreateKey(userId int, keyReference string) (*Key, *kmsErrors.A
 		return nil, kmsErrors.MapRepoErr(err)
 	}
 
+	s.Logger.Info("Key created", "keyId", newKey.ID, "userId", newKey.UserId)
+
 	return newKey, nil
 }
 
@@ -84,6 +86,9 @@ func (s *Service) GetKey(userId int, keyReference string) (*Key, *kmsErrors.AppE
 	if err != nil {
 		return nil, kmsErrors.MapRepoErr(err)
 	}
+
+	s.Logger.Info("Key retrieved", "keyId", key.ID, "userId", userId)
+
 	return key, nil
 }
 

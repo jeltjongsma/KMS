@@ -7,24 +7,53 @@ import (
 	"fmt"
 	"kms/internal/auth"
 	c "kms/internal/bootstrap/context"
+	"kms/pkg/id"
+	"time"
 )
 
 type contextKey string
 const RouteParamsCtxKey contextKey = "routeParams"
 const TokenCtxKey contextKey = "token"
+const RequestIDKey contextKey = "requestId"
 
 type AppHandler func(http.ResponseWriter, *http.Request) *kmsErrors.AppError
 
-func WithLogging(logger c.Logger) func(AppHandler) http.Handler {
+func WrapAppHandler(logger c.Logger) func(AppHandler) http.Handler {
 	return func(handler AppHandler) http.Handler {
 		return NewAppHandler(logger, handler)
 	}
 }
-
+ 
 func NewAppHandler(logger c.Logger, handler AppHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if appErr := handler(w, r); appErr != nil {
+		// Generate UUID for request and set response header
+		reqID, err := id.GenerateUUID()
+		if err != nil {
+			msg := "Failed to generate UUID for request"
+			logger.Error("HTTP handler", "message", msg)
+			http.Error(w, msg, 500)
+			return 
+		}
+		w.Header().Set("X-Request-ID", reqID)
+
+		// Add UUID to request context
+		ctx := context.WithValue(r.Context(), RequestIDKey, reqID)
+		r = r.WithContext(ctx)
+
+		// Log request start
+		start := time.Now()
+		logger.Info("HTTP request start",
+			"requestId", reqID,
+			"method", r.Method,
+			"path", r.URL.Path,
+		)
+
+		rec := newStatusRecorder(w)
+
+		// Handle error
+		if appErr := handler(rec, r); appErr != nil {
 			entry := []any{
+				"requestId", reqID,
 				"path", r.URL.Path,
 				"code", appErr.Code,
 				"message", appErr.Message,
@@ -36,7 +65,17 @@ func NewAppHandler(logger c.Logger, handler AppHandler) http.Handler {
 				logger.Warn("HTTP handler", entry...)
 			}
 			http.Error(w, appErr.Message, appErr.Code)
+			return
 		}
+
+		// Log request finished
+		logger.Info("HTTP request finished",
+			"requestId", reqID,
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", rec.statusCode,
+			"durationMs", time.Since(start).Milliseconds(),
+		)
 	})	
 }
 

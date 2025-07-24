@@ -93,7 +93,7 @@ func (l *ConsoleLogger) Emergency(msg string, args ...any) {
 
 func prettyPrint(args []any) string {
 	var b strings.Builder
-	b.WriteString("[ ")
+	b.WriteString("[")
 	for idx, arg := range args {
 		if idx % 2 == 0 {
 			b.WriteString(fmt.Sprintf(" %v=", arg))

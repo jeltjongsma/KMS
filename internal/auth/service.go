@@ -78,6 +78,8 @@ func (s *Service) Signup(cred *SignupCredentials) (string, *kmsErrors.AppError) 
 	if err != nil {
 		return "", kmsErrors.NewInternalServerError(err)
 	}
+
+	s.Logger.Info("User signed up", "userId", id)
 	
 	return jwt, nil
 }
@@ -106,6 +108,8 @@ func (s *Service) Login(cred *Credentials) (string, *kmsErrors.AppError) {
 	if err != nil {
 		return "", kmsErrors.NewInternalServerError(err)
 	}
+
+	s.Logger.Info("User signed in", "userId", user.ID)
 
 	return jwt, nil
 }

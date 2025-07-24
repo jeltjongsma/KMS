@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 	kmsErrors "kms/pkg/errors"
-	pkgHttp "kms/pkg/http"
+	pHttp "kms/pkg/http"
 	"kms/pkg/json"
 	"kms/internal/httpctx"
 	c "kms/internal/bootstrap/context"
@@ -48,7 +48,7 @@ func (h *Handler) GenerateKey(w http.ResponseWriter, r *http.Request) *kmsErrors
 		Encoding: key.Encoding,
 	}
 
-	return pkgHttp.WriteJSON(w, response)
+	return pHttp.WriteJSON(w, response)
 }
 
 func (h *Handler) GetKey(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
@@ -77,7 +77,7 @@ func (h *Handler) GetKey(w http.ResponseWriter, r *http.Request) *kmsErrors.AppE
 		Encoding: key.Encoding,
 	}
 
-	return pkgHttp.WriteJSON(w, response)
+	return pHttp.WriteJSON(w, response)
 }
 
 func (h *Handler) GetAllDev(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
@@ -85,5 +85,5 @@ func (h *Handler) GetAllDev(w http.ResponseWriter, r *http.Request) *kmsErrors.A
 	if appErr != nil {
 		return appErr
 	}
-	return pkgHttp.WriteJSON(w, keys)
+	return pHttp.WriteJSON(w, keys)
 }

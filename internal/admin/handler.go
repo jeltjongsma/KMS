@@ -7,7 +7,7 @@ import (
 	"kms/internal/httpctx"
 	"kms/internal/api/dto"
 	"kms/pkg/json"
-	pkgHttp "kms/pkg/http"
+	pHttp "kms/pkg/http"
 	c "kms/internal/bootstrap/context"
 )
 
@@ -48,7 +48,7 @@ func (h *Handler) UpdateRole(w http.ResponseWriter, r *http.Request) *kmsErrors.
 		return appErr
 	}
 
-	pkgHttp.WriteStatus(w, 204)
+	w.WriteHeader(204)
 	return nil
 }
 
@@ -72,7 +72,7 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError
 		Role: admin.Role,
 	}
 	
-	return pkgHttp.WriteJSON(w, response)
+	return pHttp.WriteJSON(w, response)
 }
 
 func (h *Handler) GenerateSignupToken(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
@@ -99,5 +99,5 @@ func (h *Handler) GenerateSignupToken(w http.ResponseWriter, r *http.Request) *k
 		Token: token,
 	}
 
-	return pkgHttp.WriteJSON(w, response)
+	return pHttp.WriteJSON(w, response)
 }

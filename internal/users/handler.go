@@ -3,7 +3,7 @@ package users
 import (
 	"net/http"
 	kmsErrors "kms/pkg/errors"
-	pkgHttp "kms/pkg/http"
+	pHttp "kms/pkg/http"
 	c "kms/internal/bootstrap/context"
 )
 
@@ -24,5 +24,5 @@ func (h *Handler) GetAllDev(w http.ResponseWriter, r *http.Request) *kmsErrors.A
 	if appErr != nil {
 		return appErr
 	}
-	return pkgHttp.WriteJSON(w, users)
+	return pHttp.WriteJSON(w, users)
 } 
