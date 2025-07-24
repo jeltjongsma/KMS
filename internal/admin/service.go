@@ -5,6 +5,8 @@ import (
 	kmsErrors "kms/pkg/errors"
 	"kms/internal/auth"
 	c "kms/internal/bootstrap/context"
+	"fmt"
+	"unicode"
 )
 
 type Service struct {
@@ -51,6 +53,13 @@ func (s *Service) Me(userId int) (*users.User, *kmsErrors.AppError) {
 }
 
 func (s *Service) GenerateSignupToken(body *GenerateSignupTokenRequest, adminId string) (string, *kmsErrors.AppError) {
+	if err := validateUsername(body.Username); err != nil {
+		return "", kmsErrors.NewInvalidBodyError(
+			kmsErrors.WrapError(err, map[string]any{
+				"username": body.Username,
+			}))
+	}
+
 	tokenGenInfo := &auth.TokenGenInfo{
 		Ttl: body.Ttl,
 		Secret: s.KeyManager.SignupKey(),
@@ -65,4 +74,17 @@ func (s *Service) GenerateSignupToken(body *GenerateSignupTokenRequest, adminId 
 	s.Logger.Info("Generated signup token", "adminId", adminId, "username", body.Username)
 
 	return token, nil
+}
+
+// Allow 0-9, a-Z and '-' in username
+func validateUsername(username string) error {
+	if len(username) < 4 || len(username) > 64 {
+		return fmt.Errorf("Username length should be between 4 and 64, is %d", len(username))
+	}
+	for _, r := range username {
+		if !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-') {
+			return fmt.Errorf("Invalid character in username (%v): %c\n", username, r)
+		}
+	}
+	return nil
 }
