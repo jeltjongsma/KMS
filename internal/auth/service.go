@@ -7,6 +7,8 @@ import (
 	c "kms/internal/bootstrap/context"
 	"kms/internal/users"
 	"kms/pkg/hashing"
+	"fmt"
+	"unicode"
 )
 
 type Service struct {
@@ -37,6 +39,10 @@ func (s *Service) Signup(cred *SignupCredentials) (string, *kmsErrors.AppError) 
 	token, err := VerifyToken(cred.Token, s.KeyManager.SignupKey())
 	if err != nil {
 		return "", kmsErrors.MapVerifyTokenErr(err)
+	}
+
+	if err := validatePassword(cred.Password); err != nil {
+		return "", kmsErrors.NewAppError(err, "Password does not meet minimum requirements. len > 12 & contains at least 3 of the following: Upper, lower, sym & digit", 400)
 	}
 
 	if token.Header.Typ != "signup" {
@@ -85,6 +91,8 @@ func (s *Service) Signup(cred *SignupCredentials) (string, *kmsErrors.AppError) 
 }
 
 func (s *Service) Login(cred *Credentials) (string, *kmsErrors.AppError) {
+	
+
 	usernameSecret, err := s.KeyManager.HashKey("username")
 	if err != nil {
 		return "", kmsErrors.NewInternalServerError(err)
@@ -112,4 +120,36 @@ func (s *Service) Login(cred *Credentials) (string, *kmsErrors.AppError) {
 	s.Logger.Info("User signed in", "userId", user.ID)
 
 	return jwt, nil
+}
+
+func validatePassword(password string) error {
+	if len(password) < 12 {
+		return fmt.Errorf("Password should be over 12, is %d", len(password))
+	}
+	var (
+		hasLower, hasUpper, hasDigit, hasSym bool
+	)
+
+	for _, r := range password {
+		switch {
+		case unicode.IsLower(r):
+			hasLower = true
+		case unicode.IsUpper(r):
+			hasUpper = true
+		case unicode.IsDigit(r):
+			hasDigit = true
+		case unicode.IsPunct(r) || unicode.IsSymbol(r):
+			hasSym = true
+		}
+	}
+	count := 0
+	for _, ok := range []bool{hasDigit, hasSym, hasUpper, hasLower} {
+		if ok {
+			count++
+		}
+	}
+	if count < 3 {
+		return fmt.Errorf("Password (%s) does not meet specifications", password)
+	}
+	return nil
 }

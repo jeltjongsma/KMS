@@ -54,10 +54,13 @@ func (s *Service) Me(userId int) (*users.User, *kmsErrors.AppError) {
 
 func (s *Service) GenerateSignupToken(body *GenerateSignupTokenRequest, adminId string) (string, *kmsErrors.AppError) {
 	if err := validateUsername(body.Username); err != nil {
-		return "", kmsErrors.NewInvalidBodyError(
+		return "", kmsErrors.NewAppError(
 			kmsErrors.WrapError(err, map[string]any{
 				"username": body.Username,
-			}))
+			}),
+			"Username does not meet minimum requirements. 4 <= len <= 64 & [a-Z0-9\\-]",
+			400,
+		)
 	}
 
 	tokenGenInfo := &auth.TokenGenInfo{
