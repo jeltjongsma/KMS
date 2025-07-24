@@ -14,8 +14,6 @@ import (
 
 // Single http.HandleFunc() with custom router?
 func RegisterRoutes(ctx *bootstrap.AppContext) error {
-	// TODO: Clean this mess
-	
 	jwtTtl, err := strconv.ParseInt(ctx.Cfg["JWT_TTL"], 0, 64)
 	if err != nil {
 		return err
@@ -41,15 +39,15 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 
 	var withAuth = mw.Authorize(ctx.KeyManager.JWTKey()) 
 	var adminOnly = mw.RequireAdmin(ctx.UserRepo) 
-	var wrapHandler = httpctx.WrapAppHandler(ctx.Logger)
+	var globalHandler = httpctx.GlobalAppHandler(ctx.Logger)
 
 	// Register routes for dev-only environment
 	if ctx.Cfg["ENV"] == "dev" {
-		http.Handle("/users", wrapHandler(httpctx.AppHandler(userHandler.GetAllDev)))
-		http.Handle("/keys", wrapHandler(httpctx.AppHandler(keyHandler.GetAllDev)))
+		http.Handle("/users", globalHandler(httpctx.AppHandler(userHandler.GetAllDev)))
+		http.Handle("/keys", globalHandler(httpctx.AppHandler(keyHandler.GetAllDev)))
 	}
 
-	http.Handle("/keys/", wrapHandler(mw.MakeRouter(
+	http.Handle("/keys/", globalHandler(mw.MakeRouter(
 		[]*mw.Route{
 			mw.NewRoute(
 				"POST",
@@ -65,7 +63,7 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 	)))
 
 	// Auth
-	http.Handle("/auth/", wrapHandler(mw.MakeRouter(
+	http.Handle("/auth/", globalHandler(mw.MakeRouter(
 		[]*mw.Route{
 			mw.NewRoute(
 				"POST",
@@ -81,7 +79,7 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 	)))
 
 	// Users
-	http.Handle("/users/", wrapHandler(mw.MakeRouter(
+	http.Handle("/users/", globalHandler(mw.MakeRouter(
 		[]*mw.Route{
 			mw.NewRoute(
 				"POST",
@@ -97,7 +95,7 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 	)))
 
 	// Admin
-	http.Handle("/admin", wrapHandler(withAuth(adminOnly(adminHandler.Me))))
+	http.Handle("/admin", globalHandler(withAuth(adminOnly(adminHandler.Me))))
 	
 	return nil
 }

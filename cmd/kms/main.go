@@ -23,7 +23,7 @@ func main() {
 
 	consoleLogger, err := bootstrap.InitConsoleLogger(cfg["LOG_LEVEL"])
 	if err != nil {
-		log.Fatal("Unable to initialise loggerL ", err)
+		log.Fatal("Unable to initialise logger: ", err)
 	}
 
 	db, err := bootstrap.ConnectDatabase(cfg)

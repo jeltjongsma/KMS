@@ -18,7 +18,7 @@ const RequestIDKey contextKey = "requestId"
 
 type AppHandler func(http.ResponseWriter, *http.Request) *kmsErrors.AppError
 
-func WrapAppHandler(logger c.Logger) func(AppHandler) http.Handler {
+func GlobalAppHandler(logger c.Logger) func(AppHandler) http.Handler {
 	return func(handler AppHandler) http.Handler {
 		return NewAppHandler(logger, handler)
 	}
