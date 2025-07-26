@@ -8,6 +8,7 @@ import (
 	"kms/internal/storage/postgres"
 	"kms/internal/api"
 	dbEncr "kms/internal/storage/encryption"
+	"errors"
 ) 
 
 func main() {
@@ -93,5 +94,7 @@ func main() {
 		log.Fatal("Unable to register routes: ", err)
 	}
 
-	http.ListenAndServe(fmt.Sprintf(":%v", cfg["SERVER_PORT"]), nil)
+	if err := http.ListenAndServeTLS(fmt.Sprintf(":%v", cfg["SERVER_PORT"]), "kms.crt", "kms.key", nil); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatal("HTTPS server failed: ", err)
+	}
 }
