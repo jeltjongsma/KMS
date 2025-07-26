@@ -39,10 +39,10 @@ func main() {
 			Name: "keys",
 			Fields: map[string]string{
 				"id": "SERIAL PRIMARY KEY",
-				"keyReference": "TEXT",
-				"dek": 	"TEXT",
-				"userId": "INT",
-				"encoding": "TEXT",
+				"keyReference": "VARCHAR(64) NOT NULL",
+				"dek": 	"VARCHAR(80) NOT NULL",
+				"userId": "INTEGER NOT NULL",
+				"encoding": "VARCHAR(64) NOT NULL",
 			},
 			Keys: []string{
 				"id",
@@ -57,10 +57,10 @@ func main() {
 			Name: "users",
 			Fields: map[string]string{
 				"id": "SERIAL PRIMARY KEY",
-				"username": "TEXT UNIQUE NOT NULL",
-				"hashedUsername": "TEXT UNIQUE NOT NULL",
-				"password": "TEXT NOT NULL",
-				"role": "TEXT NOT NULL DEFAULT 'user'",
+				"username": "VARCHAR(64) UNIQUE NOT NULL",
+				"hashedUsername": "VARCHAR(44) UNIQUE NOT NULL",
+				"password": "CHAR(60) NOT NULL",
+				"role": "VARCHAR(44) NOT NULL DEFAULT 'user'",
 			},
 			Keys: []string{
 				"id",

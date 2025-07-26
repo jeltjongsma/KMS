@@ -42,7 +42,7 @@ func (s *Service) Signup(cred *SignupCredentials) (string, *kmsErrors.AppError) 
 	}
 
 	if err := validatePassword(cred.Password); err != nil {
-		return "", kmsErrors.NewAppError(err, "Password does not meet minimum requirements. len > 12 & contains at least 3 of the following: Upper, lower, sym & digit", 400)
+		return "", kmsErrors.NewAppError(err, "Password does not meet minimum requirements. 12 <= len <= 128 & contains at least 3 of the following: Upper, lower, sym & digit", 400)
 	}
 
 	if token.Header.Typ != "signup" {
@@ -123,8 +123,8 @@ func (s *Service) Login(cred *Credentials) (string, *kmsErrors.AppError) {
 }
 
 func validatePassword(password string) error {
-	if len(password) < 12 {
-		return fmt.Errorf("Password should be over 12, is %d", len(password))
+	if len(password) < 12 || len(password) > 128{
+		return fmt.Errorf("Password length should be between 12 and 128, is %d", len(password))
 	}
 	var (
 		hasLower, hasUpper, hasDigit, hasSym bool
