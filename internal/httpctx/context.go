@@ -1,17 +1,18 @@
 package httpctx
 
 import (
-	"net/http"
-	kmsErrors "kms/pkg/errors"
 	"context"
 	"fmt"
 	"kms/internal/auth"
 	c "kms/internal/bootstrap/context"
+	kmsErrors "kms/pkg/errors"
 	"kms/pkg/id"
+	"net/http"
 	"time"
 )
 
 type contextKey string
+
 const RouteParamsCtxKey contextKey = "routeParams"
 const TokenCtxKey contextKey = "token"
 const RequestIDKey contextKey = "requestId"
@@ -23,16 +24,15 @@ func GlobalAppHandler(logger c.Logger) func(AppHandler) http.Handler {
 		return NewAppHandler(logger, handler)
 	}
 }
- 
+
 func NewAppHandler(logger c.Logger, handler AppHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Generate UUID for request and set response header
 		reqID, err := id.GenerateUUID()
 		if err != nil {
-			msg := "Failed to generate UUID for request"
-			logger.Error("HTTP handler", "message", msg)
-			http.Error(w, msg, 500)
-			return 
+			logger.Error("HTTP handler", "message", "Failed to generate UUID for request", "error", err)
+			http.Error(w, "Internal server error", 500)
+			return
 		}
 		w.Header().Set("X-Request-ID", reqID)
 
@@ -76,18 +76,18 @@ func NewAppHandler(logger c.Logger, handler AppHandler) http.Handler {
 			"status", rec.statusCode,
 			"durationMs", time.Since(start).Milliseconds(),
 		)
-	})	
+	})
 }
 
 func GetRouteParam(ctx context.Context, key string) (string, error) {
 	params, ok := ctx.Value(RouteParamsCtxKey).(map[string]string)
 	if !ok {
-		return "", fmt.Errorf("No route params in context")
+		return "", fmt.Errorf("no route params in context")
 	}
 
 	val, found := params[key]
 	if !found {
-		return "", fmt.Errorf("Param (%v) not in path", key)
+		return "", fmt.Errorf("param (%v) not in path", key)
 	}
 	return val, nil
 }
@@ -96,7 +96,7 @@ func ExtractToken(ctx context.Context) (*auth.Token, error) {
 	tokenStr := ctx.Value(TokenCtxKey)
 	token, ok := tokenStr.(auth.Token)
 	if !ok {
-		return nil, fmt.Errorf("No token in context")
+		return nil, fmt.Errorf("no token in context")
 	}
 	return &token, nil
 }

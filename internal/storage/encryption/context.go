@@ -1,13 +1,12 @@
 package encryption
 
 import (
-	"reflect"
 	b64 "encoding/base64"
-	kmsErrors "kms/pkg/errors"
-	"kms/pkg/encryption"
 	c "kms/internal/bootstrap/context"
+	"kms/pkg/encryption"
+	kmsErrors "kms/pkg/errors"
+	"reflect"
 )
-
 
 func EncryptFields(dst, src any, keyManager c.KeyManager) error {
 	vSrc := reflect.ValueOf(src)
@@ -41,18 +40,18 @@ func EncryptFields(dst, src any, keyManager c.KeyManager) error {
 
 		if !vDstField.CanSet() {
 			return kmsErrors.WrapError(kmsErrors.ErrRepoEncryption, map[string]interface{}{
-				"msg": "Unable to set field",
+				"msg":   "Unable to set field",
 				"field": vDstField,
 			})
 		}
 
 		if tSrcField.Tag.Get("encrypt") == "true" {
 			isEncoded := tSrcField.Tag.Get("encoded") == "true"
-						
+
 			toEncrypt, ok := vSrcField.Interface().(string)
 			if !ok {
 				return kmsErrors.WrapError(kmsErrors.ErrRepoEncryption, map[string]interface{}{
-					"msg": "Field marked for encryption but is not a string",
+					"msg":   "Field marked for encryption but is not a string",
 					"field": tSrcField.Name,
 				})
 			}
@@ -64,9 +63,9 @@ func EncryptFields(dst, src any, keyManager c.KeyManager) error {
 				decoded, err = b64.RawURLEncoding.DecodeString(toEncrypt)
 				if err != nil {
 					return kmsErrors.WrapError(kmsErrors.ErrRepoEncryption, map[string]interface{}{
-						"msg": "Failed to decode field",
+						"msg":   "Failed to decode field",
 						"field": tSrcField.Name,
-						"err": err,
+						"err":   err,
 					})
 				}
 			} else {
@@ -81,9 +80,9 @@ func EncryptFields(dst, src any, keyManager c.KeyManager) error {
 			}
 			if err != nil {
 				return kmsErrors.WrapError(kmsErrors.ErrRepoEncryption, map[string]interface{}{
-					"msg": "Failed to encrypt field",
+					"msg":   "Failed to encrypt field",
 					"field": tSrcField.Name,
-					"err": err,
+					"err":   err,
 				})
 			}
 
@@ -93,7 +92,7 @@ func EncryptFields(dst, src any, keyManager c.KeyManager) error {
 			vDstField.SetString(encoded)
 		} else {
 			vDstField.Set(vSrcField)
-		}	
+		}
 	}
 
 	return nil
@@ -131,7 +130,7 @@ func DecryptFields(dst, src any, keyManager c.KeyManager) error {
 
 		if !vDstField.CanSet() {
 			return kmsErrors.WrapError(kmsErrors.ErrRepoEncryption, map[string]interface{}{
-				"msg": "Unable to set field",
+				"msg":   "Unable to set field",
 				"field": vDstField,
 			})
 		}
@@ -142,7 +141,7 @@ func DecryptFields(dst, src any, keyManager c.KeyManager) error {
 			toDecrypt, ok := vSrcField.Interface().(string)
 			if !ok {
 				return kmsErrors.WrapError(kmsErrors.ErrRepoEncryption, map[string]interface{}{
-					"msg": "Field marked for decryption but is not a string",
+					"msg":   "Field marked for decryption but is not a string",
 					"field": tSrcField.Name,
 				})
 			}
@@ -150,9 +149,9 @@ func DecryptFields(dst, src any, keyManager c.KeyManager) error {
 			decoded, err := b64.RawURLEncoding.DecodeString(toDecrypt)
 			if err != nil {
 				return kmsErrors.WrapError(kmsErrors.ErrRepoEncryption, map[string]interface{}{
-					"msg": "Failed to decode field",
+					"msg":   "Failed to decode field",
 					"field": tSrcField.Name,
-					"err": err,
+					"err":   err,
 				})
 			}
 
@@ -164,12 +163,11 @@ func DecryptFields(dst, src any, keyManager c.KeyManager) error {
 			}
 			if err != nil {
 				return kmsErrors.WrapError(kmsErrors.ErrRepoEncryption, map[string]interface{}{
-					"msg": "Failed to decrypt field",
+					"msg":   "Failed to decrypt field",
 					"field": tSrcField.Name,
-					"err": err,
+					"err":   err,
 				})
 			}
-
 
 			// Only encode to base64 if decrypted is base64
 			var encoded string
@@ -178,11 +176,11 @@ func DecryptFields(dst, src any, keyManager c.KeyManager) error {
 			} else {
 				encoded = string(decrypted)
 			}
-			
+
 			vDstField.SetString(encoded)
 		} else {
 			vDstField.Set(vSrcField)
-		}	
+		}
 	}
 
 	return nil

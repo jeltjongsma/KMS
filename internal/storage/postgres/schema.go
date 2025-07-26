@@ -1,20 +1,20 @@
-package postgres 
+package postgres
 
 import (
-	"fmt"
 	"database/sql"
-	"strings"
-	"log"
+	"fmt"
 	c "kms/internal/bootstrap/context"
-	"kms/pkg/hashing"
 	"kms/internal/storage/encryption"
+	"kms/pkg/hashing"
+	"log"
+	"strings"
 )
 
 type TableSchema struct {
-	Name	string 
-	Fields 	map[string]string
-	Keys 	[]string
-	Unique 	[]string
+	Name   string
+	Fields map[string]string
+	Keys   []string
+	Unique []string
 }
 
 func createTable(db *sql.DB, schema *TableSchema) error {
@@ -25,7 +25,7 @@ func createTable(db *sql.DB, schema *TableSchema) error {
 	for idx, key := range schema.Keys {
 		column := fmt.Sprintf("%v %v", key, schema.Fields[key])
 		builder.WriteString(column)
-		if idx < len(schema.Keys) - 1 {
+		if idx < len(schema.Keys)-1 {
 			builder.WriteString(",")
 		}
 	}
@@ -34,7 +34,7 @@ func createTable(db *sql.DB, schema *TableSchema) error {
 		builder.WriteString(",UNIQUE (")
 		for idx, key := range schema.Unique {
 			builder.WriteString(key)
-			if idx < len(schema.Unique) - 1 {
+			if idx < len(schema.Unique)-1 {
 				builder.WriteString(",")
 			}
 		}
@@ -54,23 +54,29 @@ func dropTable(db *sql.DB, name string) error {
 }
 
 func ensureMasterAdmin(cfg c.KmsConfig, db *sql.DB, keyManager c.KeyManager) error {
-	var count int 
+	var count int
 	// FIXME: Will always fail
 	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE role = 'admin'").Scan(&count)
-	if err != nil {return err}
+	if err != nil {
+		return err
+	}
 
 	if count == 0 {
 		hashedPw, err := hashing.HashPassword(cfg["MASTER_ADMIN_PASSWORD"])
-		if err != nil {return err}
+		if err != nil {
+			return err
+		}
 		encryptedAdmin, err := encryption.EncryptString("admin", keyManager.DBKey())
-		if err != nil {return err}
+		if err != nil {
+			return err
+		}
 		encryptedUsername, err := encryption.EncryptString(cfg["MASTER_ADMIN_USERNAME"], keyManager.DBKey())
 		usernameSecret, err := keyManager.HashKey("username")
 		if err != nil {
 			return err
 		}
 		_, err = db.Exec(
-			"INSERT INTO users (username, hashedUsername, password, role) VALUES ($1, $2, $3, $4)", 
+			"INSERT INTO users (username, hashedUsername, password, role) VALUES ($1, $2, $3, $4)",
 			encryptedUsername,
 			hashing.HashHS256ToB64([]byte(cfg["MASTER_ADMIN_USERNAME"]), usernameSecret),
 			hashedPw,
@@ -79,7 +85,7 @@ func ensureMasterAdmin(cfg c.KmsConfig, db *sql.DB, keyManager c.KeyManager) err
 		return err
 	}
 	return nil
-} 
+}
 
 func InitSchema(cfg c.KmsConfig, db *sql.DB, schemas []TableSchema, keyManager c.KeyManager) error {
 	clearTables := cfg["ENV"] == "dev" && cfg["CLEAR_DB"] == "true"
@@ -96,7 +102,9 @@ func InitSchema(cfg c.KmsConfig, db *sql.DB, schemas []TableSchema, keyManager c
 		}
 	}
 	if cfg["ENV"] == "dev" {
-		if err := ensureMasterAdmin(cfg, db, keyManager); err != nil {return err}
+		if err := ensureMasterAdmin(cfg, db, keyManager); err != nil {
+			return err
+		}
 	}
 	return nil
 }

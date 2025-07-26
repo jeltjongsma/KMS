@@ -1,40 +1,38 @@
 package auth
 
 import (
-	"encoding/json"
-	b64 "encoding/base64"
-	"crypto/sha256"
 	"crypto/hmac"
+	"crypto/sha256"
+	b64 "encoding/base64"
+	"encoding/json"
+	"kms/internal/users"
+	kmsErrors "kms/pkg/errors"
+	"kms/pkg/hashing"
+	"strconv"
 	"strings"
 	"time"
-	"strconv"
-	"kms/internal/users"
-	"kms/pkg/hashing"
-	kmsErrors "kms/pkg/errors"
 )
 
 type Token struct {
-	Header 		*TokenHeader
-	Payload 	*TokenPayload
+	Header  *TokenHeader
+	Payload *TokenPayload
 }
 
 type TokenHeader struct {
-	// Alg 	string	`json:"alg"`
-	Typ 	string 	`json:"type"`
-	Ver 	string	`json:"ver"`
+	Ver string `json:"ver"`
+	Typ string `json:"typ"`
 }
 
 type TokenPayload struct {
-	Sub 	string	`json:"sub"`
-	Ttl 	int64	`json:"ttl"`
-	Iat 	int64	`json:"iat"`
-	// Scp 	[]string	`json:"scp"`
+	Sub string `json:"sub"`
+	Ttl int64  `json:"ttl"`
+	Iat int64  `json:"iat"`
 }
 
 type TokenGenInfo struct {
-	Ttl		int64
-	Secret 	[]byte
-	Typ 	string
+	Ttl    int64
+	Secret []byte
+	Typ    string
 }
 
 func GenerateJWT(genInfo *TokenGenInfo, user *users.User) (string, error) {
@@ -50,7 +48,7 @@ func GenerateJWT(genInfo *TokenGenInfo, user *users.User) (string, error) {
 	}
 
 	token := Token{
-		Header: &header,
+		Header:  &header,
 		Payload: &payload,
 	}
 
@@ -70,7 +68,7 @@ func GenerateSignupToken(genInfo *TokenGenInfo, username string) (string, error)
 	}
 
 	token := Token{
-		Header: &header,
+		Header:  &header,
 		Payload: &payload,
 	}
 
@@ -94,9 +92,7 @@ func GenerateToken(token *Token, secret []byte) (string, error) {
 
 	signature := hashing.HashHS256ToB64([]byte(message), secret)
 	return message + "." + signature, nil
-} 
-
-
+}
 
 // TODO: Check if token has been revoked (logout, invalidation)
 // TODO: Invalidate tokens when server restarts
@@ -149,13 +145,13 @@ func VerifyToken(jwt string, secret []byte) (Token, error) {
 	}
 
 	return Token{
-		Header: &header,
+		Header:  &header,
 		Payload: &payload,
 	}, nil
 }
 
 func verifyHMAC(message, signature, secret []byte) bool {
-	h := hmac.New(sha256.New, secret) 
+	h := hmac.New(sha256.New, secret)
 	h.Write(message)
 	expectedMAC := h.Sum(nil)
 	return hmac.Equal(signature, expectedMAC)
@@ -163,8 +159,5 @@ func verifyHMAC(message, signature, secret []byte) bool {
 
 func verifyStillValid(payload *TokenPayload) bool {
 	now := time.Now().UnixMilli()
-	if now < (payload.Ttl + payload.Iat) {
-		return true
-	}
-	return false
+	return now < (payload.Ttl + payload.Iat)
 }

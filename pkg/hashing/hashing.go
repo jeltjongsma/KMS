@@ -1,10 +1,11 @@
 package hashing
 
 import (
-	"golang.org/x/crypto/bcrypt"
-	b64 "encoding/base64"
-	"crypto/sha256"
 	"crypto/hmac"
+	"crypto/sha256"
+	b64 "encoding/base64"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func HashPassword(password string) (string, error) {

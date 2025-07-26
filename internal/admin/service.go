@@ -1,27 +1,27 @@
 package admin
 
 import (
-	"kms/internal/users"
-	kmsErrors "kms/pkg/errors"
+	"fmt"
 	"kms/internal/auth"
 	c "kms/internal/bootstrap/context"
-	"fmt"
+	"kms/internal/users"
+	kmsErrors "kms/pkg/errors"
 	"unicode"
 )
 
 type Service struct {
-	AdminRepo 	AdminRepository
-	UserRepo 	users.UserRepository
-	KeyManager  c.KeyManager
-	Logger 		c.Logger
+	AdminRepo  AdminRepository
+	UserRepo   users.UserRepository
+	KeyManager c.KeyManager
+	Logger     c.Logger
 }
 
 func NewService(adminRepo AdminRepository, userRepo users.UserRepository, keyManager c.KeyManager, logger c.Logger) *Service {
 	return &Service{
-		AdminRepo: adminRepo,
-		UserRepo: userRepo,
+		AdminRepo:  adminRepo,
+		UserRepo:   userRepo,
 		KeyManager: keyManager,
-		Logger: logger,
+		Logger:     logger,
 	}
 }
 
@@ -30,7 +30,7 @@ type AdminRepository interface {
 }
 
 func (s *Service) UpdateRole(userId int, role string, adminId string) *kmsErrors.AppError {
-	oldRole, err := s.UserRepo.GetRole(userId) 
+	oldRole, err := s.UserRepo.GetRole(userId)
 	if err != nil {
 		return kmsErrors.MapRepoErr(err)
 	}
@@ -38,7 +38,7 @@ func (s *Service) UpdateRole(userId int, role string, adminId string) *kmsErrors
 	if err := s.UserRepo.UpdateRole(userId, role); err != nil {
 		return kmsErrors.MapRepoErr(err)
 	}
-	
+
 	s.Logger.Info("User role updated", "userId", userId, "oldRole", oldRole, "newRole", role)
 
 	return nil
@@ -64,9 +64,9 @@ func (s *Service) GenerateSignupToken(body *GenerateSignupTokenRequest, adminId 
 	}
 
 	tokenGenInfo := &auth.TokenGenInfo{
-		Ttl: body.Ttl,
+		Ttl:    body.Ttl,
 		Secret: s.KeyManager.SignupKey(),
-		Typ: "signup",
+		Typ:    "signup",
 	}
 
 	token, err := auth.GenerateSignupToken(tokenGenInfo, body.Username)
@@ -82,11 +82,11 @@ func (s *Service) GenerateSignupToken(body *GenerateSignupTokenRequest, adminId 
 // Allow 0-9, a-Z and '-' in username
 func validateUsername(username string) error {
 	if len(username) < 4 || len(username) > 64 {
-		return fmt.Errorf("Username length should be between 4 and 64, is %d", len(username))
+		return fmt.Errorf("username length should be between 4 and 64, is %d", len(username))
 	}
 	for _, r := range username {
 		if !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-') {
-			return fmt.Errorf("Invalid character in username (%v): %c\n", username, r)
+			return fmt.Errorf("invalid character in username (%v): %c", username, r)
 		}
 	}
 	return nil

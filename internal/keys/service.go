@@ -1,26 +1,26 @@
 package keys
 
 import (
-	"fmt"
 	b64 "encoding/base64"
-	"unicode"
-	kmsErrors "kms/pkg/errors"
-	"kms/pkg/encryption"
-	"kms/pkg/hashing"
+	"fmt"
 	c "kms/internal/bootstrap/context"
+	"kms/pkg/encryption"
+	kmsErrors "kms/pkg/errors"
+	"kms/pkg/hashing"
+	"unicode"
 )
 
 type Service struct {
-	KeyRepo 		KeyRepository
-	KeyManager 		c.KeyManager
-	Logger 			c.Logger
+	KeyRepo    KeyRepository
+	KeyManager c.KeyManager
+	Logger     c.Logger
 }
 
 func NewService(keyRepo KeyRepository, keyManager c.KeyManager, logger c.Logger) *Service {
 	return &Service{
-		KeyRepo: keyRepo,
+		KeyRepo:    keyRepo,
 		KeyManager: keyManager,
-		Logger: logger,
+		Logger:     logger,
 	}
 }
 
@@ -32,7 +32,7 @@ type KeyRepository interface {
 
 func (s *Service) CreateKey(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
 	if err := validateKeyReference(keyReference); err != nil {
-		return nil, kmsErrors.NewAppError(err, "Invalid key reference", 400)
+		return nil, kmsErrors.NewAppError(err, "Key reference does not meet minimum requirements. 0 < len <= 64 & contains only [0-9a-Z\\-]", 400)
 	}
 
 	DEKBytes, err := encryption.GenerateKey(32)
@@ -51,9 +51,9 @@ func (s *Service) CreateKey(userId int, keyReference string) (*Key, *kmsErrors.A
 
 	key := &Key{
 		KeyReference: hashedReference,
-		DEK: DEKB64,
-		UserId: userId,
-		Encoding: "base64url (RFC 4648)",
+		DEK:          DEKB64,
+		UserId:       userId,
+		Encoding:     "base64url (RFC 4648)",
 	}
 	newKey, err := s.KeyRepo.CreateKey(key)
 	if err != nil {
@@ -67,9 +67,12 @@ func (s *Service) CreateKey(userId int, keyReference string) (*Key, *kmsErrors.A
 
 // Allow 0-9, a-Z and '-' in custom key reference
 func validateKeyReference(keyReference string) error {
+	if len(keyReference) < 1 || len(keyReference) > 64 {
+		return fmt.Errorf("key reference must be between 1 and 64 characters long, is %d", len(keyReference))
+	}
 	for _, r := range keyReference {
 		if !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-') {
-			return fmt.Errorf("Invalid character in keyreference (%v): %v\n", keyReference, r)
+			return fmt.Errorf("invalid character in keyreference (%v): %v", keyReference, r)
 		}
 	}
 	return nil

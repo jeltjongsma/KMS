@@ -3,35 +3,35 @@ package auth
 import (
 	"database/sql"
 	"errors"
-	kmsErrors "kms/pkg/errors"
+	"fmt"
 	c "kms/internal/bootstrap/context"
 	"kms/internal/users"
+	kmsErrors "kms/pkg/errors"
 	"kms/pkg/hashing"
-	"fmt"
 	"unicode"
 )
 
 type Service struct {
-	Cfg 			c.KmsConfig
-	UserRepo 		users.UserRepository
-	TokenGenInfo 	*TokenGenInfo
-	KeyManager 		c.KeyManager
-	Logger 			c.Logger
+	Cfg          c.KmsConfig
+	UserRepo     users.UserRepository
+	TokenGenInfo *TokenGenInfo
+	KeyManager   c.KeyManager
+	Logger       c.Logger
 }
 
 func NewService(
-	cfg c.KmsConfig, 
-	userRepo users.UserRepository, 
+	cfg c.KmsConfig,
+	userRepo users.UserRepository,
 	tokenGenInfo *TokenGenInfo,
 	keyManager c.KeyManager,
 	logger c.Logger,
-	) *Service {
+) *Service {
 	return &Service{
-		Cfg: cfg,
-		UserRepo: userRepo,
+		Cfg:          cfg,
+		UserRepo:     userRepo,
 		TokenGenInfo: tokenGenInfo,
-		KeyManager: keyManager,
-		Logger: logger,
+		KeyManager:   keyManager,
+		Logger:       logger,
 	}
 }
 
@@ -48,8 +48,8 @@ func (s *Service) Signup(cred *SignupCredentials) (string, *kmsErrors.AppError) 
 	if token.Header.Typ != "signup" {
 		return "", kmsErrors.NewAppError(
 			kmsErrors.WrapError(kmsErrors.ErrInvalidToken, map[string]interface{}{
-				"msg": "Token should be of type 'signup'",
-				"type": token.Header.Typ, 
+				"msg":  "Token should be of type 'signup'",
+				"type": token.Header.Typ,
 			}),
 			"Invalid token",
 			400,
@@ -67,12 +67,12 @@ func (s *Service) Signup(cred *SignupCredentials) (string, *kmsErrors.AppError) 
 	}
 
 	user := &users.User{
-		Username: token.Payload.Sub,
+		Username:       token.Payload.Sub,
 		HashedUsername: hashing.HashHS256ToB64([]byte(token.Payload.Sub), usernameSecret),
-		Password: hashedPassword,
-		Role: s.Cfg["DEFAULT_ROLE"],
+		Password:       hashedPassword,
+		Role:           s.Cfg["DEFAULT_ROLE"],
 	}
-	
+
 	id, err := s.UserRepo.CreateUser(user)
 	if err != nil {
 		return "", kmsErrors.MapRepoErr(err)
@@ -86,13 +86,11 @@ func (s *Service) Signup(cred *SignupCredentials) (string, *kmsErrors.AppError) 
 	}
 
 	s.Logger.Info("User signed up", "userId", id)
-	
+
 	return jwt, nil
 }
 
 func (s *Service) Login(cred *Credentials) (string, *kmsErrors.AppError) {
-	
-
 	usernameSecret, err := s.KeyManager.HashKey("username")
 	if err != nil {
 		return "", kmsErrors.NewInternalServerError(err)
@@ -112,7 +110,7 @@ func (s *Service) Login(cred *Credentials) (string, *kmsErrors.AppError) {
 		return "", kmsErrors.MapHashErr(err)
 	}
 
-	jwt, err := GenerateJWT(s.TokenGenInfo, user) 
+	jwt, err := GenerateJWT(s.TokenGenInfo, user)
 	if err != nil {
 		return "", kmsErrors.NewInternalServerError(err)
 	}
@@ -123,8 +121,8 @@ func (s *Service) Login(cred *Credentials) (string, *kmsErrors.AppError) {
 }
 
 func validatePassword(password string) error {
-	if len(password) < 12 || len(password) > 128{
-		return fmt.Errorf("Password length should be between 12 and 128, is %d", len(password))
+	if len(password) < 12 || len(password) > 128 {
+		return fmt.Errorf("password length should be between 12 and 128, is %d", len(password))
 	}
 	var (
 		hasLower, hasUpper, hasDigit, hasSym bool
@@ -149,7 +147,7 @@ func validatePassword(password string) error {
 		}
 	}
 	if count < 3 {
-		return fmt.Errorf("Password (%s) does not meet specifications", password)
+		return fmt.Errorf("password (%s) does not meet specifications", password)
 	}
 	return nil
 }

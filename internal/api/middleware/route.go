@@ -1,27 +1,27 @@
 package middleware
 
 import (
-	"kms/internal/httpctx"
-	"net/http"
-	kmsErrors "kms/pkg/errors"
 	"context"
 	"fmt"
+	"kms/internal/httpctx"
+	kmsErrors "kms/pkg/errors"
+	"net/http"
 	"strings"
 )
 
 type Route struct {
-	Method 	string
-	Pattern	string
+	Method  string
+	Pattern string
 	Handler httpctx.AppHandler
 }
 
 func NewRoute(method, pattern string, handler httpctx.AppHandler) *Route {
 	return &Route{
-		Method: method,
+		Method:  method,
 		Pattern: pattern,
 		Handler: handler,
 	}
-} 
+}
 
 func MakeRouter(routes []*Route) httpctx.AppHandler {
 	return func(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
@@ -29,10 +29,10 @@ func MakeRouter(routes []*Route) httpctx.AppHandler {
 			if params, ok := matchPattern(route, r); ok {
 				ctx := context.WithValue(r.Context(), httpctx.RouteParamsCtxKey, params)
 				return route.Handler(w, r.WithContext(ctx))
-			} 
+			}
 		}
 		return kmsErrors.NewAppError(
-			fmt.Errorf("Path does not exist: [%v] %v\n", r.Method, r.URL.Path),
+			fmt.Errorf("path does not exist: [%v] %v", r.Method, r.URL.Path),
 			"Not found",
 			404,
 		)
@@ -53,15 +53,15 @@ func matchPattern(route *Route, r *http.Request) (map[string]string, bool) {
 
 	params := make(map[string]string)
 	for idx, routePart := range routeParts {
-		// Compare
-		if routePart == reqParts[idx] {
-			continue
-		}
 		// Check if param
 		if strings.HasPrefix(routePart, "{") && strings.HasSuffix(routePart, "}") {
 			params[strings.Trim(routePart, "{}")] = reqParts[idx]
 			continue
-		} 	
+		}
+		// Compare
+		if routePart == reqParts[idx] {
+			continue
+		}
 		return nil, false
 	}
 	return params, true

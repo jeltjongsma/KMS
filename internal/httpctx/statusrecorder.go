@@ -6,13 +6,13 @@ import (
 
 type statusRecorder struct {
 	http.ResponseWriter
-	statusCode int 
+	statusCode int
 }
 
 func newStatusRecorder(w http.ResponseWriter) *statusRecorder {
 	return &statusRecorder{
 		ResponseWriter: w,
-		statusCode: 200,
+		statusCode:     200,
 	}
 }
 

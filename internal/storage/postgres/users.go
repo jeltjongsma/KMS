@@ -32,12 +32,16 @@ func (r *PostgresUserRepo) GetAll() ([]users.User, error) {
 	query := "SELECT * FROM users"
 	var allUsers []users.User
 	rows, err := r.db.Query(query)
-	if err != nil {return allUsers, err}
+	if err != nil {
+		return allUsers, err
+	}
 	defer rows.Close()
 	for rows.Next() {
-		var user users.User // FIXME: Shadowed by slice earlier
+		var user users.User
 		err := rows.Scan(&user.ID, &user.Username, &user.HashedUsername, &user.Password, &user.Role)
-		if err != nil {return allUsers, err}
+		if err != nil {
+			return allUsers, err
+		}
 		allUsers = append(allUsers, user)
 	}
 	return allUsers, nil
@@ -64,7 +68,7 @@ func (r *PostgresUserRepo) UpdateRole(id int, role string) error {
 	}
 	if nRows == 0 {
 		return kmsErrors.WrapError(kmsErrors.ErrNoRowsAffected, map[string]interface{}{
-			"id": id,
+			"id":   id,
 			"role": role,
 		})
 	}
@@ -73,7 +77,7 @@ func (r *PostgresUserRepo) UpdateRole(id int, role string) error {
 
 func (r *PostgresUserRepo) GetRole(id int) (string, error) {
 	query := "SELECT role FROM users WHERE id = $1"
-	var role string 
+	var role string
 	err := r.db.QueryRow(query, id).Scan(&role)
 	return role, err
 }

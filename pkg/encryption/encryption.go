@@ -1,11 +1,11 @@
 package encryption
 
 import (
-	"crypto/rand"
 	"crypto/aes"
 	"crypto/cipher"
-	"io"
+	"crypto/rand"
 	"fmt"
+	"io"
 )
 
 func Encrypt(plaintext, key []byte) ([]byte, error) {
@@ -41,13 +41,13 @@ func Decrypt(ciphertext, key []byte) ([]byte, error) {
 
 	nonceSize := aesgcm.NonceSize()
 	if len(ciphertext) < nonceSize {
-		return nil, fmt.Errorf("Ciphertext too short\n")
+		return nil, fmt.Errorf("ciphertext too short")
 	}
 
 	nonce := ciphertext[:nonceSize]
 	ciphertextOnly := ciphertext[nonceSize:]
 
-	plaintext, err := aesgcm.Open(nil, nonce, ciphertextOnly, nil) 
+	plaintext, err := aesgcm.Open(nil, nonce, ciphertextOnly, nil)
 	if err != nil {
 		return nil, err
 	}

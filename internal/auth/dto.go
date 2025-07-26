@@ -1,4 +1,4 @@
-package auth 
+package auth
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 )
 
 type Credentials struct {
-	Username 	string 	`json:"username"`
-	Password	string 	`json:"password"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 func (c *Credentials) Lift() *users.User {
@@ -18,18 +18,20 @@ func (c *Credentials) Lift() *users.User {
 }
 
 type SignupCredentials struct {
-	Token 		string 	`json:"token"`
-	Password	string 	`json:"password"`
+	Token    string `json:"token"`
+	Password string `json:"password"`
 }
 
 func (c *SignupCredentials) Validate() error {
 	if c.Token == "" || c.Password == "" {
-		return fmt.Errorf("Token and password should be non-empty")
+		return fmt.Errorf("token and password should be non-empty")
 	}
 	return nil
 }
 
-func (c* Credentials) Validate() error {
-	if c.Username != "" && c.Password != "" {return nil}
-	return fmt.Errorf("Username and password should be non-empty\n")
+func (c *Credentials) Validate() error {
+	if c.Username != "" && c.Password != "" {
+		return nil
+	}
+	return fmt.Errorf("username and password should be non-empty")
 }

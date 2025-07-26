@@ -1,19 +1,19 @@
 package users
 
 import (
-	kmsErrors "kms/pkg/errors"
 	c "kms/internal/bootstrap/context"
+	kmsErrors "kms/pkg/errors"
 )
 
 type Service struct {
-	UserRepo 	UserRepository
-	Logger 		c.Logger
+	UserRepo UserRepository
+	Logger   c.Logger
 }
 
 func NewService(userRepo UserRepository, logger c.Logger) *Service {
 	return &Service{
 		UserRepo: userRepo,
-		Logger: logger,
+		Logger:   logger,
 	}
 }
 

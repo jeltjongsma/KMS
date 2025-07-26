@@ -1,29 +1,33 @@
 package auth
 
 import (
-	"net/http"
+	"kms/internal/api/dto"
+	c "kms/internal/bootstrap/context"
 	kmsErrors "kms/pkg/errors"
 	pHttp "kms/pkg/http"
-	"kms/internal/api/dto"
 	"kms/pkg/json"
-	c "kms/internal/bootstrap/context"
+	"net/http"
 )
 
 type Handler struct {
-	Service 	*Service
-	Logger 		c.Logger
+	Service AuthService
+	Logger  c.Logger
 }
 
-func NewHandler(authService *Service, logger c.Logger) *Handler {
+func NewHandler(authService AuthService, logger c.Logger) *Handler {
 	return &Handler{
 		Service: authService,
-		Logger: logger,
+		Logger:  logger,
 	}
 }
 
-// TODO: Minimum password requirements
+type AuthService interface {
+	Signup(*SignupCredentials) (string, *kmsErrors.AppError)
+	Login(*Credentials) (string, *kmsErrors.AppError)
+}
+
 func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
-	var cred SignupCredentials 
+	var cred SignupCredentials
 	if err := json.ParseBody(r.Body, &cred); err != nil {
 		return kmsErrors.NewInvalidBodyError(err)
 	}

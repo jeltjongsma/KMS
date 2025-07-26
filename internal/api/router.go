@@ -1,15 +1,15 @@
 package api
 
 import (
+	"kms/internal/admin"
+	mw "kms/internal/api/middleware"
+	"kms/internal/auth"
+	"kms/internal/bootstrap"
+	"kms/internal/httpctx"
+	"kms/internal/keys"
+	"kms/internal/users"
 	"net/http"
 	"strconv"
-	"kms/internal/bootstrap"
-	"kms/internal/users"
-	"kms/internal/admin"
-	"kms/internal/keys"
-	"kms/internal/auth"
-	mw "kms/internal/api/middleware"
-	"kms/internal/httpctx"
 )
 
 // Single http.HandleFunc() with custom router?
@@ -20,9 +20,9 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 	}
 
 	jwtGenInfo := &auth.TokenGenInfo{
-		Ttl: jwtTtl,
+		Ttl:    jwtTtl,
 		Secret: ctx.KeyManager.JWTKey(),
-		Typ: "jwt",
+		Typ:    "jwt",
 	}
 
 	authService := auth.NewService(ctx.Cfg, ctx.UserRepo, jwtGenInfo, ctx.KeyManager, ctx.Logger)
@@ -31,14 +31,14 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 	keyService := keys.NewService(ctx.KeyRepo, ctx.KeyManager, ctx.Logger)
 	keyHandler := keys.NewHandler(keyService, ctx.Logger)
 
-	adminService := admin.NewService(ctx.AdminRepo, ctx.UserRepo, ctx.KeyManager, ctx.Logger) 
+	adminService := admin.NewService(ctx.AdminRepo, ctx.UserRepo, ctx.KeyManager, ctx.Logger)
 	adminHandler := admin.NewHandler(adminService, ctx.Logger)
 
 	userService := users.NewService(ctx.UserRepo, ctx.Logger)
 	userHandler := users.NewHandler(userService, ctx.Logger)
 
-	var withAuth = mw.Authorize(ctx.KeyManager.JWTKey()) 
-	var adminOnly = mw.RequireAdmin(ctx.UserRepo) 
+	var withAuth = mw.Authorize(ctx.KeyManager.JWTKey())
+	var adminOnly = mw.RequireAdmin(ctx.UserRepo)
 	var globalHandler = httpctx.GlobalAppHandler(ctx.Logger)
 
 	// Register routes for dev-only environment
@@ -96,6 +96,6 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 
 	// Admin
 	http.Handle("/admin", globalHandler(withAuth(adminOnly(adminHandler.Me))))
-	
+
 	return nil
 }

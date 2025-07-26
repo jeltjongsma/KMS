@@ -1,25 +1,31 @@
 package keys
 
 import (
-	"net/http"
-	"strconv"
+	c "kms/internal/bootstrap/context"
+	"kms/internal/httpctx"
 	kmsErrors "kms/pkg/errors"
 	pHttp "kms/pkg/http"
 	"kms/pkg/json"
-	"kms/internal/httpctx"
-	c "kms/internal/bootstrap/context"
+	"net/http"
+	"strconv"
 )
 
 type Handler struct {
-	Service 	*Service
-	Logger 		c.Logger
+	Service KeyService
+	Logger  c.Logger
 }
 
-func NewHandler(keyService *Service, logger c.Logger) *Handler {
+func NewHandler(keyService KeyService, logger c.Logger) *Handler {
 	return &Handler{
 		Service: keyService,
-		Logger: logger,
+		Logger:  logger,
 	}
+}
+
+type KeyService interface {
+	CreateKey(userId int, keyReference string) (*Key, *kmsErrors.AppError)
+	GetKey(id int, keyReference string) (*Key, *kmsErrors.AppError)
+	GetAll() ([]Key, *kmsErrors.AppError)
 }
 
 func (h *Handler) GenerateKey(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
@@ -44,7 +50,7 @@ func (h *Handler) GenerateKey(w http.ResponseWriter, r *http.Request) *kmsErrors
 	}
 
 	response := &KeyReponse{
-		DEK: key.DEK,
+		DEK:      key.DEK,
 		Encoding: key.Encoding,
 	}
 
@@ -73,7 +79,7 @@ func (h *Handler) GetKey(w http.ResponseWriter, r *http.Request) *kmsErrors.AppE
 	}
 
 	response := &KeyReponse{
-		DEK: key.DEK,
+		DEK:      key.DEK,
 		Encoding: key.Encoding,
 	}
 

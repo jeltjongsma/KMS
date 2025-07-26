@@ -1,10 +1,9 @@
 package id
 
 import (
-	"io"
 	"crypto/rand"
-	// "encoding/hex"
 	"fmt"
+	"io"
 )
 
 func GenerateUUID() (string, error) {

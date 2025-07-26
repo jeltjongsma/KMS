@@ -1,26 +1,33 @@
 package admin
 
 import (
+	"kms/internal/api/dto"
+	c "kms/internal/bootstrap/context"
+	"kms/internal/httpctx"
+	"kms/internal/users"
+	kmsErrors "kms/pkg/errors"
+	pHttp "kms/pkg/http"
+	"kms/pkg/json"
 	"net/http"
 	"strconv"
-	kmsErrors "kms/pkg/errors"
-	"kms/internal/httpctx"
-	"kms/internal/api/dto"
-	"kms/pkg/json"
-	pHttp "kms/pkg/http"
-	c "kms/internal/bootstrap/context"
 )
 
 type Handler struct {
-	Service 	*Service
-	Logger 		c.Logger
+	Service AdminService
+	Logger  c.Logger
 }
 
-func NewHandler(adminService *Service, logger c.Logger) *Handler {
+func NewHandler(adminService AdminService, logger c.Logger) *Handler {
 	return &Handler{
 		Service: adminService,
-		Logger: logger,
+		Logger:  logger,
 	}
+}
+
+type AdminService interface {
+	UpdateRole(userId int, role string, adminId string) *kmsErrors.AppError
+	Me(userId int) (*users.User, *kmsErrors.AppError)
+	GenerateSignupToken(body *GenerateSignupTokenRequest, adminId string) (string, *kmsErrors.AppError)
 }
 
 func (h *Handler) UpdateRole(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
@@ -48,8 +55,7 @@ func (h *Handler) UpdateRole(w http.ResponseWriter, r *http.Request) *kmsErrors.
 		return appErr
 	}
 
-	w.WriteHeader(204)
-	return nil
+	return pHttp.WriteStatus(w, 204)
 }
 
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
@@ -69,9 +75,9 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError
 
 	response := &dto.UserResponse{
 		Username: admin.Username,
-		Role: admin.Role,
+		Role:     admin.Role,
 	}
-	
+
 	return pHttp.WriteJSON(w, response)
 }
 

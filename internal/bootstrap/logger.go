@@ -1,13 +1,13 @@
 package bootstrap
 
 import (
-	"log"
 	"fmt"
+	"log"
 	"strings"
 )
 
 type ConsoleLogger struct {
-	LogLevel 	int
+	LogLevel int
 }
 
 func InitConsoleLogger(logLevel string) (*ConsoleLogger, error) {
@@ -39,7 +39,7 @@ func mapLogLevel(logLevel string) (int, error) {
 	case "emergency":
 		return 7, nil
 	default:
-		return 0, fmt.Errorf("Unknown log level: %v", logLevel)
+		return 0, fmt.Errorf("unknown log level: %v", logLevel)
 	}
 }
 
@@ -95,7 +95,7 @@ func prettyPrint(args []any) string {
 	var b strings.Builder
 	b.WriteString("[")
 	for idx, arg := range args {
-		if idx % 2 == 0 {
+		if idx%2 == 0 {
 			b.WriteString(fmt.Sprintf(" %v=", arg))
 		} else {
 			b.WriteString(fmt.Sprintf("%v ", arg))

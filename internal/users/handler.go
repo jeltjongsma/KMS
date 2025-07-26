@@ -1,22 +1,26 @@
 package users
 
 import (
-	"net/http"
+	c "kms/internal/bootstrap/context"
 	kmsErrors "kms/pkg/errors"
 	pHttp "kms/pkg/http"
-	c "kms/internal/bootstrap/context"
+	"net/http"
 )
 
 type Handler struct {
-	Service 	*Service
-	Logger 		c.Logger
+	Service UserService
+	Logger  c.Logger
 }
 
-func NewHandler(userService *Service, logger c.Logger) *Handler {
+func NewHandler(userService UserService, logger c.Logger) *Handler {
 	return &Handler{
 		Service: userService,
-		Logger: logger,
+		Logger:  logger,
 	}
+}
+
+type UserService interface {
+	GetAll() ([]User, *kmsErrors.AppError)
 }
 
 func (h *Handler) GetAllDev(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
@@ -25,4 +29,4 @@ func (h *Handler) GetAllDev(w http.ResponseWriter, r *http.Request) *kmsErrors.A
 		return appErr
 	}
 	return pHttp.WriteJSON(w, users)
-} 
+}

@@ -1,9 +1,10 @@
 package errors
 
 import (
-	"errors"
-	"github.com/lib/pq"
 	"database/sql"
+	"errors"
+
+	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -31,16 +32,16 @@ func MapRepoErr(err error) *AppError {
 }
 
 func MapHashErr(err error) *AppError {
-	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword ) {
+	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 		return NewAppError(err, "Incorrect username or password", 401)
 	}
-	
+
 	return NewInternalServerError(err)
 }
 
 func MapVerifyTokenErr(err error) *AppError {
 	if errors.Is(err, ErrInvalidToken) {
-		return NewAppError(err, "Invalid token", 401)
+		return NewAppError(err, "Unauthorized", 401)
 	}
 
 	return NewInternalServerError(err)

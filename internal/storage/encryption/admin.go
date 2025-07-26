@@ -1,23 +1,23 @@
 package encryption
 
 import (
-	"kms/internal/users"
 	"kms/internal/admin"
 	c "kms/internal/bootstrap/context"
+	"kms/internal/users"
 )
 
 type EncryptedAdminRepo struct {
-	AdminRepo 	admin.AdminRepository
-	KeyManager 	c.KeyManager
+	AdminRepo  admin.AdminRepository
+	KeyManager c.KeyManager
 }
 
 func NewEncryptedAdminRepo(adminRepo admin.AdminRepository, keyManager c.KeyManager) *EncryptedAdminRepo {
 	return &EncryptedAdminRepo{
-		AdminRepo: adminRepo,
+		AdminRepo:  adminRepo,
 		KeyManager: keyManager,
 	}
 }
- 
+
 func (r *EncryptedAdminRepo) GetAdmin(id int) (*users.User, error) {
 	user, err := r.AdminRepo.GetAdmin(id)
 	if err != nil {
@@ -30,4 +30,3 @@ func (r *EncryptedAdminRepo) GetAdmin(id int) (*users.User, error) {
 	}
 	return decUser, nil
 }
-

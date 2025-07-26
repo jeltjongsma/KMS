@@ -1,18 +1,18 @@
 package encryption
 
 import (
-	"kms/internal/users"
 	c "kms/internal/bootstrap/context"
+	"kms/internal/users"
 )
 
 type EncryptedUserRepo struct {
-	UserRepo 	users.UserRepository
-	KeyManager  c.KeyManager
+	UserRepo   users.UserRepository
+	KeyManager c.KeyManager
 }
 
 func NewEncryptedUserRepo(userRepo users.UserRepository, keyManager c.KeyManager) *EncryptedUserRepo {
 	return &EncryptedUserRepo{
-		UserRepo: userRepo,
+		UserRepo:   userRepo,
 		KeyManager: keyManager,
 	}
 }

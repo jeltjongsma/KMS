@@ -1,17 +1,16 @@
-package middleware 
+package middleware
 
 import (
-	"net/http"
 	"context"
-	"strings"	
 	"fmt"
-	"strconv"
+	"kms/internal/auth"
 	"kms/internal/httpctx"
 	"kms/internal/users"
 	kmsErrors "kms/pkg/errors"
-	"kms/internal/auth"
+	"net/http"
+	"strconv"
+	"strings"
 )
-
 
 func Authorize(jwtSecret []byte) func(httpctx.AppHandler) httpctx.AppHandler {
 	return func(next httpctx.AppHandler) httpctx.AppHandler {
@@ -19,7 +18,7 @@ func Authorize(jwtSecret []byte) func(httpctx.AppHandler) httpctx.AppHandler {
 			bearer := strings.TrimSpace(r.Header.Get("Authorization"))
 			if bearer == "" {
 				return kmsErrors.NewAppError(
-					fmt.Errorf("Bearer token missing\n"),
+					fmt.Errorf("bearer token missing"),
 					"Unauthorized",
 					401,
 				)
@@ -28,7 +27,7 @@ func Authorize(jwtSecret []byte) func(httpctx.AppHandler) httpctx.AppHandler {
 			parts := strings.Split(bearer, " ")
 			if len(parts) != 2 || parts[0] != "Bearer" {
 				return kmsErrors.NewAppError(
-					fmt.Errorf("Invalid bearer token: %v\n", bearer),
+					fmt.Errorf("invalid bearer token: %v", bearer),
 					"Unauthorized",
 					401,
 				)
@@ -46,7 +45,7 @@ func Authorize(jwtSecret []byte) func(httpctx.AppHandler) httpctx.AppHandler {
 						"msg": "Token should be of type 'jwt'",
 						"typ": token.Header.Typ,
 					}),
-					"Unauthorized", 
+					"Unauthorized",
 					401,
 				)
 			}
@@ -78,7 +77,7 @@ func RequireAdmin(userRepo users.UserRepository) func(httpctx.AppHandler) httpct
 
 			if role != "admin" {
 				return kmsErrors.NewAppError(
-					fmt.Errorf("Forbidden role (%v)\n", role),
+					fmt.Errorf("forbidden role (%v)", role),
 					"Forbidden",
 					403,
 				)

@@ -33,13 +33,17 @@ func (r *PostgresKeyRepo) GetAll() ([]keys.Key, error) {
 	query := "SELECT * FROM keys"
 	var allKeys []keys.Key
 	rows, err := r.db.Query(query)
-	if err != nil {return allKeys, err}
+	if err != nil {
+		return allKeys, err
+	}
 
 	defer rows.Close()
 	for rows.Next() {
 		var key keys.Key
 		err := rows.Scan(&key.ID, &key.KeyReference, &key.DEK, &key.UserId, &key.Encoding)
-		if err != nil {return allKeys, err}
+		if err != nil {
+			return allKeys, err
+		}
 		allKeys = append(allKeys, key)
 	}
 	return allKeys, nil

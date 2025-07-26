@@ -1,18 +1,18 @@
 package encryption
 
 import (
-	"kms/internal/keys"
 	c "kms/internal/bootstrap/context"
+	"kms/internal/keys"
 )
 
 type EncryptedKeyRepo struct {
-	KeyRepo 	keys.KeyRepository 
-	KeyManager 	c.KeyManager
+	KeyRepo    keys.KeyRepository
+	KeyManager c.KeyManager
 }
 
 func NewEncryptedKeyRepo(keyRepo keys.KeyRepository, keyManager c.KeyManager) *EncryptedKeyRepo {
 	return &EncryptedKeyRepo{
-		KeyRepo: keyRepo,
+		KeyRepo:    keyRepo,
 		KeyManager: keyManager,
 	}
 }
@@ -34,7 +34,7 @@ func (r *EncryptedKeyRepo) CreateKey(key *keys.Key) (*keys.Key, error) {
 }
 
 func (r *EncryptedKeyRepo) GetKey(id int, keyReference string) (*keys.Key, error) {
-	key, err := r.KeyRepo.GetKey(id, keyReference) 
+	key, err := r.KeyRepo.GetKey(id, keyReference)
 	if err != nil {
 		return nil, err
 	}

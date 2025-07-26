@@ -1,15 +1,15 @@
 package main
 
 import (
-	"net/http"
-	"log"
-	"fmt"
-	"kms/internal/bootstrap"
-	"kms/internal/storage/postgres"
-	"kms/internal/api"
-	dbEncr "kms/internal/storage/encryption"
 	"errors"
-) 
+	"fmt"
+	"kms/internal/api"
+	"kms/internal/bootstrap"
+	dbEncr "kms/internal/storage/encryption"
+	"kms/internal/storage/postgres"
+	"log"
+	"net/http"
+)
 
 func main() {
 	cfg, err := bootstrap.LoadConfig(".env")
@@ -35,14 +35,14 @@ func main() {
 
 	// TODO: Implement migration instead of this mess
 	schemas := []postgres.TableSchema{
-		postgres.TableSchema{
+		{
 			Name: "keys",
 			Fields: map[string]string{
-				"id": "SERIAL PRIMARY KEY",
+				"id":           "SERIAL PRIMARY KEY",
 				"keyReference": "VARCHAR(64) NOT NULL",
-				"dek": 	"VARCHAR(80) NOT NULL",
-				"userId": "INTEGER NOT NULL",
-				"encoding": "VARCHAR(64) NOT NULL",
+				"dek":          "VARCHAR(80) NOT NULL",
+				"userId":       "INTEGER NOT NULL",
+				"encoding":     "VARCHAR(64) NOT NULL",
 			},
 			Keys: []string{
 				"id",
@@ -53,14 +53,14 @@ func main() {
 			},
 			Unique: []string{"userId", "keyReference"},
 		},
-		postgres.TableSchema{
+		{
 			Name: "users",
 			Fields: map[string]string{
-				"id": "SERIAL PRIMARY KEY",
-				"username": "VARCHAR(64) UNIQUE NOT NULL",
+				"id":             "SERIAL PRIMARY KEY",
+				"username":       "VARCHAR(64) UNIQUE NOT NULL",
 				"hashedUsername": "VARCHAR(44) UNIQUE NOT NULL",
-				"password": "CHAR(60) NOT NULL",
-				"role": "VARCHAR(44) NOT NULL DEFAULT 'user'",
+				"password":       "CHAR(60) NOT NULL",
+				"role":           "VARCHAR(44) NOT NULL DEFAULT 'user'",
 			},
 			Keys: []string{
 				"id",
@@ -81,13 +81,13 @@ func main() {
 	userRepo := dbEncr.NewEncryptedUserRepo(postgres.NewPostgresUserRepo(db), keyManager)
 
 	appCtx := &bootstrap.AppContext{
-		Cfg: cfg,
+		Cfg:        cfg,
 		KeyManager: keyManager,
-		Logger: consoleLogger,
-		DB: db,
-		UserRepo: userRepo,
-		KeyRepo: keyRepo,
-		AdminRepo: adminRepo,
+		Logger:     consoleLogger,
+		DB:         db,
+		UserRepo:   userRepo,
+		KeyRepo:    keyRepo,
+		AdminRepo:  adminRepo,
 	}
 
 	if err := api.RegisterRoutes(appCtx); err != nil {

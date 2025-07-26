@@ -1,17 +1,17 @@
 package bootstrap
 
 import (
+	b64 "encoding/base64"
 	"fmt"
 	c "kms/internal/bootstrap/context"
-	b64 "encoding/base64"
 )
 
 type StaticKeyManager struct {
-	JwtKey_		[]byte
-	SignupKey_ 	[]byte
-	KEK_ 		[]byte
-	DBKey_		[]byte
-	HashKeys_	map[string][]byte
+	JwtKey_    []byte
+	SignupKey_ []byte
+	KEK_       []byte
+	DBKey_     []byte
+	HashKeys_  map[string][]byte
 }
 
 func InitStaticKeyManager(cfg c.KmsConfig) (*StaticKeyManager, error) {
@@ -42,26 +42,16 @@ func InitStaticKeyManager(cfg c.KmsConfig) (*StaticKeyManager, error) {
 
 	hashKeys := map[string][]byte{
 		"keyReference": keyRefKey,
-		"username": usernameKey,
+		"username":     usernameKey,
 	}
 
 	return &StaticKeyManager{
-		JwtKey_: jwtKey,
+		JwtKey_:    jwtKey,
 		SignupKey_: signupKey,
-		KEK_: kek,
-		DBKey_: dbKey,
-		HashKeys_: hashKeys,
+		KEK_:       kek,
+		DBKey_:     dbKey,
+		HashKeys_:  hashKeys,
 	}, nil
-}
-
-func NewStaticKeyManager(jwtKey, signupKey, kek, dbKey []byte, hashKeys map[string][]byte) *StaticKeyManager {
-	return &StaticKeyManager{
-		JwtKey_: jwtKey,
-		SignupKey_: signupKey,
-		KEK_: kek,
-		DBKey_: dbKey,
-		HashKeys_: hashKeys,
-	}
 }
 
 func (m *StaticKeyManager) JWTKey() []byte {
@@ -83,7 +73,7 @@ func (m *StaticKeyManager) DBKey() []byte {
 func (m *StaticKeyManager) HashKey(kind string) ([]byte, error) {
 	key, ok := m.HashKeys_[kind]
 	if !ok {
-		return nil, fmt.Errorf("Hask key '%s' not found", kind)
+		return nil, fmt.Errorf("hash key '%s' not found", kind)
 	}
 	return key, nil
 }
