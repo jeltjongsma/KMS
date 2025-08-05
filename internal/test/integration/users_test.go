@@ -1,0 +1,115 @@
+package integration
+
+import (
+	"fmt"
+	"kms/internal/test"
+	"testing"
+)
+
+func TestUpdateRole(t *testing.T) {
+	admin, err := requireUser(appCtx, "admin", "admin")
+	test.RequireErrNil(t, err)
+
+	u, err := requireUser(appCtx, "user", "user")
+	test.RequireErrNil(t, err)
+
+	token, err := requireJWT(appCtx, admin)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("POST", fmt.Sprintf("/users/%d/role", u.ID), `{"role":"admin"}`,
+		"Authorization", "Bearer "+token)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireStatusCode(t, resp.StatusCode, 204)
+
+	updatedU, err := appCtx.UserRepo.FindByHashedUsername(u.HashedUsername)
+	test.RequireErrNil(t, err)
+
+	if updatedU.Role != "admin" {
+		t.Errorf("expected role: admin, got %s", updatedU.Role)
+	}
+
+	if updatedU.ID != u.ID ||
+		updatedU.HashedUsername != u.HashedUsername ||
+		updatedU.Username != u.Username ||
+		updatedU.Password != u.Password {
+		t.Errorf("expected %v, got %v", u, updatedU)
+	}
+}
+
+func TestUpdateRole_MissingToken(t *testing.T) {
+	_, err := requireUser(appCtx, "users-updaterole-missingtoken-admin", "admin")
+	test.RequireErrNil(t, err)
+
+	u, err := requireUser(appCtx, "users-updaterole-missingtoken-user", "user")
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("POST", fmt.Sprintf("/users/%d/role", u.ID), `{"role":"admin"}`)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireUnauthorized(t, resp)
+}
+
+func TestUpdateRole_MissingBody(t *testing.T) {
+	admin, err := requireUser(appCtx, "users-updaterole-missingbody-admin", "admin")
+	test.RequireErrNil(t, err)
+
+	u, err := requireUser(appCtx, "users-updaterole-missingbody-user", "user")
+	test.RequireErrNil(t, err)
+
+	token, err := requireJWT(appCtx, admin)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("POST", fmt.Sprintf("/users/%d/role", u.ID), "",
+		"Authorization", "Bearer "+token)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireStatusCode(t, resp.StatusCode, 400)
+	test.RequireContains(t, GetBody(resp), "Invalid request body")
+}
+
+func TestGenerateSignupToken(t *testing.T) {
+	u, err := requireUser(appCtx, "users-gensignup", "admin")
+	test.RequireErrNil(t, err)
+
+	token, err := requireJWT(appCtx, u)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("POST", "/users/tokens/generate", `{"ttl":3600,"username":"iot-device"}`,
+		"Authorization", "Bearer "+token)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireStatusCode(t, resp.StatusCode, 200)
+	test.RequireContains(t, GetBody(resp), `"token":`)
+}
+
+func TestGenerateSignupToken_MissingToken(t *testing.T) {
+	_, err := requireUser(appCtx, "users-gensignup-missingtoken", "admin")
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("POST", "/users/tokens/generate", `{"ttl":3600,"username":"iot-device"}`)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireUnauthorized(t, resp)
+}
+
+func TestGenerateSignupToken_MissingBody(t *testing.T) {
+	u, err := requireUser(appCtx, "users-gensignup-missingbody", "admin")
+	test.RequireErrNil(t, err)
+
+	token, err := requireJWT(appCtx, u)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("POST", "/users/tokens/generate", "",
+		"Authorization", "Bearer "+token)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireStatusCode(t, resp.StatusCode, 400)
+	test.RequireContains(t, GetBody(resp), "Invalid request body")
+}

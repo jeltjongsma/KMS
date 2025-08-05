@@ -22,3 +22,9 @@ func RequireErrContains(t *testing.T, err error, expected string) {
 		t.Errorf("expected %s, got %v", expected, err)
 	}
 }
+
+func RequireContains(t *testing.T, msg string, expected string) {
+	if !strings.Contains(msg, expected) {
+		t.Fatalf("expected to contain %s, got %s", expected, msg)
+	}
+}

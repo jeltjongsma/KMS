@@ -1,35 +1,39 @@
-package main
+package integration
 
 import (
-	"errors"
-	"fmt"
 	"kms/internal/api"
 	"kms/internal/bootstrap"
 	dbEncr "kms/internal/storage/encryption"
 	"kms/internal/storage/postgres"
-	"log"
 	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
 )
 
-func main() {
-	cfg, err := bootstrap.LoadConfig(".env")
-	if err != nil {
-		log.Fatal("Unable to load config: ", err)
-	}
+var server *httptest.Server
+var appCtx *bootstrap.AppContext
 
+func TestMain(m *testing.M) {
+	http.DefaultServeMux = http.NewServeMux()
+
+	cfg, err := bootstrap.LoadConfig("../../../.env")
+	if err != nil {
+		panic(err)
+	}
 	keyManager, err := bootstrap.InitStaticKeyManager(cfg)
 	if err != nil {
-		log.Fatal("Unable to initialise key manager: ", err)
+		panic(err)
 	}
 
 	consoleLogger, err := bootstrap.InitConsoleLogger(cfg["LOG_LEVEL"])
 	if err != nil {
-		log.Fatal("Unable to initialise logger: ", err)
+		panic(err)
 	}
 
 	db, err := bootstrap.ConnectDatabase(cfg)
 	if err != nil {
-		log.Fatal("Unable to connect to database: ", err)
+		panic(err)
 	}
 	defer db.Close()
 
@@ -73,14 +77,15 @@ func main() {
 	}
 
 	if err := postgres.InitSchema(cfg, db, schemas, keyManager); err != nil {
-		log.Fatal("Failed to create schema: ", err)
+		panic(err)
 	}
 
 	keyRepo := dbEncr.NewEncryptedKeyRepo(postgres.NewPostgresKeyRepo(db), keyManager)
 	adminRepo := dbEncr.NewEncryptedAdminRepo(postgres.NewPostgresAdminRepo(db), keyManager)
 	userRepo := dbEncr.NewEncryptedUserRepo(postgres.NewPostgresUserRepo(db), keyManager)
 
-	appCtx := &bootstrap.AppContext{
+	// TODO: Add startup time to dismiss old JWTs
+	appCtx = &bootstrap.AppContext{
 		Cfg:        cfg,
 		KeyManager: keyManager,
 		Logger:     consoleLogger,
@@ -91,10 +96,13 @@ func main() {
 	}
 
 	if err := api.RegisterRoutes(appCtx); err != nil {
-		log.Fatal("Unable to register routes: ", err)
+		panic(err)
 	}
 
-	if err := http.ListenAndServeTLS(fmt.Sprintf(":%v", cfg["SERVER_PORT"]), "kms.crt", "kms.key", nil); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatal("HTTPS server failed: ", err)
-	}
+	server = httptest.NewServer(nil)
+	defer server.Close()
+
+	code := m.Run()
+
+	os.Exit(code)
 }
