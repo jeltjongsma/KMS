@@ -21,8 +21,8 @@ type UpdateRoleRequest struct {
 }
 
 func (r *UpdateRoleRequest) Validate() error {
-	if r.Role != "" {
-		return nil
+	if r.Role != "user" && r.Role != "admin" {
+		return fmt.Errorf("role must be 'user' or 'admin'")
 	}
-	return fmt.Errorf("role should be non-empty")
+	return nil
 }

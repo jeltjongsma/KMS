@@ -116,3 +116,17 @@ func TestMatchPattern_MultipleParams(t *testing.T) {
 		}
 	}
 }
+
+func TestMatchPattern_WrongMethod(t *testing.T) {
+	route := NewRoute("GET", "/test/{id}", func(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
+		return nil
+	})
+	req, err := http.NewRequest("POST", "/test/12", nil)
+	if err != nil {
+		t.Fatalf("failed to create request: %v", err)
+	}
+	_, ok := matchPattern(route, req)
+	if ok != false {
+		t.Fatalf("expected matchPattern(%s) to return %v, got %v", "POST", false, ok)
+	}
+}

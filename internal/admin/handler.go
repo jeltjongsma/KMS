@@ -51,6 +51,10 @@ func (h *Handler) UpdateRole(w http.ResponseWriter, r *http.Request) *kmsErrors.
 		return kmsErrors.NewAppError(err, "Invalid request body", 400)
 	}
 
+	if err := requestBody.Validate(); err != nil {
+		return kmsErrors.NewInvalidBodyError(err)
+	}
+
 	if appErr := h.Service.UpdateRole(userId, requestBody.Role, token.Payload.Sub); appErr != nil {
 		return appErr
 	}

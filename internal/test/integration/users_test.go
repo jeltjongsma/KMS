@@ -67,8 +67,25 @@ func TestUpdateRole_MissingBody(t *testing.T) {
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
 
-	requireStatusCode(t, resp.StatusCode, 400)
-	test.RequireContains(t, GetBody(resp), "Invalid request body")
+	requireBadRequest(t, resp)
+}
+
+func TestUpdateRole_InvalidRole(t *testing.T) {
+	admin, err := requireUser(appCtx, "users-updaterole-emptyrole-admin", "admin")
+	test.RequireErrNil(t, err)
+
+	u, err := requireUser(appCtx, "users-updaterole-emptyrole-user", "user")
+	test.RequireErrNil(t, err)
+
+	token, err := requireJWT(appCtx, admin)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("POST", fmt.Sprintf("/users/%d/role", u.ID), `{"role":""}`,
+		"Authorization", "Bearer "+token)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireBadRequest(t, resp)
 }
 
 func TestGenerateSignupToken(t *testing.T) {
@@ -110,6 +127,5 @@ func TestGenerateSignupToken_MissingBody(t *testing.T) {
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
 
-	requireStatusCode(t, resp.StatusCode, 400)
-	test.RequireContains(t, GetBody(resp), "Invalid request body")
+	requireBadRequest(t, resp)
 }

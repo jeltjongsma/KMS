@@ -37,7 +37,6 @@ func TestMapLogLevel(t *testing.T) {
 
 func captureLogOutput(f func()) string {
 	var buf bytes.Buffer
-	// logger := log.New(&buf, "", 0)
 	orig := log.Default()
 	log.SetOutput(&buf)
 	log.SetFlags(0)

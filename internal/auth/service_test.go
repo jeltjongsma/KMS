@@ -86,10 +86,48 @@ func TestService_Signup_InvalidTokenError(t *testing.T) {
 
 	_, appErr := service.Signup(cred)
 	if appErr == nil {
-		t.Fatal("expected error for invalid token type, got nil")
+		t.Fatal("expected error for invalid token, got nil")
 	}
 	if appErr.Code != 401 {
 		t.Errorf("expected error code 401, got %d", appErr.Code)
+	}
+}
+
+func TestService_Signup_WrongTokenTyp(t *testing.T) {
+	mockRepo := users.NewUserRepositoryMock()
+	mockLogger := mocks.NewLoggerMock()
+	mockKeyManager := mocks.NewKeyManagerMock()
+	signupSecret := []byte("signupsecret")
+	mockKeyManager.SignupKeyFunc = func() []byte {
+		return signupSecret
+	}
+	cfg := c.KmsConfig{
+		"DEFAULT_ROLE": "user",
+	}
+
+	tokenGenInfo := &TokenGenInfo{
+		Ttl:    3600,
+		Secret: signupSecret,
+		Typ:    "jwt",
+	}
+
+	service := NewService(cfg, mockRepo, tokenGenInfo, mockKeyManager, mockLogger)
+
+	token, err := GenerateSignupToken(tokenGenInfo, "testuser")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	cred := &SignupCredentials{
+		Token:    token,
+		Password: "Valid123!1234",
+	}
+
+	_, appErr := service.Signup(cred)
+	if appErr == nil {
+		t.Fatal("expected error for invalid token type, got nil")
+	}
+	if appErr.Code != 400 {
+		t.Errorf("expected statuscode 400, got %d", appErr.Code)
 	}
 }
 

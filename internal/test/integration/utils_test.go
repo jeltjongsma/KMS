@@ -121,3 +121,8 @@ func requireUnauthorized(t *testing.T, r *http.Response) {
 	requireStatusCode(t, r.StatusCode, 401)
 	test.RequireContains(t, GetBody(r), "Unauthorized")
 }
+
+func requireBadRequest(t *testing.T, r *http.Response) {
+	requireStatusCode(t, r.StatusCode, 400)
+	test.RequireContains(t, GetBody(r), "Invalid request body")
+}
