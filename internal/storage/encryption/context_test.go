@@ -5,7 +5,6 @@ import (
 	"kms/internal/test/mocks"
 	"kms/pkg/encryption"
 	kmsErrors "kms/pkg/errors"
-	"log"
 	"strings"
 	"testing"
 )
@@ -38,7 +37,17 @@ func TestString_Decrypt_NonB64Error(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error")
 	}
-	log.Printf("err: %v", err)
+}
+
+func TestBase64_Encrypt_NonB64Error(t *testing.T) {
+	secret, err := encryption.GenerateKey(32)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	_, err = EncryptBase64("not+base64", secret)
+	if err == nil {
+		t.Fatalf("expected error")
+	}
 }
 
 type Foo struct {

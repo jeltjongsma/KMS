@@ -194,6 +194,18 @@ func EncryptString(str string, key []byte) (string, error) {
 	return b64.RawURLEncoding.EncodeToString(encrypted), nil
 }
 
+func EncryptBase64(str string, key []byte) (string, error) {
+	bytes, err := b64.RawURLEncoding.DecodeString(str)
+	if err != nil {
+		return "", err
+	}
+	encrypted, err := encryption.Encrypt(bytes, key)
+	if err != nil {
+		return "", err
+	}
+	return b64.RawURLEncoding.EncodeToString(encrypted), nil
+}
+
 func DecryptString(str string, key []byte) (string, error) {
 	decoded, err := b64.RawURLEncoding.DecodeString(str)
 	if err != nil {

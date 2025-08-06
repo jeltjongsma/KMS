@@ -5,9 +5,11 @@ import (
 	"kms/internal/bootstrap"
 	dbEncr "kms/internal/storage/encryption"
 	"kms/internal/storage/postgres"
+	"kms/internal/test"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"slices"
 	"testing"
 )
 
@@ -105,4 +107,37 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	os.Exit(code)
+}
+
+func TestMethodNotAllowed(t *testing.T) {
+	methods := []string{"CONNECT", "GET", "POST", "PATCH", "PUT", "OPTIONS", "DELETE", "HEAD", "TRACE"}
+
+	tests := []struct {
+		path           string
+		allowedMethods []string
+	}{
+		{"/keys/actions/generate", []string{"POST"}},
+		{"/keys/keyRef", []string{"GET"}},
+		{"/keys/keyRef/renew", []string{"PATCH"}},
+		{"/auth/signup", []string{"POST"}},
+		{"/auth/login", []string{"POST"}},
+		{"/users/12/role", []string{"POST"}},
+		{"/users/tokens/generate", []string{"POST"}},
+	}
+
+	for _, tt := range tests {
+		for _, m := range methods {
+			if slices.Contains(tt.allowedMethods, m) {
+				continue
+			}
+			resp, err := doRequest(m, tt.path, "")
+			requireReqNotFailed(t, err)
+			defer resp.Body.Close()
+
+			requireStatusCode(t, resp.StatusCode, 405)
+			if m != "HEAD" {
+				test.RequireContains(t, GetBody(resp), "Method not allowed")
+			}
+		}
+	}
 }

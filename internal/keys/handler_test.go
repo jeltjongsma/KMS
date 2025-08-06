@@ -22,7 +22,7 @@ func TestHandler_GenerateKey_Success(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/keys/generate", strings.NewReader(`{"keyReference": "keyRef"}`))
+	req := httptest.NewRequest("POST", "/keys/actions/generate", strings.NewReader(`{"keyReference": "keyRef"}`))
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{
 			Sub: "1",
@@ -45,7 +45,7 @@ func TestHandler_GenerateKey_MissingToken(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/keys/generate", strings.NewReader(`{"keyReference": "keyRef"}`))
+	req := httptest.NewRequest("POST", "/keys/actions/generate", strings.NewReader(`{"keyReference": "keyRef"}`))
 	rr := httptest.NewRecorder()
 
 	err := handler.GenerateKey(rr, req)
@@ -65,7 +65,7 @@ func TestHandler_GenerateKey_InvalidUserIdError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/keys/generate", strings.NewReader(`{"keyReference": "keyRef"}`))
+	req := httptest.NewRequest("POST", "/keys/actions/generate", strings.NewReader(`{"keyReference": "keyRef"}`))
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{
 			Sub: "userId",
@@ -91,7 +91,7 @@ func TestHandler_GenerateKey_ParseBodyError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/keys/generate", strings.NewReader(`{"keyReference": "keyRef"`))
+	req := httptest.NewRequest("POST", "/keys/actions/generate", strings.NewReader(`{"keyReference": "keyRef"`))
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{
 			Sub: "1",
@@ -120,7 +120,7 @@ func TestHandler_GenerateKey_ServiceError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/keys/generate", strings.NewReader(`{"keyReference": "keyRef"}`))
+	req := httptest.NewRequest("POST", "/keys/actions/generate", strings.NewReader(`{"keyReference": "keyRef"}`))
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{
 			Sub: "1",
@@ -274,6 +274,126 @@ func TestHandler_GetKey_ServiceError(t *testing.T) {
 	}
 	if err.Code != 500 {
 		t.Errorf("handler returned wrong status code: got %v want %v", err.Code, 500)
+	}
+}
+
+func TestHandler_RenewKey_Success(t *testing.T) {
+	mockService := NewKeyServiceMock()
+	mockService.RenewKeyFunc = func(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
+		return &Key{
+			DEK:      "dek",
+			Encoding: "encoding",
+		}, nil
+	}
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("PATCH", "/keys/keyRef/renew", nil)
+	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
+		Payload: &auth.TokenPayload{
+			Sub: "1",
+		},
+	})
+	ctx_ := context.WithValue(ctx, httpctx.RouteParamsCtxKey, map[string]string{
+		"keyReference": "keyRef",
+	})
+	req = req.WithContext(ctx_)
+	rr := httptest.NewRecorder()
+
+	err := handler.RenewKey(rr, req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if rr.Code != 200 {
+		t.Errorf("expected status 200, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), `{"dek":"dek","encoding":"encoding"}`) {
+		t.Errorf("unexpected body: %v", rr.Body.String())
+	}
+}
+
+func TestHandler_RenewKey_MissingToken(t *testing.T) {
+	mockService := NewKeyServiceMock()
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("PATCH", "/keys/keyRef/renew", nil)
+	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
+		Payload: &auth.TokenPayload{
+			Sub: "1",
+		},
+	})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	err := handler.RenewKey(rr, req)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if err.Code != 500 {
+		t.Errorf("expected status 500, got %d", err.Code)
+	}
+
+	if !strings.Contains(err.Err.Error(), "no route params in context") {
+		t.Errorf("expected no route params in context, got %v", err.Err)
+	}
+}
+
+func TestHandler_RenewKey_MissingRouteParam(t *testing.T) {
+	mockService := NewKeyServiceMock()
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("PATCH", "/keys/keyRef/renew", nil)
+	rr := httptest.NewRecorder()
+
+	err := handler.RenewKey(rr, req)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if err.Code != 500 {
+		t.Errorf("expected status 500, got %d", err.Code)
+	}
+
+	if !strings.Contains(err.Err.Error(), "no token in context") {
+		t.Errorf("expected no token in context, got %v", err.Err)
+	}
+}
+
+func TestService_RenewKey_ServiceError(t *testing.T) {
+	mockService := NewKeyServiceMock()
+	mockService.RenewKeyFunc = func(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
+		return nil, kmsErrors.NewAppError(nil, "service error", 500)
+	}
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("PATCH", "/keys/keyRef/renew", nil)
+	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
+		Payload: &auth.TokenPayload{
+			Sub: "1",
+		},
+	})
+	ctx_ := context.WithValue(ctx, httpctx.RouteParamsCtxKey, map[string]string{
+		"keyReference": "keyRef",
+	})
+	req = req.WithContext(ctx_)
+	rr := httptest.NewRecorder()
+
+	err := handler.RenewKey(rr, req)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if err.Code != 500 {
+		t.Errorf("expected status 500, got %d", err.Code)
+	}
+
+	if !strings.Contains(err.Message, "service error") {
+		t.Errorf("expected service error, got %v", err.Message)
 	}
 }
 

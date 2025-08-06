@@ -12,7 +12,7 @@ type GenerateKeyRequest struct {
 	KeyReference string `json:"keyReference"`
 }
 
-type KeyReponse struct {
+type KeyResponse struct {
 	DEK      string `json:"dek"`
 	Encoding string `json:"encoding"`
 }

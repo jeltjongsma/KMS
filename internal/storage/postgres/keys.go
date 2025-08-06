@@ -29,6 +29,14 @@ func (r *PostgresKeyRepo) GetKey(userId int, keyReference string) (*keys.Key, er
 	return &key, err
 }
 
+func (r *PostgresKeyRepo) UpdateKey(userId int, keyReference string, newKey string) (*keys.Key, error) {
+	query := "UPDATE keys SET dek = $1 WHERE userId = $2 AND keyReference = $3 RETURNING *"
+	var key keys.Key
+	err := r.db.QueryRow(query, newKey, userId, keyReference).
+		Scan(&key.ID, &key.KeyReference, &key.DEK, &key.UserId, &key.Encoding)
+	return &key, err
+}
+
 func (r *PostgresKeyRepo) GetAll() ([]keys.Key, error) {
 	query := "SELECT * FROM keys"
 	var allKeys []keys.Key

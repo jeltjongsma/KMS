@@ -27,6 +27,7 @@ func NewService(keyRepo KeyRepository, keyManager c.KeyManager, logger c.Logger)
 type KeyRepository interface {
 	CreateKey(key *Key) (*Key, error)
 	GetKey(id int, keyReference string) (*Key, error)
+	UpdateKey(id int, keyReference string, newKey string) (*Key, error)
 	GetAll() ([]Key, error)
 }
 
@@ -79,6 +80,9 @@ func validateKeyReference(keyReference string) error {
 }
 
 func (s *Service) GetKey(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
+	if err := validateKeyReference(keyReference); err != nil {
+		return nil, kmsErrors.NewAppError(err, "Invalid key reference", 400)
+	}
 	keyRefSecret, err := s.KeyManager.HashKey("keyReference")
 	if err != nil {
 		return nil, kmsErrors.NewInternalServerError(err)
@@ -91,6 +95,33 @@ func (s *Service) GetKey(userId int, keyReference string) (*Key, *kmsErrors.AppE
 	}
 
 	s.Logger.Info("Key retrieved", "keyId", key.ID, "userId", userId)
+
+	return key, nil
+}
+
+func (s *Service) RenewKey(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
+	if err := validateKeyReference(keyReference); err != nil {
+		return nil, kmsErrors.NewAppError(err, "Invalid key reference", 400)
+	}
+	DEKBytes, err := encryption.GenerateKey(32)
+	if err != nil {
+		return nil, kmsErrors.NewInternalServerError(err)
+	}
+
+	DEKB64 := b64.RawURLEncoding.EncodeToString(DEKBytes)
+
+	keyRefSecret, err := s.KeyManager.HashKey("keyReference")
+	if err != nil {
+		return nil, kmsErrors.NewInternalServerError(err)
+	}
+
+	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), keyRefSecret)
+	key, err := s.KeyRepo.UpdateKey(userId, hashedReference, DEKB64)
+	if err != nil {
+		return nil, kmsErrors.MapRepoErr(err)
+	}
+
+	s.Logger.Info("Key updated", "keyId", key.ID, "userId", userId)
 
 	return key, nil
 }

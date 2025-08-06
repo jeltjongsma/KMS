@@ -25,6 +25,7 @@ func NewHandler(keyService KeyService, logger c.Logger) *Handler {
 type KeyService interface {
 	CreateKey(userId int, keyReference string) (*Key, *kmsErrors.AppError)
 	GetKey(id int, keyReference string) (*Key, *kmsErrors.AppError)
+	RenewKey(userId int, keyReference string) (*Key, *kmsErrors.AppError)
 	GetAll() ([]Key, *kmsErrors.AppError)
 }
 
@@ -49,7 +50,7 @@ func (h *Handler) GenerateKey(w http.ResponseWriter, r *http.Request) *kmsErrors
 		return appErr
 	}
 
-	response := &KeyReponse{
+	response := &KeyResponse{
 		DEK:      key.DEK,
 		Encoding: key.Encoding,
 	}
@@ -78,7 +79,36 @@ func (h *Handler) GetKey(w http.ResponseWriter, r *http.Request) *kmsErrors.AppE
 		return appErr
 	}
 
-	response := &KeyReponse{
+	response := &KeyResponse{
+		DEK:      key.DEK,
+		Encoding: key.Encoding,
+	}
+
+	return pHttp.WriteJSON(w, response)
+}
+
+func (h *Handler) RenewKey(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
+	token, err := httpctx.ExtractToken(r.Context())
+	if err != nil {
+		return kmsErrors.NewInternalServerError(err)
+	}
+
+	userId, err := strconv.Atoi(token.Payload.Sub)
+	if err != nil {
+		return kmsErrors.NewInternalServerError(err)
+	}
+
+	keyReference, err := httpctx.GetRouteParam(r.Context(), "keyReference")
+	if err != nil {
+		return kmsErrors.NewInternalServerError(err)
+	}
+
+	key, appErr := h.Service.RenewKey(userId, keyReference)
+	if appErr != nil {
+		return appErr
+	}
+
+	response := &KeyResponse{
 		DEK:      key.DEK,
 		Encoding: key.Encoding,
 	}

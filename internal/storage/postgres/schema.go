@@ -71,6 +71,9 @@ func ensureMasterAdmin(cfg c.KmsConfig, db *sql.DB, keyManager c.KeyManager) err
 			return err
 		}
 		encryptedUsername, err := encryption.EncryptString(cfg["MASTER_ADMIN_USERNAME"], keyManager.DBKey())
+		if err != nil {
+			return err
+		}
 		usernameSecret, err := keyManager.HashKey("username")
 		if err != nil {
 			return err

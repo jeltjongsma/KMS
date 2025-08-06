@@ -47,6 +47,24 @@ func (r *EncryptedKeyRepo) GetKey(id int, keyReference string) (*keys.Key, error
 	return retKey, nil
 }
 
+func (r *EncryptedKeyRepo) UpdateKey(userId int, keyReference string, newKey string) (*keys.Key, error) {
+	encKey, err := EncryptBase64(newKey, r.KeyManager.KEK())
+	if err != nil {
+		return nil, err
+	}
+
+	stored, err := r.KeyRepo.UpdateKey(userId, keyReference, encKey)
+	if err != nil {
+		return nil, err
+	}
+
+	retKey := &keys.Key{}
+	if err := DecryptFields(retKey, stored, r.KeyManager); err != nil {
+		return nil, err
+	}
+	return retKey, nil
+}
+
 // Dev
 func (r *EncryptedKeyRepo) GetAll() ([]keys.Key, error) {
 	return r.KeyRepo.GetAll()

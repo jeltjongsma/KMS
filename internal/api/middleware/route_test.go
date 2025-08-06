@@ -59,28 +59,36 @@ func TestMatchPattern_Simple(t *testing.T) {
 	})
 
 	tests := []struct {
+		method   string
 		path     string
 		expected bool
+		err      string
 	}{
-		{"/test/123", true},
-		{"/test/abc", true},
-		{"/test/", false},
-		{"/other/123", false},
-		{"/test/123/extra", false},
-		{"/test/{id}", true}, // Router doesn't care about the actual value of {id}
+		{"GET", "/test/123", true, ""},
+		{"GET", "/test/abc", true, ""},
+		{"GET", "/test/", false, "lengths don't match"},
+		{"GET", "/other/123", false, "paths don't match"},
+		{"GET", "/test/123/extra", false, "lengths don't match"},
+		{"GET", "/test/{id}", true, ""}, // Router doesn't care about the actual value of {id}
+		{"POST", "/test/123", false, "method not allowed"},
+		{"POST", "/test/abc", false, "method not allowed"},
+		{"POST", "/test/", false, "lengths don't match"},
+		{"POST", "/other/123", false, "paths don't match"},
+		{"POST", "/test/123/extra", false, "lengths don't match"},
+		{"POST", "/test/{id}", false, "method not allowed"},
 	}
 
 	for _, tt := range tests {
-		req, err := http.NewRequest("GET", tt.path, nil)
+		req, err := http.NewRequest(tt.method, tt.path, nil)
 		if err != nil {
 			t.Fatalf("failed to create request: %v", err)
 		}
-		params, ok := matchPattern(route, req)
-		if ok != tt.expected {
-			t.Errorf("expected matchPattern(%s) to return %v, got %v", tt.path, tt.expected, ok)
+		params, err := matchPattern(route, req)
+		if (err == nil) != tt.expected {
+			t.Errorf("expected matchPattern(%s) to return %v, got %v", tt.path, tt.err, err)
 			continue
 		}
-		if ok && params["id"] == "" {
+		if (err == nil) && params["id"] == "" {
 			t.Errorf("expected 'id' parameter to be set for path %s", tt.path)
 		}
 	}
@@ -106,12 +114,12 @@ func TestMatchPattern_MultipleParams(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create request: %v", err)
 		}
-		params, ok := matchPattern(route, req)
-		if ok != tt.expected {
-			t.Errorf("expected matchPattern(%s) to return %v, got %v", tt.path, tt.expected, ok)
+		params, err := matchPattern(route, req)
+		if (err == nil) != tt.expected {
+			t.Errorf("expected matchPattern(%s) to return %v, got %v", tt.path, tt.expected, err)
 			continue
 		}
-		if ok && (params["id"] == "" || params["name"] == "") {
+		if (err == nil) && (params["id"] == "" || params["name"] == "") {
 			t.Error("expected 'id' and 'name' parameters to be set for path", tt.path)
 		}
 	}
@@ -125,8 +133,8 @@ func TestMatchPattern_WrongMethod(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create request: %v", err)
 	}
-	_, ok := matchPattern(route, req)
-	if ok != false {
-		t.Fatalf("expected matchPattern(%s) to return %v, got %v", "POST", false, ok)
+	_, err = matchPattern(route, req)
+	if err.Error() != "method not allowed" {
+		t.Fatalf("expected matchPattern(%s) to return method not allowed, got %v", "POST", err)
 	}
 }

@@ -51,13 +51,18 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 		[]*mw.Route{
 			mw.NewRoute(
 				"POST",
-				"/keys/generate",
+				"/keys/actions/generate",
 				withAuth(keyHandler.GenerateKey),
 			),
 			mw.NewRoute(
 				"GET",
 				"/keys/{keyReference}",
 				withAuth(keyHandler.GetKey),
+			),
+			mw.NewRoute(
+				"PATCH",
+				"/keys/{keyReference}/renew",
+				withAuth(keyHandler.RenewKey),
 			),
 		},
 	)))
