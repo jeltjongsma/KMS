@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"kms/internal/test"
 	kmsErrors "kms/pkg/errors"
+	pHttp "kms/pkg/http"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -51,6 +53,46 @@ func TestMakeRouter_NotFound(t *testing.T) {
 	if respErr.Code != http.StatusNotFound {
 		t.Errorf("expected status code 404, got: %d", respErr.Code)
 	}
+}
+
+func TestMakeRouter_MethodNotAllowed(t *testing.T) {
+	routes := []*Route{
+		NewRoute(
+			"POST",
+			"/test/abc", // static route
+			func(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
+				return pHttp.WriteJSON(w, map[string]string{
+					"msg": "static",
+				})
+			},
+		),
+		NewRoute(
+			"GET",
+			"/test/{id}", // dynamic route that matches "/test/abc"
+			func(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
+				return pHttp.WriteJSON(w, map[string]string{
+					"msg": "static",
+				})
+			},
+		),
+	}
+	router := MakeRouter(routes)
+
+	// make request for static route with wrong method
+	req, err := http.NewRequest("GET", "/test/abc", nil)
+	if err != nil {
+		t.Fatalf("failed to create request: %v", err)
+	}
+	rr := httptest.NewRecorder()
+	respErr := router(rr, req)
+	if respErr == nil {
+		t.Fatal("expected an error, got nil")
+	}
+	if respErr.Code != 405 {
+		t.Errorf("expected status code 405, got: %d", respErr.Code)
+	}
+	test.RequireContains(t, respErr.Message, "Method not allowed")
+
 }
 
 func TestMatchPattern_Simple(t *testing.T) {
