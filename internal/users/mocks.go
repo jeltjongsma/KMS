@@ -10,6 +10,7 @@ type UserRepositoryMock struct {
 	CreateUserFunc           func(user *User) (int, error)
 	GetUserFunc              func(id int) (*User, error)
 	GetAllFunc               func() ([]User, error)
+	DeleteFunc               func(userId int) error
 	FindByHashedUsernameFunc func(email string) (*User, error)
 	UpdateRoleFunc           func(id int, role string) error
 	GetRoleFunc              func(id int) (string, error)
@@ -38,6 +39,13 @@ func (m *UserRepositoryMock) GetAll() ([]User, error) {
 		return m.GetAllFunc()
 	}
 	return nil, errors.New("GetAllFunc not implemented in mock")
+}
+
+func (m *UserRepositoryMock) Delete(userId int) error {
+	if m.DeleteFunc != nil {
+		return m.DeleteFunc(userId)
+	}
+	return errors.New("DeleteFunc not implemented in mock")
 }
 
 func (m *UserRepositoryMock) FindByHashedUsername(email string) (*User, error) {

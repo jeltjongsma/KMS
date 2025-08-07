@@ -47,6 +47,15 @@ func (r *PostgresUserRepo) GetAll() ([]users.User, error) {
 	return allUsers, nil
 }
 
+func (r *PostgresUserRepo) Delete(userId int) error {
+	query := "DELETE FROM users WHERE id = $1"
+	_, err := r.db.Exec(query, userId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *PostgresUserRepo) FindByHashedUsername(email string) (*users.User, error) {
 	query := "SELECT * FROM users WHERE hashedUsername = $1"
 	var user users.User

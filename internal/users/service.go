@@ -21,6 +21,7 @@ type UserRepository interface {
 	CreateUser(user *User) (int, error)
 	GetUser(id int) (*User, error)
 	GetAll() ([]User, error)
+	Delete(userId int) error
 	FindByHashedUsername(email string) (*User, error)
 	UpdateRole(id int, role string) error
 	GetRole(id int) (string, error)

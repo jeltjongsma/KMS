@@ -100,11 +100,11 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 				"/users",
 				withAuth(adminOnly(adminHandler.GetUsers)),
 			),
-			// mw.NewRoute(
-			// 	"DELETE",
-			// 	"/users/{id}",
-			// 	withAuth(adminOnly(adminHandler.DeleteUser)),
-			// ),
+			mw.NewRoute(
+				"DELETE",
+				"/users/{id}",
+				withAuth(adminOnly(adminHandler.DeleteUser)),
+			),
 		},
 	)))
 

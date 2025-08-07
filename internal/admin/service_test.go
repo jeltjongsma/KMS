@@ -223,3 +223,39 @@ func TestService_GetUsers_RepoError(t *testing.T) {
 
 	test.RequireContains(t, err.Err.Error(), "repo error")
 }
+
+func TestService_DeleteUser_Success(t *testing.T) {
+	mockAdminRepo := NewAdminRepositoryMock()
+	mockUserRepo := users.NewUserRepositoryMock()
+	mockUserRepo.DeleteFunc = func(userId int) error {
+		return nil
+	}
+	mockKeyManager := mocks.NewKeyManagerMock()
+	mockLogger := mocks.NewLoggerMock()
+
+	service := NewService(mockAdminRepo, mockUserRepo, mockKeyManager, mockLogger)
+
+	if err := service.DeleteUser(1); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestService_DeleteUser_RepoError(t *testing.T) {
+	mockAdminRepo := NewAdminRepositoryMock()
+	mockUserRepo := users.NewUserRepositoryMock()
+	mockUserRepo.DeleteFunc = func(userId int) error {
+		return errors.New("repo error")
+	}
+	mockKeyManager := mocks.NewKeyManagerMock()
+	mockLogger := mocks.NewLoggerMock()
+
+	service := NewService(mockAdminRepo, mockUserRepo, mockKeyManager, mockLogger)
+
+	err := service.DeleteUser(1)
+
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	test.RequireContains(t, err.Err.Error(), "repo error")
+}

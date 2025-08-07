@@ -88,6 +88,14 @@ func (s *Service) GetUsers() ([]users.User, *kmsErrors.AppError) {
 	return users, nil
 }
 
+func (s *Service) DeleteUser(userId int) *kmsErrors.AppError {
+	if err := s.UserRepo.Delete(userId); err != nil {
+		return kmsErrors.MapRepoErr(err)
+	}
+
+	return nil
+}
+
 // Allow 0-9, a-Z and '-' in username
 func validateUsername(username string) error {
 	if len(username) < 4 || len(username) > 64 {

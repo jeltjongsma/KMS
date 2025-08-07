@@ -28,6 +28,7 @@ type AdminServiceMock struct {
 	MeFunc                  func(id int) (*users.User, *kmsErrors.AppError)
 	GenerateSignupTokenFunc func(body *GenerateSignupTokenRequest, adminId string) (string, *kmsErrors.AppError)
 	GetUsersFunc            func() ([]users.User, *kmsErrors.AppError)
+	DeleteUserFunc          func(userId int) *kmsErrors.AppError
 }
 
 func NewAdminServiceMock() *AdminServiceMock {
@@ -60,4 +61,11 @@ func (m *AdminServiceMock) GetUsers() ([]users.User, *kmsErrors.AppError) {
 		return m.GetUsersFunc()
 	}
 	return nil, kmsErrors.LiftToAppError(errors.New("GetUsersFunc not implemented in mock"))
+}
+
+func (m *AdminServiceMock) DeleteUser(userId int) *kmsErrors.AppError {
+	if m.DeleteUserFunc != nil {
+		return m.DeleteUserFunc(userId)
+	}
+	return kmsErrors.LiftToAppError(errors.New("DeleteUserFunc not implemented in mock"))
 }

@@ -29,6 +29,7 @@ type AdminService interface {
 	Me(userId int) (*users.User, *kmsErrors.AppError)
 	GenerateSignupToken(body *GenerateSignupTokenRequest, adminId string) (string, *kmsErrors.AppError)
 	GetUsers() ([]users.User, *kmsErrors.AppError)
+	DeleteUser(userId int) *kmsErrors.AppError
 }
 
 func (h *Handler) UpdateRole(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
@@ -120,4 +121,22 @@ func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) *kmsErrors.Ap
 	}
 
 	return pHttp.WriteJSON(w, users)
+}
+
+func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
+	userIdStr, err := httpctx.GetRouteParam(r.Context(), "id")
+	if err != nil {
+		return kmsErrors.NewInternalServerError(err)
+	}
+
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		return kmsErrors.NewAppError(err, "ID must be integer", 400)
+	}
+
+	if appErr := h.Service.DeleteUser(userId); appErr != nil {
+		return appErr
+	}
+
+	return pHttp.WriteStatus(w, 204)
 }

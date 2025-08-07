@@ -3,6 +3,7 @@ package integration
 import (
 	"fmt"
 	"kms/internal/test"
+	"strconv"
 	"testing"
 )
 
@@ -167,6 +168,48 @@ func TestGetUsers_NotAdmin(t *testing.T) {
 
 func TestGetUsers_MissingToken(t *testing.T) {
 	resp, err := doRequest("GET", "/users", "")
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireUnauthorized(t, resp)
+}
+
+func TestDeleteUser(t *testing.T) {
+	a, err := requireUser(appCtx, "users-deleteuser", "admin")
+	test.RequireErrNil(t, err)
+
+	u, err := requireUser(appCtx, "users-deleteuser-user", "user")
+	test.RequireErrNil(t, err)
+
+	token, err := requireJWT(appCtx, a)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("DELETE", "/users/"+strconv.Itoa(u.ID), "",
+		"Authorization", "Bearer "+token)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	_, err = appCtx.UserRepo.FindByHashedUsername(u.HashedUsername)
+	test.RequireErrNotNil(t, err)
+}
+
+func TestDeleteUser_NotAdmin(t *testing.T) {
+	u, err := requireUser(appCtx, "users-deleteuser-user", "user")
+	test.RequireErrNil(t, err)
+
+	token, err := requireJWT(appCtx, u)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("DELETE", "/users/"+strconv.Itoa(u.ID), "",
+		"Authorization", "Bearer "+token)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireForbidden(t, resp)
+}
+
+func TestDeleteUser_MissingToken(t *testing.T) {
+	resp, err := doRequest("DELETE", "/users/12", "")
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
 

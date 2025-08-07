@@ -194,6 +194,37 @@ func TestGetAllUsers_RepoError(t *testing.T) {
 	test.RequireContains(t, err.Error(), "repo error")
 }
 
+func TestDelete_Success(t *testing.T) {
+	keyManager := mocks.NewKeyManagerMock()
+	mockRepo := users.NewUserRepositoryMock()
+	mockRepo.DeleteFunc = func(x int) error {
+		return nil
+	}
+
+	repo := NewEncryptedUserRepo(mockRepo, keyManager)
+
+	if err := repo.Delete(1); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestDelete_RepoError(t *testing.T) {
+	keyManager := mocks.NewKeyManagerMock()
+	mockRepo := users.NewUserRepositoryMock()
+	mockRepo.DeleteFunc = func(x int) error {
+		return errors.New("repo error")
+	}
+
+	repo := NewEncryptedUserRepo(mockRepo, keyManager)
+
+	err := repo.Delete(1)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	test.RequireContains(t, err.Error(), "repo error")
+}
+
 func TestFindByHashedUsername_Success(t *testing.T) {
 	keyManager := mocks.NewKeyManagerMock()
 	dbKey, err := encryption.GenerateKey(32)

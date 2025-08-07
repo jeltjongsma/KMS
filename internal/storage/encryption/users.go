@@ -59,6 +59,10 @@ func (r *EncryptedUserRepo) GetAll() ([]users.User, error) {
 	return decUsers, nil
 }
 
+func (r *EncryptedUserRepo) Delete(userId int) error {
+	return r.UserRepo.Delete(userId)
+}
+
 func (r *EncryptedUserRepo) FindByHashedUsername(email string) (*users.User, error) {
 	user, err := r.UserRepo.FindByHashedUsername(email)
 	if err != nil {

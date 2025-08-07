@@ -363,3 +363,99 @@ func TestHandler_GetUsers_ServiceError(t *testing.T) {
 
 	test.RequireContains(t, err.Message, "service error")
 }
+
+func TestHandler_DeleteUser_Success(t *testing.T) {
+	mockService := NewAdminServiceMock()
+	mockService.DeleteUserFunc = func(userId int) *kmsErrors.AppError {
+		return nil
+	}
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("DELETE", "/users/2", nil)
+	ctx := context.WithValue(req.Context(), httpctx.RouteParamsCtxKey, map[string]string{"id": "2"})
+
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+
+	err := handler.DeleteUser(rr, req)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if rr.Result().StatusCode != 204 {
+		t.Errorf("expected status 204, got %d", rr.Result().StatusCode)
+	}
+}
+
+func TestHandler_DeleteUser_MissingRouteParam(t *testing.T) {
+	mockService := NewAdminServiceMock()
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("DELETE", "/users/2", nil)
+	rr := httptest.NewRecorder()
+
+	err := handler.DeleteUser(rr, req)
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	test.RequireContains(t, err.Err.Error(), "no route params in context")
+	if err.Code != 500 {
+		t.Errorf("expected status 500, got %d", rr.Result().StatusCode)
+	}
+}
+
+func TestHandler_DeleteUser_NonIntParam(t *testing.T) {
+	mockService := NewAdminServiceMock()
+	mockService.DeleteUserFunc = func(userId int) *kmsErrors.AppError {
+		return nil
+	}
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("DELETE", "/users/2", nil)
+	ctx := context.WithValue(req.Context(), httpctx.RouteParamsCtxKey, map[string]string{"id": "id"})
+
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+
+	err := handler.DeleteUser(rr, req)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	test.RequireContains(t, err.Err.Error(), "strconv.Atoi: parsing")
+	test.RequireContains(t, err.Message, "ID must be integer")
+	if err.Code != 400 {
+		t.Errorf("expected status 400, got %d", rr.Result().StatusCode)
+	}
+}
+
+func TestHandler_DeleteUser_ServiceError(t *testing.T) {
+	mockService := NewAdminServiceMock()
+	mockService.DeleteUserFunc = func(userId int) *kmsErrors.AppError {
+		return kmsErrors.NewAppError(nil, "service error", 500)
+	}
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("DELETE", "/users/2", nil)
+	ctx := context.WithValue(req.Context(), httpctx.RouteParamsCtxKey, map[string]string{"id": "2"})
+
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+
+	err := handler.DeleteUser(rr, req)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	test.RequireContains(t, err.Message, "service error")
+}
