@@ -129,3 +129,46 @@ func TestGenerateSignupToken_MissingBody(t *testing.T) {
 
 	requireBadRequest(t, resp)
 }
+
+func TestGetUsers(t *testing.T) {
+	a, err := requireUser(appCtx, "users-getusers", "admin")
+	test.RequireErrNil(t, err)
+
+	_, err = requireUser(appCtx, "users-getusers-user", "user")
+	test.RequireErrNil(t, err)
+
+	token, err := requireJWT(appCtx, a)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("GET", "/users", "",
+		"Authorization", "Bearer "+token)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	body := GetBody(resp)
+	test.RequireContains(t, body, `"username":"users-getusers-user"`)
+	test.RequireContains(t, body, `"username":"users-getusers"`)
+}
+
+func TestGetUsers_NotAdmin(t *testing.T) {
+	u, err := requireUser(appCtx, "users-getusers-notadmin", "user")
+	test.RequireErrNil(t, err)
+
+	token, err := requireJWT(appCtx, u)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("GET", "/users", "",
+		"Authorization", "Bearer "+token)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireForbidden(t, resp)
+}
+
+func TestGetUsers_MissingToken(t *testing.T) {
+	resp, err := doRequest("GET", "/users", "")
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireUnauthorized(t, resp)
+}

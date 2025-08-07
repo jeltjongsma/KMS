@@ -28,6 +28,7 @@ type AdminService interface {
 	UpdateRole(userId int, role string, adminId string) *kmsErrors.AppError
 	Me(userId int) (*users.User, *kmsErrors.AppError)
 	GenerateSignupToken(body *GenerateSignupTokenRequest, adminId string) (string, *kmsErrors.AppError)
+	GetUsers() ([]users.User, *kmsErrors.AppError)
 }
 
 func (h *Handler) UpdateRole(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
@@ -110,4 +111,13 @@ func (h *Handler) GenerateSignupToken(w http.ResponseWriter, r *http.Request) *k
 	}
 
 	return pHttp.WriteJSON(w, response)
+}
+
+func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
+	users, appErr := h.Service.GetUsers()
+	if appErr != nil {
+		return appErr
+	}
+
+	return pHttp.WriteJSON(w, users)
 }

@@ -131,12 +131,37 @@ func TestGetUser_RepoError(t *testing.T) {
 	test.RequireErrContains(t, err, "repo error")
 }
 
-func TestGetAllUsers(t *testing.T) {
+func TestGetAllUsers_Success(t *testing.T) {
 	keyManager := mocks.NewKeyManagerMock()
+	dbKey, err := encryption.GenerateKey(32)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	kek, err := encryption.GenerateKey(32)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	keyManager.DBKeyFunc = func() []byte {
+		return dbKey
+	}
+	keyManager.KEKFunc = func() []byte {
+		return kek
+	}
+	original := &users.User{
+		ID:             1,
+		Username:       "username",
+		HashedUsername: "hashedUsername",
+		Password:       "password",
+		Role:           "role",
+	}
+	var u users.User
+	err = EncryptFields(&u, original, keyManager)
+	test.RequireErrNil(t, err)
+
 	mockRepo := users.NewUserRepositoryMock()
 	mockRepo.GetAllFunc = func() ([]users.User, error) {
 		return []users.User{
-			{ID: 1, Username: "username"},
+			u,
 		}, nil
 	}
 
@@ -152,6 +177,21 @@ func TestGetAllUsers(t *testing.T) {
 	if retrieved[0].ID != 1 || retrieved[0].Username != "username" {
 		t.Errorf("expected ID=1 and username='username', got %v", retrieved[0])
 	}
+}
+
+func TestGetAllUsers_RepoError(t *testing.T) {
+	keyManager := mocks.NewKeyManagerMock()
+	mockRepo := users.NewUserRepositoryMock()
+	mockRepo.GetAllFunc = func() ([]users.User, error) {
+		return nil, errors.New("repo error")
+	}
+
+	repo := NewEncryptedUserRepo(mockRepo, keyManager)
+
+	_, err := repo.GetAll()
+	test.RequireErrNotNil(t, err)
+
+	test.RequireContains(t, err.Error(), "repo error")
 }
 
 func TestFindByHashedUsername_Success(t *testing.T) {

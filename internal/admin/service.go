@@ -79,6 +79,15 @@ func (s *Service) GenerateSignupToken(body *GenerateSignupTokenRequest, adminId 
 	return token, nil
 }
 
+func (s *Service) GetUsers() ([]users.User, *kmsErrors.AppError) {
+	users, err := s.UserRepo.GetAll()
+	if err != nil {
+		return nil, kmsErrors.MapRepoErr(err)
+	}
+
+	return users, nil
+}
+
 // Allow 0-9, a-Z and '-' in username
 func validateUsername(username string) error {
 	if len(username) < 4 || len(username) > 64 {

@@ -41,9 +41,22 @@ func (r *EncryptedUserRepo) GetUser(id int) (*users.User, error) {
 	return decUser, nil
 }
 
-// Dev
 func (r *EncryptedUserRepo) GetAll() ([]users.User, error) {
-	return r.UserRepo.GetAll()
+	stored, err := r.UserRepo.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	decUsers := make([]users.User, len(stored))
+	for idx, u := range stored {
+		decU := &users.User{}
+		if err := DecryptFields(decU, &u, r.KeyManager); err != nil {
+			return nil, err
+		}
+		decUsers[idx] = *decU
+	}
+
+	return decUsers, nil
 }
 
 func (r *EncryptedUserRepo) FindByHashedUsername(email string) (*users.User, error) {

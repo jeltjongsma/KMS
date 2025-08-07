@@ -7,7 +7,6 @@ import (
 	"kms/internal/bootstrap"
 	"kms/internal/httpctx"
 	"kms/internal/keys"
-	"kms/internal/users"
 	"net/http"
 	"strconv"
 )
@@ -34,8 +33,8 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 	adminService := admin.NewService(ctx.AdminRepo, ctx.UserRepo, ctx.KeyManager, ctx.Logger)
 	adminHandler := admin.NewHandler(adminService, ctx.Logger)
 
-	userService := users.NewService(ctx.UserRepo, ctx.Logger)
-	userHandler := users.NewHandler(userService, ctx.Logger)
+	// userService := users.NewService(ctx.UserRepo, ctx.Logger)
+	// userHandler := users.NewHandler(userService, ctx.Logger)
 
 	var withAuth = mw.Authorize(ctx.KeyManager.JWTKey())
 	var adminOnly = mw.RequireAdmin(ctx.UserRepo)
@@ -43,7 +42,7 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 
 	// Register routes for dev-only environment
 	if ctx.Cfg["ENV"] == "dev" {
-		http.Handle("/users", globalHandler(httpctx.AppHandler(userHandler.GetAllDev)))
+		// http.Handle("/users", globalHandler(httpctx.AppHandler(userHandler.GetAllDev)))
 		http.Handle("/keys", globalHandler(httpctx.AppHandler(keyHandler.GetAllDev)))
 	}
 
@@ -96,6 +95,16 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 				"/users/tokens/generate",
 				withAuth(adminOnly(adminHandler.GenerateSignupToken)),
 			),
+			mw.NewRoute(
+				"GET",
+				"/users",
+				withAuth(adminOnly(adminHandler.GetUsers)),
+			),
+			// mw.NewRoute(
+			// 	"DELETE",
+			// 	"/users/{id}",
+			// 	withAuth(adminOnly(adminHandler.DeleteUser)),
+			// ),
 		},
 	)))
 

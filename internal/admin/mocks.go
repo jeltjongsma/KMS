@@ -27,6 +27,7 @@ type AdminServiceMock struct {
 	UpdateRoleFunc          func(userId int, role string, adminId string) *kmsErrors.AppError
 	MeFunc                  func(id int) (*users.User, *kmsErrors.AppError)
 	GenerateSignupTokenFunc func(body *GenerateSignupTokenRequest, adminId string) (string, *kmsErrors.AppError)
+	GetUsersFunc            func() ([]users.User, *kmsErrors.AppError)
 }
 
 func NewAdminServiceMock() *AdminServiceMock {
@@ -52,4 +53,11 @@ func (m *AdminServiceMock) GenerateSignupToken(body *GenerateSignupTokenRequest,
 		return m.GenerateSignupTokenFunc(body, adminId)
 	}
 	return "", kmsErrors.LiftToAppError(errors.New("GenerateSignupTokenFunc not implemented in mock"))
+}
+
+func (m *AdminServiceMock) GetUsers() ([]users.User, *kmsErrors.AppError) {
+	if m.GetUsersFunc != nil {
+		return m.GetUsersFunc()
+	}
+	return nil, kmsErrors.LiftToAppError(errors.New("GetUsersFunc not implemented in mock"))
 }

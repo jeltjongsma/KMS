@@ -2,6 +2,7 @@ package admin
 
 import (
 	"errors"
+	"kms/internal/test"
 	"kms/internal/test/mocks"
 	"kms/internal/users"
 	"strings"
@@ -67,21 +68,6 @@ func TestService_UpdateRole_RepoUpdateRoleError(t *testing.T) {
 		t.Errorf("expected error code 500, got %d", err.Code)
 	}
 }
-
-// func TestService_UpdateRole_InvalidRole(t *testing.T) {
-// 	mockRepo := NewAdminRepositoryMock()
-// 	mockUserRepo := users.NewUserRepositoryMock()
-// 	mockLogger := mocks.NewLoggerMock()
-
-// 	service := NewService(mockRepo, mockUserRepo, nil, mockLogger)
-// 	err := service.UpdateRole(1, "invalid_role", "admin123")
-// 	if err == nil || !strings.Contains(err.Err.Error(), "Invalid role") {
-// 		t.Fatalf("expected invalid role error, got %v", err)
-// 	}
-// 	if err.Code != 400 {
-// 		t.Errorf("expected error code 400, got %d", err.Code)
-// 	}
-// }
 
 func TestService_Me_Success(t *testing.T) {
 	mockRepo := NewAdminRepositoryMock()
@@ -190,4 +176,50 @@ func TestService_validateUsername(t *testing.T) {
 			continue
 		}
 	}
+}
+
+func TestService_GetUsers_Success(t *testing.T) {
+	mockAdminRepo := NewAdminRepositoryMock()
+	mockUserRepo := users.NewUserRepositoryMock()
+	mockUserRepo.GetAllFunc = func() ([]users.User, error) {
+		return []users.User{
+			{ID: 1, Username: "username"},
+		}, nil
+	}
+	mockKeyManager := mocks.NewKeyManagerMock()
+	mockLogger := mocks.NewLoggerMock()
+
+	service := NewService(mockAdminRepo, mockUserRepo, mockKeyManager, mockLogger)
+
+	u, err := service.GetUsers()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(u) != 1 {
+		t.Errorf("expected length 1, got %d", len(u))
+	}
+
+	if u[0].ID != 1 || u[0].Username != "username" {
+		t.Errorf("expected ID=1 and Username='username', got %v", u[0])
+	}
+}
+
+func TestService_GetUsers_RepoError(t *testing.T) {
+	mockAdminRepo := NewAdminRepositoryMock()
+	mockUserRepo := users.NewUserRepositoryMock()
+	mockUserRepo.GetAllFunc = func() ([]users.User, error) {
+		return nil, errors.New("repo error")
+	}
+	mockKeyManager := mocks.NewKeyManagerMock()
+	mockLogger := mocks.NewLoggerMock()
+
+	service := NewService(mockAdminRepo, mockUserRepo, mockKeyManager, mockLogger)
+
+	_, err := service.GetUsers()
+	if err == nil {
+		t.Fatal("expected repo error, got nil")
+	}
+
+	test.RequireContains(t, err.Err.Error(), "repo error")
 }

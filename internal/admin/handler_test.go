@@ -4,7 +4,9 @@ import (
 	"context"
 	"kms/internal/auth"
 	"kms/internal/httpctx"
+	"kms/internal/test"
 	"kms/internal/test/mocks"
+	"kms/internal/users"
 	kmsErrors "kms/pkg/errors"
 	"net/http"
 	"net/http/httptest"
@@ -316,4 +318,48 @@ func TestHandler_GenerateSignupToken_ServiceError(t *testing.T) {
 	if err.Code != 500 {
 		t.Errorf("handler returned wrong status code: got %v want %v", err.Code, 500)
 	}
+}
+
+func TestHandler_GetUsers_Success(t *testing.T) {
+	u := []users.User{
+		{
+			ID:       1,
+			Username: "username",
+		},
+	}
+	mockService := NewAdminServiceMock()
+	mockService.GetUsersFunc = func() ([]users.User, *kmsErrors.AppError) {
+		return u, nil
+	}
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("GET", "/users", nil)
+	rr := httptest.NewRecorder()
+
+	if err := handler.GetUsers(rr, req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	test.RequireContains(t, rr.Body.String(), `"id":1,"username":"username"`)
+}
+
+func TestHandler_GetUsers_ServiceError(t *testing.T) {
+	mockService := NewAdminServiceMock()
+	mockService.GetUsersFunc = func() ([]users.User, *kmsErrors.AppError) {
+		return nil, kmsErrors.NewAppError(nil, "service error", 500)
+	}
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("GET", "/users", nil)
+	rr := httptest.NewRecorder()
+
+	err := handler.GetUsers(rr, req)
+
+	if err == nil {
+		t.Fatal("expected service error")
+	}
+
+	test.RequireContains(t, err.Message, "service error")
 }
