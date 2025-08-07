@@ -119,10 +119,12 @@ func TestMethodNotAllowed(t *testing.T) {
 		{"/keys/actions/generate", []string{"POST"}},
 		{"/keys/keyRef", []string{"GET"}},
 		{"/keys/keyRef/actions/renew", []string{"PATCH"}},
+		{"/keys/keyRef/actions/delete", []string{"DELETE"}},
 		{"/auth/signup", []string{"POST"}},
 		{"/auth/login", []string{"POST"}},
 		{"/users/12/role", []string{"POST"}},
 		{"/users/tokens/generate", []string{"POST"}},
+		{"/users/12", []string{"DELETE"}},
 	}
 
 	for _, tt := range tests {
