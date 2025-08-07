@@ -26,8 +26,9 @@ func NewService(keyRepo KeyRepository, keyManager c.KeyManager, logger c.Logger)
 
 type KeyRepository interface {
 	CreateKey(key *Key) (*Key, error)
-	GetKey(id int, keyReference string) (*Key, error)
-	UpdateKey(id int, keyReference string, newKey string) (*Key, error)
+	GetKey(userId int, keyReference string) (*Key, error)
+	UpdateKey(userId int, keyReference string, newKey string) (*Key, error)
+	Delete(userId int, keyReference string) (int, error)
 	GetAll() ([]Key, error)
 }
 
@@ -124,6 +125,27 @@ func (s *Service) RenewKey(userId int, keyReference string) (*Key, *kmsErrors.Ap
 	s.Logger.Info("Key updated", "keyId", key.ID, "userId", userId)
 
 	return key, nil
+}
+
+func (s *Service) DeleteKey(userId int, keyReference string) *kmsErrors.AppError {
+	if err := validateKeyReference(keyReference); err != nil {
+		return kmsErrors.NewAppError(err, "Invalid key reference", 400)
+	}
+
+	keyRefSecret, err := s.KeyManager.HashKey("keyReference")
+	if err != nil {
+		return kmsErrors.NewInternalServerError(err)
+	}
+
+	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), keyRefSecret)
+	keyId, err := s.KeyRepo.Delete(userId, hashedReference)
+	if err != nil {
+		return kmsErrors.MapRepoErr(err)
+	}
+
+	s.Logger.Info("Key deleted", "keyId", keyId, "userId", userId)
+
+	return nil
 }
 
 func (s *Service) GetAll() ([]Key, *kmsErrors.AppError) {

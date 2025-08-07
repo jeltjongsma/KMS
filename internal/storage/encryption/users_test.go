@@ -194,7 +194,7 @@ func TestGetAllUsers_RepoError(t *testing.T) {
 	test.RequireContains(t, err.Error(), "repo error")
 }
 
-func TestDelete_Success(t *testing.T) {
+func TestDeleteUser_Success(t *testing.T) {
 	keyManager := mocks.NewKeyManagerMock()
 	mockRepo := users.NewUserRepositoryMock()
 	mockRepo.DeleteFunc = func(x int) error {
@@ -208,7 +208,7 @@ func TestDelete_Success(t *testing.T) {
 	}
 }
 
-func TestDelete_RepoError(t *testing.T) {
+func TestDeleteUser_RepoError(t *testing.T) {
 	keyManager := mocks.NewKeyManagerMock()
 	mockRepo := users.NewUserRepositoryMock()
 	mockRepo.DeleteFunc = func(x int) error {

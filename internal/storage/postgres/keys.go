@@ -37,6 +37,13 @@ func (r *PostgresKeyRepo) UpdateKey(userId int, keyReference string, newKey stri
 	return &key, err
 }
 
+func (r *PostgresKeyRepo) Delete(userId int, keyReference string) (int, error) {
+	query := "DELETE FROM keys WHERE userId = $1 AND keyReference = $2 RETURNING id"
+	var keyId int
+	err := r.db.QueryRow(query, userId, keyReference).Scan(&keyId)
+	return keyId, err
+}
+
 func (r *PostgresKeyRepo) GetAll() ([]keys.Key, error) {
 	query := "SELECT * FROM keys"
 	var allKeys []keys.Key

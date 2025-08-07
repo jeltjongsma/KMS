@@ -24,8 +24,9 @@ func NewHandler(keyService KeyService, logger c.Logger) *Handler {
 
 type KeyService interface {
 	CreateKey(userId int, keyReference string) (*Key, *kmsErrors.AppError)
-	GetKey(id int, keyReference string) (*Key, *kmsErrors.AppError)
+	GetKey(userId int, keyReference string) (*Key, *kmsErrors.AppError)
 	RenewKey(userId int, keyReference string) (*Key, *kmsErrors.AppError)
+	DeleteKey(userId int, keyReference string) *kmsErrors.AppError
 	GetAll() ([]Key, *kmsErrors.AppError)
 }
 
@@ -114,6 +115,29 @@ func (h *Handler) RenewKey(w http.ResponseWriter, r *http.Request) *kmsErrors.Ap
 	}
 
 	return pHttp.WriteJSON(w, response)
+}
+
+func (h *Handler) DeleteKey(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
+	token, err := httpctx.ExtractToken(r.Context())
+	if err != nil {
+		return kmsErrors.NewInternalServerError(err)
+	}
+
+	userId, err := strconv.Atoi(token.Payload.Sub)
+	if err != nil {
+		return kmsErrors.NewInternalServerError(err)
+	}
+
+	keyReference, err := httpctx.GetRouteParam(r.Context(), "keyReference")
+	if err != nil {
+		return kmsErrors.NewInternalServerError(err)
+	}
+
+	if appErr := h.Service.DeleteKey(userId, keyReference); appErr != nil {
+		return appErr
+	}
+
+	return pHttp.WriteStatus(w, 204)
 }
 
 func (h *Handler) GetAllDev(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {

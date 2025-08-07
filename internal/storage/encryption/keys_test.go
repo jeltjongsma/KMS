@@ -225,6 +225,35 @@ func TestUpdateKey_RepoError(t *testing.T) {
 	test.RequireContains(t, err.Error(), "repo error")
 }
 
+func TestDeleteKey_Success(t *testing.T) {
+	mockRepo := keys.NewKeyRepositoryMock()
+	mockRepo.DeleteFunc = func(x int, y string) (int, error) {
+		return 1, nil
+	}
+	mockKeyManager := mocks.NewKeyManagerMock()
+
+	repo := NewEncryptedKeyRepo(mockRepo, mockKeyManager)
+	keyId, err := repo.Delete(12, "keyRef")
+
+	test.RequireErrNil(t, err)
+	if keyId != 1 {
+		t.Errorf("expected keyId=1, got %d", keyId)
+	}
+}
+
+func TestDeleteKey_RepoError(t *testing.T) {
+	mockRepo := keys.NewKeyRepositoryMock()
+	mockRepo.DeleteFunc = func(x int, y string) (int, error) {
+		return 1, errors.New("repo error")
+	}
+	mockKeyManager := mocks.NewKeyManagerMock()
+
+	repo := NewEncryptedKeyRepo(mockRepo, mockKeyManager)
+	_, err := repo.Delete(12, "keyRef")
+
+	test.RequireErrNotNil(t, err)
+}
+
 func TestGetAllKeys(t *testing.T) {
 	keyManager := mocks.NewKeyManagerMock()
 	stored := []keys.Key{

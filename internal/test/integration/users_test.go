@@ -191,6 +191,7 @@ func TestDeleteUser(t *testing.T) {
 
 	_, err = appCtx.UserRepo.FindByHashedUsername(u.HashedUsername)
 	test.RequireErrNotNil(t, err)
+	test.RequireContains(t, err.Error(), "no rows")
 }
 
 func TestDeleteUser_NotAdmin(t *testing.T) {
@@ -209,9 +210,15 @@ func TestDeleteUser_NotAdmin(t *testing.T) {
 }
 
 func TestDeleteUser_MissingToken(t *testing.T) {
+	u, err := requireUser(appCtx, "users-deleteuser-user-missingtoken", "user")
+	test.RequireErrNil(t, err)
+
 	resp, err := doRequest("DELETE", "/users/12", "")
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
 
 	requireUnauthorized(t, resp)
+
+	_, err = appCtx.UserRepo.FindByHashedUsername(u.HashedUsername)
+	test.RequireErrNil(t, err)
 }

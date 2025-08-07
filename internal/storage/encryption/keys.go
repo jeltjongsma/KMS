@@ -65,6 +65,10 @@ func (r *EncryptedKeyRepo) UpdateKey(userId int, keyReference string, newKey str
 	return retKey, nil
 }
 
+func (r *EncryptedKeyRepo) Delete(userId int, keyReference string) (int, error) {
+	return r.KeyRepo.Delete(userId, keyReference)
+}
+
 // Dev
 func (r *EncryptedKeyRepo) GetAll() ([]keys.Key, error) {
 	return r.KeyRepo.GetAll()

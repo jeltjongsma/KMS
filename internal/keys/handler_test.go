@@ -4,6 +4,7 @@ import (
 	"context"
 	"kms/internal/auth"
 	"kms/internal/httpctx"
+	"kms/internal/test"
 	"kms/internal/test/mocks"
 	kmsErrors "kms/pkg/errors"
 	"net/http/httptest"
@@ -395,6 +396,140 @@ func TestService_RenewKey_ServiceError(t *testing.T) {
 	if !strings.Contains(err.Message, "service error") {
 		t.Errorf("expected service error, got %v", err.Message)
 	}
+}
+
+func TestHandler_DeleteKey_Success(t *testing.T) {
+	mockService := NewKeyServiceMock()
+	mockService.DeleteKeyFunc = func(userId int, keyReference string) *kmsErrors.AppError {
+		return nil
+	}
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("DELETE", "/keys/keyRef/actions/delete", nil)
+	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
+		Payload: &auth.TokenPayload{
+			Sub: "1",
+		},
+	})
+	ctx_ := context.WithValue(ctx, httpctx.RouteParamsCtxKey, map[string]string{
+		"keyReference": "keyRef",
+	})
+	req = req.WithContext(ctx_)
+	rr := httptest.NewRecorder()
+
+	err := handler.DeleteKey(rr, req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if rr.Result().StatusCode != 204 {
+		t.Errorf("expected status 204, got %d", rr.Result().StatusCode)
+	}
+}
+
+func TestHandler_DeleteKey_MissingToken(t *testing.T) {
+	mockService := NewKeyServiceMock()
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("DELETE", "/keys/keyRef/actions/delete", nil)
+	rr := httptest.NewRecorder()
+
+	err := handler.DeleteKey(rr, req)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if err.Code != 500 {
+		t.Errorf("expected status 500, got %d", err.Code)
+	}
+
+	test.RequireContains(t, err.Err.Error(), "no token in context")
+}
+
+func TestHandler_DeleteKey_InvalidToken(t *testing.T) {
+	mockService := NewKeyServiceMock()
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("DELETE", "/keys/keyRef/actions/delete", nil)
+	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
+		Payload: &auth.TokenPayload{
+			Sub: "sub",
+		},
+	})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	err := handler.DeleteKey(rr, req)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if err.Code != 500 {
+		t.Errorf("expected status 500, got %d", err.Code)
+	}
+
+	test.RequireContains(t, err.Err.Error(), "strconv.Atoi: parsing")
+}
+
+func TestHandler_DeleteKey_MissingRouteParam(t *testing.T) {
+	mockService := NewKeyServiceMock()
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("DELETE", "/keys/keyRef/actions/delete", nil)
+	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
+		Payload: &auth.TokenPayload{
+			Sub: "1",
+		},
+	})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	err := handler.DeleteKey(rr, req)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if err.Code != 500 {
+		t.Errorf("expected status 500, got %d", err.Code)
+	}
+
+	test.RequireContains(t, err.Err.Error(), "no route params in context")
+}
+
+func TestHandler_DeleteKey_ServiceError(t *testing.T) {
+	mockService := NewKeyServiceMock()
+	mockService.DeleteKeyFunc = func(userId int, keyReference string) *kmsErrors.AppError {
+		return kmsErrors.NewAppError(nil, "service error", 500)
+	}
+	mockLogger := mocks.NewLoggerMock()
+	handler := NewHandler(mockService, mockLogger)
+
+	req := httptest.NewRequest("DELETE", "/keys/keyRef/actions/delete", nil)
+	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
+		Payload: &auth.TokenPayload{
+			Sub: "1",
+		},
+	})
+	ctx_ := context.WithValue(ctx, httpctx.RouteParamsCtxKey, map[string]string{
+		"keyReference": "keyRef",
+	})
+	req = req.WithContext(ctx_)
+	rr := httptest.NewRecorder()
+
+	err := handler.DeleteKey(rr, req)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if err.Code != 500 {
+		t.Errorf("expected status 500, got %d", err.Code)
+	}
+
+	test.RequireContains(t, err.Message, "service error")
 }
 
 func TestHandler_GetAllDev_Success(t *testing.T) {

@@ -174,7 +174,7 @@ func TestRenewKey(t *testing.T) {
 	token, err := requireJWT(appCtx, u)
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("PATCH", "/keys/"+keyRef+"/renew", "",
+	resp, err := doRequest("PATCH", "/keys/"+keyRef+"/actions/renew", "",
 		"Authorization", "Bearer "+token)
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
@@ -206,7 +206,7 @@ func TestRenewKey(t *testing.T) {
 }
 
 func TestRenewKey_MissingToken(t *testing.T) {
-	resp, err := doRequest("PATCH", "/keys/keyRef/renew", "")
+	resp, err := doRequest("PATCH", "/keys/keyRef/actions/renew", "")
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
 
@@ -221,7 +221,66 @@ func TestRenewKey_InvalidKeyReference(t *testing.T) {
 	token, err := requireJWT(appCtx, u)
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("PATCH", "/keys/invalid+reference/renew", "",
+	resp, err := doRequest("PATCH", "/keys/invalid+reference/actions/renew", "",
+		"Authorization", "Bearer "+token)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireStatusCode(t, resp.StatusCode, 400)
+	test.RequireContains(t, GetBody(resp), "Invalid key reference")
+}
+
+func TestDeleteKey(t *testing.T) {
+	u, err := requireUser(appCtx, "keys-delete", "user")
+	test.RequireErrNil(t, err)
+
+	keyRef := "db-key"
+	key, err := requireKey(appCtx, u.ID, keyRef)
+	test.RequireErrNil(t, err)
+
+	token, err := requireJWT(appCtx, u)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("DELETE", "/keys/"+keyRef+"/actions/delete", "",
+		"Authorization", "Bearer "+token)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireStatusCode(t, resp.StatusCode, 204)
+
+	// check if key is actually deleted
+	_, err = appCtx.KeyRepo.GetKey(u.ID, key.KeyReference)
+	test.RequireErrNotNil(t, err)
+	test.RequireContains(t, err.Error(), "no rows")
+}
+
+func TestDeleteKey_MissingToken(t *testing.T) {
+	u, err := requireUser(appCtx, "keys-delete-missingtoken", "user")
+	test.RequireErrNil(t, err)
+
+	keyRef := "db-key"
+	key, err := requireKey(appCtx, u.ID, keyRef)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("DELETE", "/keys/"+keyRef+"/actions/delete", "")
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireUnauthorized(t, resp)
+
+	// check if key wasn't deleted regardless
+	_, err = appCtx.KeyRepo.GetKey(u.ID, key.KeyReference)
+	test.RequireErrNil(t, err)
+}
+
+func TestDeleteKey_InvalidReference(t *testing.T) {
+	u, err := requireUser(appCtx, "keys-delete-invalidref", "user")
+	test.RequireErrNil(t, err)
+
+	token, err := requireJWT(appCtx, u)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("DELETE", "/keys/invalid+ref/actions/delete", "",
 		"Authorization", "Bearer "+token)
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()

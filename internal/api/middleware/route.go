@@ -46,6 +46,7 @@ func MakeRouter(routes []*Route) httpctx.AppHandler {
 }
 
 // FIXME: Allows GET "/keys/generate" (POST-only path) to fall through to GET "/keys/{keyReference}"
+// FIXME: Returns 405 if two endpoints share path, but different method
 func matchPattern(route *Route, r *http.Request) (map[string]string, error) {
 	methodMatch := true
 	if r.Method != route.Method {

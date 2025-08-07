@@ -2,6 +2,7 @@ package keys
 
 import (
 	"errors"
+	"kms/internal/test"
 	"kms/internal/test/mocks"
 	"kms/pkg/hashing"
 	"strings"
@@ -230,6 +231,89 @@ func TestService_RenewKey_RepoError(t *testing.T) {
 	if appErr.Err.Error() != "repo error" {
 		t.Errorf("expected repo error, got %v", appErr.Err)
 	}
+}
+
+func TestService_DeleteKey_Success(t *testing.T) {
+	mockRepo := NewKeyRepositoryMock()
+	mockRepo.DeleteFunc = func(userId int, keyRef string) (int, error) {
+		return 1, nil
+	}
+	mockLogger := mocks.NewLoggerMock()
+	refKey := []byte("keyRefHashKey")
+	mockKeyManager := mocks.NewKeyManagerMock()
+	mockKeyManager.HashKeyFunc = func(ref string) ([]byte, error) {
+		return refKey, nil
+	}
+
+	service := NewService(mockRepo, mockKeyManager, mockLogger)
+
+	appErr := service.DeleteKey(1, "keyRef")
+	if appErr != nil {
+		t.Fatalf("unexpected error: %v", appErr)
+	}
+}
+
+func TestService_DeleteKey_InvalidKeyReference(t *testing.T) {
+	mockRepo := NewKeyRepositoryMock()
+	mockLogger := mocks.NewLoggerMock()
+	mockKeyManager := mocks.NewKeyManagerMock()
+
+	service := NewService(mockRepo, mockKeyManager, mockLogger)
+
+	appErr := service.DeleteKey(1, "invalid+keyRef")
+	if appErr == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	if appErr.Code != 400 {
+		t.Errorf("expected status 400, got %d", appErr.Code)
+	}
+	if appErr.Message != "Invalid key reference" {
+		t.Errorf("expected 'Invalid key reference', got %s", appErr.Message)
+	}
+}
+
+func TestService_DeleteKey_MissingHashKey(t *testing.T) {
+	mockRepo := NewKeyRepositoryMock()
+	mockRepo.DeleteFunc = func(userId int, keyRef string) (int, error) {
+		return 1, nil
+	}
+	mockLogger := mocks.NewLoggerMock()
+	mockKeyManager := mocks.NewKeyManagerMock()
+	mockKeyManager.HashKeyFunc = func(ref string) ([]byte, error) {
+		return nil, errors.New("keymanager error")
+	}
+
+	service := NewService(mockRepo, mockKeyManager, mockLogger)
+
+	appErr := service.DeleteKey(1, "keyRef")
+
+	if appErr == nil {
+		t.Fatal("expected error, got nil")
+	}
+	test.RequireContains(t, appErr.Err.Error(), "keymanager error")
+}
+
+func TestService_DeleteKey_RepoError(t *testing.T) {
+	mockRepo := NewKeyRepositoryMock()
+	mockRepo.DeleteFunc = func(userId int, keyRef string) (int, error) {
+		return 1, errors.New("repo error")
+	}
+	mockLogger := mocks.NewLoggerMock()
+	refKey := []byte("keyRefHashKey")
+	mockKeyManager := mocks.NewKeyManagerMock()
+	mockKeyManager.HashKeyFunc = func(ref string) ([]byte, error) {
+		return refKey, nil
+	}
+
+	service := NewService(mockRepo, mockKeyManager, mockLogger)
+
+	appErr := service.DeleteKey(1, "keyRef")
+
+	if appErr == nil {
+		t.Fatal("expected error, got nil")
+	}
+	test.RequireContains(t, appErr.Err.Error(), "repo error")
 }
 
 func TestService_GetAll_Success(t *testing.T) {

@@ -59,8 +59,13 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 				withAuth(keyHandler.GetKey),
 			),
 			mw.NewRoute(
+				"DELETE",
+				"/keys/{keyReference}/actions/delete",
+				withAuth(keyHandler.DeleteKey),
+			),
+			mw.NewRoute(
 				"PATCH",
-				"/keys/{keyReference}/renew",
+				"/keys/{keyReference}/actions/renew",
 				withAuth(keyHandler.RenewKey),
 			),
 		},
