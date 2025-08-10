@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"flag"
 	"kms/internal/api"
 	"kms/internal/bootstrap"
 	dbEncr "kms/internal/storage/encryption"
@@ -17,6 +18,12 @@ var server *httptest.Server
 var appCtx *bootstrap.AppContext
 
 func TestMain(m *testing.M) {
+	flag.Parse()
+	// don't run integration tests when short flag is set
+	if testing.Short() {
+		os.Exit(0)
+	}
+
 	http.DefaultServeMux = http.NewServeMux()
 
 	cfg, err := bootstrap.LoadConfig("../../../.env")
