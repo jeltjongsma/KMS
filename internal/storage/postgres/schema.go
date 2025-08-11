@@ -56,7 +56,7 @@ func dropTable(db *sql.DB, name string) error {
 func ensureMasterAdmin(cfg c.KmsConfig, db *sql.DB, keyManager c.KeyManager) error {
 	var count int
 	// FIXME: Will always fail
-	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE role = 'admin'").Scan(&count)
+	err := db.QueryRow("SELECT COUNT(*) FROM clients WHERE role = 'admin'").Scan(&count)
 	if err != nil {
 		return err
 	}
@@ -70,18 +70,18 @@ func ensureMasterAdmin(cfg c.KmsConfig, db *sql.DB, keyManager c.KeyManager) err
 		if err != nil {
 			return err
 		}
-		encryptedUsername, err := encryption.EncryptString(cfg["MASTER_ADMIN_USERNAME"], keyManager.DBKey())
+		encryptedClientname, err := encryption.EncryptString(cfg["MASTER_ADMIN_USERNAME"], keyManager.DBKey())
 		if err != nil {
 			return err
 		}
-		usernameSecret, err := keyManager.HashKey("username")
+		clientnameSecret, err := keyManager.HashKey("clientname")
 		if err != nil {
 			return err
 		}
 		_, err = db.Exec(
-			"INSERT INTO users (username, hashedUsername, password, role) VALUES ($1, $2, $3, $4)",
-			encryptedUsername,
-			hashing.HashHS256ToB64([]byte(cfg["MASTER_ADMIN_USERNAME"]), usernameSecret),
+			"INSERT INTO clients (clientname, hashedClientname, password, role) VALUES ($1, $2, $3, $4)",
+			encryptedClientname,
+			hashing.HashHS256ToB64([]byte(cfg["MASTER_ADMIN_USERNAME"]), clientnameSecret),
 			hashedPw,
 			encryptedAdmin,
 		)

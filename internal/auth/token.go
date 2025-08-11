@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	b64 "encoding/base64"
 	"encoding/json"
-	"kms/internal/users"
+	"kms/internal/clients"
 	kmsErrors "kms/pkg/errors"
 	"kms/pkg/hashing"
 	"strconv"
@@ -35,14 +35,14 @@ type TokenGenInfo struct {
 	Typ    string
 }
 
-func GenerateJWT(genInfo *TokenGenInfo, user *users.User) (string, error) {
+func GenerateJWT(genInfo *TokenGenInfo, client *clients.Client) (string, error) {
 	header := TokenHeader{
 		Ver: "1",
 		Typ: genInfo.Typ,
 	}
 
 	payload := TokenPayload{
-		Sub: strconv.Itoa(user.ID),
+		Sub: strconv.Itoa(client.ID),
 		Ttl: genInfo.Ttl,
 		Iat: time.Now().UnixMilli(),
 	}
@@ -55,14 +55,14 @@ func GenerateJWT(genInfo *TokenGenInfo, user *users.User) (string, error) {
 	return GenerateToken(&token, genInfo.Secret)
 }
 
-func GenerateSignupToken(genInfo *TokenGenInfo, username string) (string, error) {
+func GenerateSignupToken(genInfo *TokenGenInfo, clientname string) (string, error) {
 	header := TokenHeader{
 		Ver: "1",
 		Typ: genInfo.Typ,
 	}
 
 	payload := TokenPayload{
-		Sub: username,
+		Sub: clientname,
 		Ttl: genInfo.Ttl,
 		Iat: time.Now().UnixMilli(),
 	}

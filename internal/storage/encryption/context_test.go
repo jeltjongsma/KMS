@@ -51,13 +51,13 @@ func TestBase64_Encrypt_NonB64Error(t *testing.T) {
 }
 
 type Foo struct {
-	User string `encrypt:"true"`
-	Id   int
-	Ref  string `encoded:"true" encrypt:"true"`
+	Client string `encrypt:"true"`
+	Id     int
+	Ref    string `encoded:"true" encrypt:"true"`
 }
 
 func (f *Foo) Equals(fc *Foo) bool {
-	return f.Id == fc.Id && f.User == fc.User && f.Ref == fc.Ref
+	return f.Id == fc.Id && f.Client == fc.Client && f.Ref == fc.Ref
 }
 
 func TestFields_Roundtrip_Success(t *testing.T) {
@@ -79,9 +79,9 @@ func TestFields_Roundtrip_Success(t *testing.T) {
 	}
 
 	original := &Foo{
-		User: "User",
-		Id:   1,
-		Ref:  "cmVmZXJlbmNl", // "Reference" in base64
+		Client: "Client",
+		Id:     1,
+		Ref:    "cmVmZXJlbmNl", // "Reference" in base64
 	}
 	enc := &Foo{}
 
@@ -96,8 +96,8 @@ func TestFields_Roundtrip_Success(t *testing.T) {
 	}
 
 	// Check if other fields are actually encrypted
-	if enc.User == original.User || enc.Ref == original.Ref {
-		t.Errorf("expected user and reference to be different, got user: %v, ref: %v", enc.User, enc.Ref)
+	if enc.Client == original.Client || enc.Ref == original.Ref {
+		t.Errorf("expected client and reference to be different, got client: %v, ref: %v", enc.Client, enc.Ref)
 	}
 
 	dec := &Foo{}
@@ -143,17 +143,17 @@ func TestEncryptFields_InvalidInput(t *testing.T) {
 		{"*interface{}", new(interface{}), new(interface{}), "src and dst must point to structs"},
 		{"**Foo", new(*Foo), new(*Foo), "src and dst must point to structs"},
 		{"different structs", &Foo{}, &struct{}{}, "src and dst must be the same struct type"},
-		{"unable to set field", &struct{ user string }{}, &struct{ user string }{user: "user"}, "Unable to set field"},
+		{"unable to set field", &struct{ client string }{}, &struct{ client string }{client: "client"}, "Unable to set field"},
 		{"non-string", &struct {
 			ID int `encrypt:"true"`
 		}{}, &struct {
 			ID int `encrypt:"true"`
 		}{ID: 1}, "Field marked for encryption but is not a string"},
 		{"invalid base64", &struct {
-			User string `encrypt:"true" encoded:"true"`
+			Client string `encrypt:"true" encoded:"true"`
 		}{}, &struct {
-			User string `encrypt:"true" encoded:"true"`
-		}{User: "not+base64"}, "Failed to decode field"},
+			Client string `encrypt:"true" encoded:"true"`
+		}{Client: "not+base64"}, "Failed to decode field"},
 	}
 
 	for _, tt := range tests {
@@ -204,17 +204,17 @@ func TestDecryptFields_InvalidInput(t *testing.T) {
 		{"*interface{}", new(interface{}), new(interface{}), "src and dst must point to structs"},
 		{"**Foo", new(*Foo), new(*Foo), "src and dst must point to structs"},
 		{"different structs", &Foo{}, &struct{}{}, "src and dst must be the same struct type"},
-		{"unable to set field", &struct{ user string }{}, &struct{ user string }{user: "user"}, "Unable to set field"},
+		{"unable to set field", &struct{ client string }{}, &struct{ client string }{client: "client"}, "Unable to set field"},
 		{"non-string", &struct {
 			ID int `encrypt:"true"`
 		}{}, &struct {
 			ID int `encrypt:"true"`
 		}{ID: 1}, "Field marked for decryption but is not a string"},
 		{"invalid base64", &struct {
-			User string `encrypt:"true" encoded:"true"`
+			Client string `encrypt:"true" encoded:"true"`
 		}{}, &struct {
-			User string `encrypt:"true" encoded:"true"`
-		}{User: "not+base64"}, "Failed to decode field"},
+			Client string `encrypt:"true" encoded:"true"`
+		}{Client: "not+base64"}, "Failed to decode field"},
 	}
 
 	for _, tt := range tests {

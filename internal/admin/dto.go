@@ -5,13 +5,13 @@ import (
 )
 
 type GenerateSignupTokenRequest struct {
-	Username string `json:"username"`
-	Ttl      int64  `json:"ttl"`
+	Clientname string `json:"clientname"`
+	Ttl        int64  `json:"ttl"`
 }
 
 func (r *GenerateSignupTokenRequest) Validate() error {
-	if r.Username == "" || r.Ttl == 0 {
-		return fmt.Errorf("username and ttl should be non-empty")
+	if r.Clientname == "" || r.Ttl == 0 {
+		return fmt.Errorf("clientname and ttl should be non-empty")
 	}
 	return nil
 }
@@ -21,8 +21,8 @@ type UpdateRoleRequest struct {
 }
 
 func (r *UpdateRoleRequest) Validate() error {
-	if r.Role != "user" && r.Role != "admin" {
-		return fmt.Errorf("role must be 'user' or 'admin'")
+	if r.Role != "client" && r.Role != "admin" {
+		return fmt.Errorf("role must be 'client' or 'admin'")
 	}
 	return nil
 }

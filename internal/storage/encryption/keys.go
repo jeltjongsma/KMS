@@ -47,13 +47,13 @@ func (r *EncryptedKeyRepo) GetKey(id int, keyReference string) (*keys.Key, error
 	return retKey, nil
 }
 
-func (r *EncryptedKeyRepo) UpdateKey(userId int, keyReference string, newKey string) (*keys.Key, error) {
+func (r *EncryptedKeyRepo) UpdateKey(clientId int, keyReference string, newKey string) (*keys.Key, error) {
 	encKey, err := EncryptBase64(newKey, r.KeyManager.KEK())
 	if err != nil {
 		return nil, err
 	}
 
-	stored, err := r.KeyRepo.UpdateKey(userId, keyReference, encKey)
+	stored, err := r.KeyRepo.UpdateKey(clientId, keyReference, encKey)
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +65,8 @@ func (r *EncryptedKeyRepo) UpdateKey(userId int, keyReference string, newKey str
 	return retKey, nil
 }
 
-func (r *EncryptedKeyRepo) Delete(userId int, keyReference string) (int, error) {
-	return r.KeyRepo.Delete(userId, keyReference)
+func (r *EncryptedKeyRepo) Delete(clientId int, keyReference string) (int, error) {
+	return r.KeyRepo.Delete(clientId, keyReference)
 }
 
 // Dev

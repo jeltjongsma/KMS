@@ -2,7 +2,7 @@ package auth
 
 import (
 	b64 "encoding/base64"
-	"kms/internal/users"
+	"kms/internal/clients"
 	"strconv"
 	"strings"
 	"testing"
@@ -16,12 +16,12 @@ func Test_Roundtrip_Success(t *testing.T) {
 		Secret: secret,
 		Typ:    "test",
 	}
-	user := &users.User{
-		ID:       1,
-		Username: "testuser",
+	client := &clients.Client{
+		ID:         1,
+		Clientname: "testclient",
 	}
 
-	tokenStr, err := GenerateJWT(genInfo, user)
+	tokenStr, err := GenerateJWT(genInfo, client)
 	if err != nil {
 		t.Fatalf("GenerateJWT failed: %v", err)
 	}
@@ -48,7 +48,7 @@ func Test_GenerateToken_Valid(t *testing.T) {
 		Typ: "test",
 	}
 	payload := &TokenPayload{
-		Sub: "testuser",
+		Sub: "testclient",
 		Ttl: 3600,
 		Iat: time.Now().UnixMilli(),
 	}
@@ -75,7 +75,7 @@ func Test_GenerateToken_Valid(t *testing.T) {
 	if string(decodedHeader) != `{"ver":"1","typ":"test"}` {
 		t.Errorf("expected header to match, got %s", string(decodedHeader))
 	}
-	if string(decodedPayload) != `{"sub":"testuser","ttl":3600,"iat":`+strconv.FormatInt(payload.Iat, 10)+`}` {
+	if string(decodedPayload) != `{"sub":"testclient","ttl":3600,"iat":`+strconv.FormatInt(payload.Iat, 10)+`}` {
 		t.Errorf("expected payload to match, got %s", string(decodedPayload))
 	}
 }
@@ -87,7 +87,7 @@ func Test_GenerateJWT_Valid(t *testing.T) {
 		Secret: secret,
 		Typ:    "jwt",
 	}
-	tokenStr, err := GenerateJWT(genInfo, &users.User{ID: 1, Username: "testuser"})
+	tokenStr, err := GenerateJWT(genInfo, &clients.Client{ID: 1, Clientname: "testclient"})
 	if err != nil {
 		t.Fatalf("GenerateJWT failed: %v", err)
 	}
@@ -107,7 +107,7 @@ func Test_GenerateJWT_Valid(t *testing.T) {
 		t.Errorf("expected JWT header to match, got %s", string(decodedHeader))
 	}
 	if !strings.Contains(string(decodedPayload), `"sub":"1"`) || !strings.Contains(string(decodedPayload), `"ttl":3600`) {
-		t.Errorf("expected JWT payload to contain user ID and TTL, got %s", string(decodedPayload))
+		t.Errorf("expected JWT payload to contain client ID and TTL, got %s", string(decodedPayload))
 	}
 }
 
@@ -118,7 +118,7 @@ func Test_GenerateSignupToken_Valid(t *testing.T) {
 		Secret: secret,
 		Typ:    "signup",
 	}
-	tokenStr, err := GenerateSignupToken(genInfo, "testuser")
+	tokenStr, err := GenerateSignupToken(genInfo, "testclient")
 	if err != nil {
 		t.Fatalf("GenerateSignupToken failed: %v", err)
 	}
@@ -137,8 +137,8 @@ func Test_GenerateSignupToken_Valid(t *testing.T) {
 	if string(decodedHeader) != `{"ver":"1","typ":"signup"}` {
 		t.Errorf("expected SignupToken header to match, got %s", string(decodedHeader))
 	}
-	if !strings.Contains(string(decodedPayload), `"sub":"testuser"`) || !strings.Contains(string(decodedPayload), `"ttl":3600`) {
-		t.Errorf("expected SignupToken payload to contain username and TTL, got %s", string(decodedPayload))
+	if !strings.Contains(string(decodedPayload), `"sub":"testclient"`) || !strings.Contains(string(decodedPayload), `"ttl":3600`) {
+		t.Errorf("expected SignupToken payload to contain clientname and TTL, got %s", string(decodedPayload))
 	}
 }
 
@@ -149,7 +149,7 @@ func Test_VerifyToken_InvalidInputs(t *testing.T) {
 		Ttl:    3600,
 		Secret: secret,
 		Typ:    "test",
-	}, &users.User{ID: 1, Username: "testuser"})
+	}, &clients.Client{ID: 1, Clientname: "testclient"})
 	if err != nil {
 		t.Fatalf("GenerateJWT failed: %v", err)
 	}

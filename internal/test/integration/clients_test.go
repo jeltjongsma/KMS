@@ -8,23 +8,23 @@ import (
 )
 
 func TestUpdateRole(t *testing.T) {
-	admin, err := requireUser(appCtx, "admin", "admin")
+	admin, err := requireClient(appCtx, "admin", "admin")
 	test.RequireErrNil(t, err)
 
-	u, err := requireUser(appCtx, "user", "user")
+	u, err := requireClient(appCtx, "client", "client")
 	test.RequireErrNil(t, err)
 
 	token, err := requireJWT(appCtx, admin)
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("POST", fmt.Sprintf("/users/%d/role", u.ID), `{"role":"admin"}`,
+	resp, err := doRequest("POST", fmt.Sprintf("/clients/%d/role", u.ID), `{"role":"admin"}`,
 		"Authorization", "Bearer "+token)
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
 
 	requireStatusCode(t, resp.StatusCode, 204)
 
-	updatedU, err := appCtx.UserRepo.FindByHashedUsername(u.HashedUsername)
+	updatedU, err := appCtx.ClientRepo.FindByHashedClientname(u.HashedClientname)
 	test.RequireErrNil(t, err)
 
 	if updatedU.Role != "admin" {
@@ -32,21 +32,21 @@ func TestUpdateRole(t *testing.T) {
 	}
 
 	if updatedU.ID != u.ID ||
-		updatedU.HashedUsername != u.HashedUsername ||
-		updatedU.Username != u.Username ||
+		updatedU.HashedClientname != u.HashedClientname ||
+		updatedU.Clientname != u.Clientname ||
 		updatedU.Password != u.Password {
 		t.Errorf("expected %v, got %v", u, updatedU)
 	}
 }
 
 func TestUpdateRole_MissingToken(t *testing.T) {
-	_, err := requireUser(appCtx, "users-updaterole-missingtoken-admin", "admin")
+	_, err := requireClient(appCtx, "clients-updaterole-missingtoken-admin", "admin")
 	test.RequireErrNil(t, err)
 
-	u, err := requireUser(appCtx, "users-updaterole-missingtoken-user", "user")
+	u, err := requireClient(appCtx, "clients-updaterole-missingtoken-client", "client")
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("POST", fmt.Sprintf("/users/%d/role", u.ID), `{"role":"admin"}`)
+	resp, err := doRequest("POST", fmt.Sprintf("/clients/%d/role", u.ID), `{"role":"admin"}`)
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
 
@@ -54,16 +54,16 @@ func TestUpdateRole_MissingToken(t *testing.T) {
 }
 
 func TestUpdateRole_MissingBody(t *testing.T) {
-	admin, err := requireUser(appCtx, "users-updaterole-missingbody-admin", "admin")
+	admin, err := requireClient(appCtx, "clients-updaterole-missingbody-admin", "admin")
 	test.RequireErrNil(t, err)
 
-	u, err := requireUser(appCtx, "users-updaterole-missingbody-user", "user")
+	u, err := requireClient(appCtx, "clients-updaterole-missingbody-client", "client")
 	test.RequireErrNil(t, err)
 
 	token, err := requireJWT(appCtx, admin)
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("POST", fmt.Sprintf("/users/%d/role", u.ID), "",
+	resp, err := doRequest("POST", fmt.Sprintf("/clients/%d/role", u.ID), "",
 		"Authorization", "Bearer "+token)
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
@@ -72,16 +72,16 @@ func TestUpdateRole_MissingBody(t *testing.T) {
 }
 
 func TestUpdateRole_InvalidRole(t *testing.T) {
-	admin, err := requireUser(appCtx, "users-updaterole-emptyrole-admin", "admin")
+	admin, err := requireClient(appCtx, "clients-updaterole-emptyrole-admin", "admin")
 	test.RequireErrNil(t, err)
 
-	u, err := requireUser(appCtx, "users-updaterole-emptyrole-user", "user")
+	u, err := requireClient(appCtx, "clients-updaterole-emptyrole-client", "client")
 	test.RequireErrNil(t, err)
 
 	token, err := requireJWT(appCtx, admin)
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("POST", fmt.Sprintf("/users/%d/role", u.ID), `{"role":""}`,
+	resp, err := doRequest("POST", fmt.Sprintf("/clients/%d/role", u.ID), `{"role":""}`,
 		"Authorization", "Bearer "+token)
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
@@ -90,13 +90,13 @@ func TestUpdateRole_InvalidRole(t *testing.T) {
 }
 
 func TestUpdateRole_NotAdmin(t *testing.T) {
-	u, err := requireUser(appCtx, "users-updaterole-notadmin-user", "user")
+	u, err := requireClient(appCtx, "clients-updaterole-notadmin-client", "client")
 	test.RequireErrNil(t, err)
 
 	token, err := requireJWT(appCtx, u)
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("POST", fmt.Sprintf("/users/%d/role", u.ID), `{"role":"admin"}`,
+	resp, err := doRequest("POST", fmt.Sprintf("/clients/%d/role", u.ID), `{"role":"admin"}`,
 		"Authorization", "Bearer "+token)
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
@@ -104,34 +104,34 @@ func TestUpdateRole_NotAdmin(t *testing.T) {
 	requireForbidden(t, resp)
 }
 
-func TestGetUsers(t *testing.T) {
-	a, err := requireUser(appCtx, "users-getusers", "admin")
+func TestGetClients(t *testing.T) {
+	a, err := requireClient(appCtx, "clients-getclients", "admin")
 	test.RequireErrNil(t, err)
 
-	_, err = requireUser(appCtx, "users-getusers-user", "user")
+	_, err = requireClient(appCtx, "clients-getclients-client", "client")
 	test.RequireErrNil(t, err)
 
 	token, err := requireJWT(appCtx, a)
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("GET", "/users", "",
+	resp, err := doRequest("GET", "/clients", "",
 		"Authorization", "Bearer "+token)
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
 
 	body := GetBody(resp)
-	test.RequireContains(t, body, `"username":"users-getusers-user"`)
-	test.RequireContains(t, body, `"username":"users-getusers"`)
+	test.RequireContains(t, body, `"clientname":"clients-getclients-client"`)
+	test.RequireContains(t, body, `"clientname":"clients-getclients"`)
 }
 
-func TestGetUsers_NotAdmin(t *testing.T) {
-	u, err := requireUser(appCtx, "users-getusers-notadmin", "user")
+func TestGetClients_NotAdmin(t *testing.T) {
+	u, err := requireClient(appCtx, "clients-getclients-notadmin", "client")
 	test.RequireErrNil(t, err)
 
 	token, err := requireJWT(appCtx, u)
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("GET", "/users", "",
+	resp, err := doRequest("GET", "/clients", "",
 		"Authorization", "Bearer "+token)
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
@@ -139,42 +139,42 @@ func TestGetUsers_NotAdmin(t *testing.T) {
 	requireForbidden(t, resp)
 }
 
-func TestGetUsers_MissingToken(t *testing.T) {
-	resp, err := doRequest("GET", "/users", "")
+func TestGetClients_MissingToken(t *testing.T) {
+	resp, err := doRequest("GET", "/clients", "")
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
 
 	requireUnauthorized(t, resp)
 }
 
-func TestDeleteUser(t *testing.T) {
-	a, err := requireUser(appCtx, "users-deleteuser", "admin")
+func TestDeleteClient(t *testing.T) {
+	a, err := requireClient(appCtx, "clients-deleteclient", "admin")
 	test.RequireErrNil(t, err)
 
-	u, err := requireUser(appCtx, "users-deleteuser-user", "user")
+	u, err := requireClient(appCtx, "clients-deleteclient-client", "client")
 	test.RequireErrNil(t, err)
 
 	token, err := requireJWT(appCtx, a)
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("DELETE", "/users/"+strconv.Itoa(u.ID), "",
+	resp, err := doRequest("DELETE", "/clients/"+strconv.Itoa(u.ID), "",
 		"Authorization", "Bearer "+token)
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
 
-	_, err = appCtx.UserRepo.FindByHashedUsername(u.HashedUsername)
+	_, err = appCtx.ClientRepo.FindByHashedClientname(u.HashedClientname)
 	test.RequireErrNotNil(t, err)
 	test.RequireContains(t, err.Error(), "no rows")
 }
 
-func TestDeleteUser_NotAdmin(t *testing.T) {
-	u, err := requireUser(appCtx, "users-deleteuser-user", "user")
+func TestDeleteClient_NotAdmin(t *testing.T) {
+	u, err := requireClient(appCtx, "clients-deleteclient-client", "client")
 	test.RequireErrNil(t, err)
 
 	token, err := requireJWT(appCtx, u)
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("DELETE", "/users/"+strconv.Itoa(u.ID), "",
+	resp, err := doRequest("DELETE", "/clients/"+strconv.Itoa(u.ID), "",
 		"Authorization", "Bearer "+token)
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
@@ -182,16 +182,16 @@ func TestDeleteUser_NotAdmin(t *testing.T) {
 	requireForbidden(t, resp)
 }
 
-func TestDeleteUser_MissingToken(t *testing.T) {
-	u, err := requireUser(appCtx, "users-deleteuser-user-missingtoken", "user")
+func TestDeleteClient_MissingToken(t *testing.T) {
+	u, err := requireClient(appCtx, "clients-deleteclient-client-missingtoken", "client")
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("DELETE", "/users/12", "")
+	resp, err := doRequest("DELETE", "/clients/12", "")
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
 
 	requireUnauthorized(t, resp)
 
-	_, err = appCtx.UserRepo.FindByHashedUsername(u.HashedUsername)
+	_, err = appCtx.ClientRepo.FindByHashedClientname(u.HashedClientname)
 	test.RequireErrNil(t, err)
 }

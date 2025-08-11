@@ -1,4 +1,4 @@
-package users
+package clients
 
 import (
 	"kms/internal/test/mocks"
@@ -9,37 +9,37 @@ import (
 )
 
 func TestHandler_GetAllDev_Success(t *testing.T) {
-	mockService := NewUserServiceMock()
-	mockService.GetAllFunc = func() ([]User, *kmsErrors.AppError) {
-		return []User{{
-			ID:       1,
-			Username: "user",
+	mockService := NewClientServiceMock()
+	mockService.GetAllFunc = func() ([]Client, *kmsErrors.AppError) {
+		return []Client{{
+			ID:         1,
+			Clientname: "client",
 		}}, nil
 	}
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("GET", "/users", nil)
+	req := httptest.NewRequest("GET", "/clients", nil)
 	rr := httptest.NewRecorder()
 
 	err := handler.GetAllDev(rr, req)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(rr.Body.String(), `{"id":1,"username":"user","hashedUsername":"","password":"","role":""}`) {
+	if !strings.Contains(rr.Body.String(), `{"id":1,"clientname":"client","hashedClientname":"","password":"","role":""}`) {
 		t.Errorf("unexpected body: %v", rr.Body.String())
 	}
 }
 
 func TestHandler_GetAllDev_ServiceError(t *testing.T) {
-	mockService := NewUserServiceMock()
-	mockService.GetAllFunc = func() ([]User, *kmsErrors.AppError) {
+	mockService := NewClientServiceMock()
+	mockService.GetAllFunc = func() ([]Client, *kmsErrors.AppError) {
 		return nil, kmsErrors.NewAppError(nil, "service error", 500)
 	}
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("GET", "/users", nil)
+	req := httptest.NewRequest("GET", "/clients", nil)
 	rr := httptest.NewRecorder()
 
 	err := handler.GetAllDev(rr, req)

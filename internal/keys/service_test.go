@@ -31,7 +31,7 @@ func TestService_CreateKey_Success(t *testing.T) {
 	if key == nil || key.KeyReference != hashedReference {
 		t.Errorf("expected key with reference '%s', got %v", hashedReference, key)
 	}
-	if key.UserId != 1 {
+	if key.ClientId != 1 {
 		t.Errorf("expected key ID 1, got %d", key.ID)
 	}
 }
@@ -95,8 +95,8 @@ func TestService_CreateKey_RepoError(t *testing.T) {
 
 func TestService_GetKey_Success(t *testing.T) {
 	mockRepo := NewKeyRepositoryMock()
-	mockRepo.GetKeyFunc = func(userId int, keyReference string) (*Key, error) {
-		return &Key{ID: userId, KeyReference: "testKey"}, nil
+	mockRepo.GetKeyFunc = func(clientId int, keyReference string) (*Key, error) {
+		return &Key{ID: clientId, KeyReference: "testKey"}, nil
 	}
 	mockLogger := mocks.NewLoggerMock()
 	mockKeyManager := mocks.NewKeyManagerMock()
@@ -154,12 +154,12 @@ func TestService_GetKey_RepoError(t *testing.T) {
 
 func TestService_RenewKey_Success(t *testing.T) {
 	mockRepo := NewKeyRepositoryMock()
-	mockRepo.UpdateKeyFunc = func(userId int, keyRef, newKey string) (*Key, error) {
+	mockRepo.UpdateKeyFunc = func(clientId int, keyRef, newKey string) (*Key, error) {
 		return &Key{
 			ID:           1,
 			KeyReference: keyRef,
 			DEK:          newKey,
-			UserId:       userId,
+			ClientId:     clientId,
 		}, nil
 	}
 	mockLogger := mocks.NewLoggerMock()
@@ -176,7 +176,7 @@ func TestService_RenewKey_Success(t *testing.T) {
 		t.Fatalf("unexpected error: %v", appErr)
 	}
 
-	if key.ID != 1 || key.KeyReference != hashing.HashHS256ToB64([]byte("keyRef"), refKey) || key.UserId != 1 {
+	if key.ID != 1 || key.KeyReference != hashing.HashHS256ToB64([]byte("keyRef"), refKey) || key.ClientId != 1 {
 		t.Errorf("expected original, got %v", key)
 	}
 }
@@ -235,7 +235,7 @@ func TestService_RenewKey_RepoError(t *testing.T) {
 
 func TestService_DeleteKey_Success(t *testing.T) {
 	mockRepo := NewKeyRepositoryMock()
-	mockRepo.DeleteFunc = func(userId int, keyRef string) (int, error) {
+	mockRepo.DeleteFunc = func(clientId int, keyRef string) (int, error) {
 		return 1, nil
 	}
 	mockLogger := mocks.NewLoggerMock()
@@ -275,7 +275,7 @@ func TestService_DeleteKey_InvalidKeyReference(t *testing.T) {
 
 func TestService_DeleteKey_MissingHashKey(t *testing.T) {
 	mockRepo := NewKeyRepositoryMock()
-	mockRepo.DeleteFunc = func(userId int, keyRef string) (int, error) {
+	mockRepo.DeleteFunc = func(clientId int, keyRef string) (int, error) {
 		return 1, nil
 	}
 	mockLogger := mocks.NewLoggerMock()
@@ -296,7 +296,7 @@ func TestService_DeleteKey_MissingHashKey(t *testing.T) {
 
 func TestService_DeleteKey_RepoError(t *testing.T) {
 	mockRepo := NewKeyRepositoryMock()
-	mockRepo.DeleteFunc = func(userId int, keyRef string) (int, error) {
+	mockRepo.DeleteFunc = func(clientId int, keyRef string) (int, error) {
 		return 1, errors.New("repo error")
 	}
 	mockLogger := mocks.NewLoggerMock()

@@ -3,10 +3,10 @@ package admin
 import (
 	"context"
 	"kms/internal/auth"
+	"kms/internal/clients"
 	"kms/internal/httpctx"
 	"kms/internal/test"
 	"kms/internal/test/mocks"
-	"kms/internal/users"
 	kmsErrors "kms/pkg/errors"
 	"net/http"
 	"net/http/httptest"
@@ -16,14 +16,14 @@ import (
 
 func TestHandler_UpdateRole_Success(t *testing.T) {
 	mockService := NewAdminServiceMock()
-	mockService.UpdateRoleFunc = func(userId int, role string, adminId string) *kmsErrors.AppError {
+	mockService.UpdateRoleFunc = func(clientId int, role string, adminId string) *kmsErrors.AppError {
 		return nil // Simulate successful role update
 	}
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	// Create a test request with a valid user ID and role
-	req := httptest.NewRequest("POST", "/users/1/role", strings.NewReader(`{"role": "admin"}`))
+	// Create a test request with a valid client ID and role
+	req := httptest.NewRequest("POST", "/clients/1/role", strings.NewReader(`{"role": "admin"}`))
 
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{Sub: "admin-id"},
@@ -50,7 +50,7 @@ func TestHandler_UpdateRole_MissingTokenError(t *testing.T) {
 	handler := NewHandler(mockService, mockLogger)
 
 	// Create a test request with missing token
-	req := httptest.NewRequest("POST", "/users/1/role", strings.NewReader((`{"role": "admin"}`)))
+	req := httptest.NewRequest("POST", "/clients/1/role", strings.NewReader((`{"role": "admin"}`)))
 
 	rr := httptest.NewRecorder()
 
@@ -72,7 +72,7 @@ func TestHandler_UpdateRole_MissingParamError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 	// Create a test request with missing param
-	req := httptest.NewRequest("POST", "/users/1/role", strings.NewReader((`{"role": "admin"}`)))
+	req := httptest.NewRequest("POST", "/clients/1/role", strings.NewReader((`{"role": "admin"}`)))
 
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{Sub: "admin-id"},
@@ -100,14 +100,14 @@ func TestHandler_UpdateRole_NonIntIdError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/users/userId/role", strings.NewReader((`{"role": "admin"}`)))
+	req := httptest.NewRequest("POST", "/clients/clientId/role", strings.NewReader((`{"role": "admin"}`)))
 
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{Sub: "admin-id"},
 	})
 
 	// Set id param to string
-	ctx_ := context.WithValue(ctx, httpctx.RouteParamsCtxKey, map[string]string{"id": "userId"})
+	ctx_ := context.WithValue(ctx, httpctx.RouteParamsCtxKey, map[string]string{"id": "clientId"})
 
 	req = req.WithContext(ctx_)
 
@@ -131,7 +131,7 @@ func TestHandler_UpdateRole_ParseBodyError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/users/1/role", strings.NewReader((`{"role"}`)))
+	req := httptest.NewRequest("POST", "/clients/1/role", strings.NewReader((`{"role"}`)))
 
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{Sub: "admin-id"},
@@ -158,13 +158,13 @@ func TestHandler_UpdateRole_ParseBodyError(t *testing.T) {
 
 func TestHandler_UpdateRole_ServiceError(t *testing.T) {
 	mockService := NewAdminServiceMock()
-	mockService.UpdateRoleFunc = func(userId int, role string, adminId string) *kmsErrors.AppError {
+	mockService.UpdateRoleFunc = func(clientId int, role string, adminId string) *kmsErrors.AppError {
 		return kmsErrors.NewAppError(nil, "service error", 500)
 	}
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/users/1/role", strings.NewReader((`{"role": "admin"}`)))
+	req := httptest.NewRequest("POST", "/clients/1/role", strings.NewReader((`{"role": "admin"}`)))
 
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{Sub: "admin-id"},
@@ -196,7 +196,7 @@ func TestHandler_GenerateSignupToken_Success(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/auth/signup/generate", strings.NewReader((`{"username": "iot-device", "ttl": 3600}`)))
+	req := httptest.NewRequest("POST", "/auth/signup/generate", strings.NewReader((`{"clientname": "iot-device", "ttl": 3600}`)))
 
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{Sub: "admin-id"},
@@ -220,7 +220,7 @@ func TestHandler_GenerateSignupToken_MissingTokenError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/auth/signup/generate", strings.NewReader((`{"username": "iot-device", "ttl": 3600}`)))
+	req := httptest.NewRequest("POST", "/auth/signup/generate", strings.NewReader((`{"clientname": "iot-device", "ttl": 3600}`)))
 
 	rr := httptest.NewRecorder()
 
@@ -241,7 +241,7 @@ func TestHandler_GenerateSignupToken_ParseBodyError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/auth/signup/generate", strings.NewReader((`{"username", "ttl": 3600}`)))
+	req := httptest.NewRequest("POST", "/auth/signup/generate", strings.NewReader((`{"clientname", "ttl": 3600}`)))
 
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{Sub: "admin-id"},
@@ -280,10 +280,10 @@ func TestHandler_GenerateSignupToken_InvalidBodyError(t *testing.T) {
 
 	err := handler.GenerateSignupToken(rr, req)
 	if err == nil {
-		t.Fatalf("expected error: username and ttl should be non-empty")
+		t.Fatalf("expected error: clientname and ttl should be non-empty")
 	}
-	if !strings.Contains(err.Err.Error(), "username and ttl should be non-empty") {
-		t.Errorf("expected error: username and ttl should be non-empty, got: %v", err.Err.Error())
+	if !strings.Contains(err.Err.Error(), "clientname and ttl should be non-empty") {
+		t.Errorf("expected error: clientname and ttl should be non-empty, got: %v", err.Err.Error())
 	}
 	if err.Code != 400 {
 		t.Errorf("handler returned wrong status code: got %v want %v", err.Code, 400)
@@ -298,7 +298,7 @@ func TestHandler_GenerateSignupToken_ServiceError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/auth/signup/generate", strings.NewReader((`{"username": "iot-device", "ttl": 3600}`)))
+	req := httptest.NewRequest("POST", "/auth/signup/generate", strings.NewReader((`{"clientname": "iot-device", "ttl": 3600}`)))
 
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{Sub: "admin-id"},
@@ -320,42 +320,42 @@ func TestHandler_GenerateSignupToken_ServiceError(t *testing.T) {
 	}
 }
 
-func TestHandler_GetUsers_Success(t *testing.T) {
-	u := []users.User{
+func TestHandler_GetClients_Success(t *testing.T) {
+	u := []clients.Client{
 		{
-			ID:       1,
-			Username: "username",
+			ID:         1,
+			Clientname: "clientname",
 		},
 	}
 	mockService := NewAdminServiceMock()
-	mockService.GetUsersFunc = func() ([]users.User, *kmsErrors.AppError) {
+	mockService.GetClientsFunc = func() ([]clients.Client, *kmsErrors.AppError) {
 		return u, nil
 	}
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("GET", "/users", nil)
+	req := httptest.NewRequest("GET", "/clients", nil)
 	rr := httptest.NewRecorder()
 
-	if err := handler.GetUsers(rr, req); err != nil {
+	if err := handler.GetClients(rr, req); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	test.RequireContains(t, rr.Body.String(), `"id":1,"username":"username"`)
+	test.RequireContains(t, rr.Body.String(), `"id":1,"clientname":"clientname"`)
 }
 
-func TestHandler_GetUsers_ServiceError(t *testing.T) {
+func TestHandler_GetClients_ServiceError(t *testing.T) {
 	mockService := NewAdminServiceMock()
-	mockService.GetUsersFunc = func() ([]users.User, *kmsErrors.AppError) {
+	mockService.GetClientsFunc = func() ([]clients.Client, *kmsErrors.AppError) {
 		return nil, kmsErrors.NewAppError(nil, "service error", 500)
 	}
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("GET", "/users", nil)
+	req := httptest.NewRequest("GET", "/clients", nil)
 	rr := httptest.NewRecorder()
 
-	err := handler.GetUsers(rr, req)
+	err := handler.GetClients(rr, req)
 
 	if err == nil {
 		t.Fatal("expected service error")
@@ -364,22 +364,22 @@ func TestHandler_GetUsers_ServiceError(t *testing.T) {
 	test.RequireContains(t, err.Message, "service error")
 }
 
-func TestHandler_DeleteUser_Success(t *testing.T) {
+func TestHandler_DeleteClient_Success(t *testing.T) {
 	mockService := NewAdminServiceMock()
-	mockService.DeleteUserFunc = func(userId int) *kmsErrors.AppError {
+	mockService.DeleteClientFunc = func(clientId int) *kmsErrors.AppError {
 		return nil
 	}
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("DELETE", "/users/2", nil)
+	req := httptest.NewRequest("DELETE", "/clients/2", nil)
 	ctx := context.WithValue(req.Context(), httpctx.RouteParamsCtxKey, map[string]string{"id": "2"})
 
 	req = req.WithContext(ctx)
 
 	rr := httptest.NewRecorder()
 
-	err := handler.DeleteUser(rr, req)
+	err := handler.DeleteClient(rr, req)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -390,15 +390,15 @@ func TestHandler_DeleteUser_Success(t *testing.T) {
 	}
 }
 
-func TestHandler_DeleteUser_MissingRouteParam(t *testing.T) {
+func TestHandler_DeleteClient_MissingRouteParam(t *testing.T) {
 	mockService := NewAdminServiceMock()
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("DELETE", "/users/2", nil)
+	req := httptest.NewRequest("DELETE", "/clients/2", nil)
 	rr := httptest.NewRecorder()
 
-	err := handler.DeleteUser(rr, req)
+	err := handler.DeleteClient(rr, req)
 
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -410,22 +410,22 @@ func TestHandler_DeleteUser_MissingRouteParam(t *testing.T) {
 	}
 }
 
-func TestHandler_DeleteUser_NonIntParam(t *testing.T) {
+func TestHandler_DeleteClient_NonIntParam(t *testing.T) {
 	mockService := NewAdminServiceMock()
-	mockService.DeleteUserFunc = func(userId int) *kmsErrors.AppError {
+	mockService.DeleteClientFunc = func(clientId int) *kmsErrors.AppError {
 		return nil
 	}
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("DELETE", "/users/2", nil)
+	req := httptest.NewRequest("DELETE", "/clients/2", nil)
 	ctx := context.WithValue(req.Context(), httpctx.RouteParamsCtxKey, map[string]string{"id": "id"})
 
 	req = req.WithContext(ctx)
 
 	rr := httptest.NewRecorder()
 
-	err := handler.DeleteUser(rr, req)
+	err := handler.DeleteClient(rr, req)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -437,22 +437,22 @@ func TestHandler_DeleteUser_NonIntParam(t *testing.T) {
 	}
 }
 
-func TestHandler_DeleteUser_ServiceError(t *testing.T) {
+func TestHandler_DeleteClient_ServiceError(t *testing.T) {
 	mockService := NewAdminServiceMock()
-	mockService.DeleteUserFunc = func(userId int) *kmsErrors.AppError {
+	mockService.DeleteClientFunc = func(clientId int) *kmsErrors.AppError {
 		return kmsErrors.NewAppError(nil, "service error", 500)
 	}
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("DELETE", "/users/2", nil)
+	req := httptest.NewRequest("DELETE", "/clients/2", nil)
 	ctx := context.WithValue(req.Context(), httpctx.RouteParamsCtxKey, map[string]string{"id": "2"})
 
 	req = req.WithContext(ctx)
 
 	rr := httptest.NewRecorder()
 
-	err := handler.DeleteUser(rr, req)
+	err := handler.DeleteClient(rr, req)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

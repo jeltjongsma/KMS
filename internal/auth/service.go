@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	c "kms/internal/bootstrap/context"
-	"kms/internal/users"
+	"kms/internal/clients"
 	kmsErrors "kms/pkg/errors"
 	"kms/pkg/hashing"
 	"unicode"
@@ -13,7 +13,7 @@ import (
 
 type Service struct {
 	Cfg          c.KmsConfig
-	UserRepo     users.UserRepository
+	ClientRepo   clients.ClientRepository
 	TokenGenInfo *TokenGenInfo
 	KeyManager   c.KeyManager
 	Logger       c.Logger
@@ -21,14 +21,14 @@ type Service struct {
 
 func NewService(
 	cfg c.KmsConfig,
-	userRepo users.UserRepository,
+	clientRepo clients.ClientRepository,
 	tokenGenInfo *TokenGenInfo,
 	keyManager c.KeyManager,
 	logger c.Logger,
 ) *Service {
 	return &Service{
 		Cfg:          cfg,
-		UserRepo:     userRepo,
+		ClientRepo:   clientRepo,
 		TokenGenInfo: tokenGenInfo,
 		KeyManager:   keyManager,
 		Logger:       logger,
@@ -61,61 +61,65 @@ func (s *Service) Signup(cred *SignupCredentials) (string, *kmsErrors.AppError) 
 		return "", kmsErrors.MapHashErr(err)
 	}
 
-	usernameSecret, err := s.KeyManager.HashKey("username")
+	clientnameSecret, err := s.KeyManager.HashKey("clientname")
 	if err != nil {
 		return "", kmsErrors.NewInternalServerError(err)
 	}
 
-	user := &users.User{
-		Username:       token.Payload.Sub,
-		HashedUsername: hashing.HashHS256ToB64([]byte(token.Payload.Sub), usernameSecret),
-		Password:       hashedPassword,
-		Role:           s.Cfg["DEFAULT_ROLE"],
+	hashedClientname := hashing.HashHS256ToB64([]byte(token.Payload.Sub), clientnameSecret)
+
+	s.Logger.Debug("Signup details", "clientname", token.Payload.Sub, "hashedClient", hashedClientname, "hashLength", len(hashedClientname))
+
+	client := &clients.Client{
+		Clientname:       token.Payload.Sub,
+		HashedClientname: hashedClientname,
+		Password:         hashedPassword,
+		Role:             s.Cfg["DEFAULT_ROLE"],
 	}
 
-	id, err := s.UserRepo.CreateUser(user)
+	id, err := s.ClientRepo.CreateClient(client)
 	if err != nil {
 		return "", kmsErrors.MapRepoErr(err)
 	}
 
-	user.ID = id
+	client.ID = id
 
-	jwt, err := GenerateJWT(s.TokenGenInfo, user)
+	jwt, err := GenerateJWT(s.TokenGenInfo, client)
 	if err != nil {
 		return "", kmsErrors.NewInternalServerError(err)
 	}
 
-	s.Logger.Info("User signed up", "userId", id)
+	s.Logger.Info("Client signed up", "clientId", id)
 
 	return jwt, nil
 }
 
 func (s *Service) Login(cred *Credentials) (string, *kmsErrors.AppError) {
-	usernameSecret, err := s.KeyManager.HashKey("username")
+	clientnameSecret, err := s.KeyManager.HashKey("clientname")
 	if err != nil {
 		return "", kmsErrors.NewInternalServerError(err)
 	}
 
-	hashedUsername := hashing.HashHS256ToB64([]byte(cred.Username), usernameSecret)
-	user, err := s.UserRepo.FindByHashedUsername(hashedUsername)
+	hashedClientname := hashing.HashHS256ToB64([]byte(cred.Clientname), clientnameSecret)
+	client, err := s.ClientRepo.FindByHashedClientname(hashedClientname)
 	if err != nil {
-		// Check if err is "not found" to help prevent user enumeration attacks
+		// Check if err is "not found" to help prevent client enumeration attacks
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", kmsErrors.NewAppError(err, "Incorrect username or password", 401)
+			return "", kmsErrors.NewAppError(err, "Incorrect clientname or password", 401)
 		}
 		return "", kmsErrors.MapRepoErr(err)
 	}
 
-	if err := hashing.CheckPassword(user.Password, cred.Password); err != nil {
+	if err := hashing.CheckPassword(client.Password, cred.Password); err != nil {
 		return "", kmsErrors.MapHashErr(err)
 	}
 
-	jwt, err := GenerateJWT(s.TokenGenInfo, user)
+	jwt, err := GenerateJWT(s.TokenGenInfo, client)
 	if err != nil {
 		return "", kmsErrors.NewInternalServerError(err)
 	}
 
-	s.Logger.Info("User signed in", "userId", user.ID)
+	s.Logger.Info("Client signed in", "clientId", client.ID)
 
 	return jwt, nil
 }

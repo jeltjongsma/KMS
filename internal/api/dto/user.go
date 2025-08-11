@@ -1,6 +1,6 @@
 package dto
 
-type UserResponse struct {
-	Username string `json:"username"`
-	Role     string `json:"role"`
+type ClientResponse struct {
+	Clientname string `json:"clientname"`
+	Role       string `json:"role"`
 }
