@@ -114,7 +114,7 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 	)))
 
 	// Admin
-	http.Handle("/admin", globalHandler(withAuth(adminOnly(adminHandler.Me))))
+	// http.Handle("/admin", globalHandler(withAuth(adminOnly(adminHandler.Me))))
 
 	return nil
 }
