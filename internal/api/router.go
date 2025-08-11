@@ -76,6 +76,11 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 		[]*mw.Route{
 			mw.NewRoute(
 				"POST",
+				"/auth/signup/generate",
+				withAuth(adminOnly(adminHandler.GenerateSignupToken)),
+			),
+			mw.NewRoute(
+				"POST",
 				"/auth/signup",
 				authHandler.Signup,
 			),
@@ -94,11 +99,6 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 				"POST",
 				"/users/{id}/role",
 				withAuth(adminOnly(adminHandler.UpdateRole)),
-			),
-			mw.NewRoute(
-				"POST",
-				"/users/tokens/generate",
-				withAuth(adminOnly(adminHandler.GenerateSignupToken)),
 			),
 			mw.NewRoute(
 				"GET",

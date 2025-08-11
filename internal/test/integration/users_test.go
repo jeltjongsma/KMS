@@ -104,63 +104,6 @@ func TestUpdateRole_NotAdmin(t *testing.T) {
 	requireForbidden(t, resp)
 }
 
-func TestGenerateSignupToken(t *testing.T) {
-	u, err := requireUser(appCtx, "users-gensignup", "admin")
-	test.RequireErrNil(t, err)
-
-	token, err := requireJWT(appCtx, u)
-	test.RequireErrNil(t, err)
-
-	resp, err := doRequest("POST", "/users/tokens/generate", `{"ttl":3600,"username":"iot-device"}`,
-		"Authorization", "Bearer "+token)
-	requireReqNotFailed(t, err)
-	defer resp.Body.Close()
-
-	requireStatusCode(t, resp.StatusCode, 200)
-	test.RequireContains(t, GetBody(resp), `"token":`)
-}
-
-func TestGenerateSignupToken_MissingToken(t *testing.T) {
-	_, err := requireUser(appCtx, "users-gensignup-missingtoken", "admin")
-	test.RequireErrNil(t, err)
-
-	resp, err := doRequest("POST", "/users/tokens/generate", `{"ttl":3600,"username":"iot-device"}`)
-	requireReqNotFailed(t, err)
-	defer resp.Body.Close()
-
-	requireUnauthorized(t, resp)
-}
-
-func TestGenerateSignupToken_MissingBody(t *testing.T) {
-	u, err := requireUser(appCtx, "users-gensignup-missingbody", "admin")
-	test.RequireErrNil(t, err)
-
-	token, err := requireJWT(appCtx, u)
-	test.RequireErrNil(t, err)
-
-	resp, err := doRequest("POST", "/users/tokens/generate", "",
-		"Authorization", "Bearer "+token)
-	requireReqNotFailed(t, err)
-	defer resp.Body.Close()
-
-	requireBadRequest(t, resp)
-}
-
-func TestGenerateSignupToken_NotAdmin(t *testing.T) {
-	u, err := requireUser(appCtx, "users-gensignup-notadmin", "user")
-	test.RequireErrNil(t, err)
-
-	token, err := requireJWT(appCtx, u)
-	test.RequireErrNil(t, err)
-
-	resp, err := doRequest("POST", "/users/tokens/generate", `{"ttl":3600,"username":"iot-device"}`,
-		"Authorization", "Bearer "+token)
-	requireReqNotFailed(t, err)
-	defer resp.Body.Close()
-
-	requireForbidden(t, resp)
-}
-
 func TestGetUsers(t *testing.T) {
 	a, err := requireUser(appCtx, "users-getusers", "admin")
 	test.RequireErrNil(t, err)

@@ -196,7 +196,7 @@ func TestHandler_GenerateSignupToken_Success(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/users/tokens/generate", strings.NewReader((`{"username": "iot-device", "ttl": 3600}`)))
+	req := httptest.NewRequest("POST", "/auth/signup/generate", strings.NewReader((`{"username": "iot-device", "ttl": 3600}`)))
 
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{Sub: "admin-id"},
@@ -220,7 +220,7 @@ func TestHandler_GenerateSignupToken_MissingTokenError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/users/tokens/generate", strings.NewReader((`{"username": "iot-device", "ttl": 3600}`)))
+	req := httptest.NewRequest("POST", "/auth/signup/generate", strings.NewReader((`{"username": "iot-device", "ttl": 3600}`)))
 
 	rr := httptest.NewRecorder()
 
@@ -241,7 +241,7 @@ func TestHandler_GenerateSignupToken_ParseBodyError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/users/tokens/generate", strings.NewReader((`{"username", "ttl": 3600}`)))
+	req := httptest.NewRequest("POST", "/auth/signup/generate", strings.NewReader((`{"username", "ttl": 3600}`)))
 
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{Sub: "admin-id"},
@@ -268,7 +268,7 @@ func TestHandler_GenerateSignupToken_InvalidBodyError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/users/tokens/generate", strings.NewReader((`{"ttl": 3600}`)))
+	req := httptest.NewRequest("POST", "/auth/signup/generate", strings.NewReader((`{"ttl": 3600}`)))
 
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{Sub: "admin-id"},
@@ -298,7 +298,7 @@ func TestHandler_GenerateSignupToken_ServiceError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/users/tokens/generate", strings.NewReader((`{"username": "iot-device", "ttl": 3600}`)))
+	req := httptest.NewRequest("POST", "/auth/signup/generate", strings.NewReader((`{"username": "iot-device", "ttl": 3600}`)))
 
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{Sub: "admin-id"},

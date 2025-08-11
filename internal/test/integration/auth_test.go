@@ -90,3 +90,60 @@ func TestSignup_InvalidPassword(t *testing.T) {
 	requireStatusCode(t, resp.StatusCode, 400)
 	test.RequireContains(t, GetBody(resp), "Password does not meet minimum requirements")
 }
+
+func TestGenerateSignupToken(t *testing.T) {
+	u, err := requireUser(appCtx, "auth-gensignup", "admin")
+	test.RequireErrNil(t, err)
+
+	token, err := requireJWT(appCtx, u)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("POST", "/auth/signup/generate", `{"ttl":3600,"username":"iot-device"}`,
+		"Authorization", "Bearer "+token)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireStatusCode(t, resp.StatusCode, 200)
+	test.RequireContains(t, GetBody(resp), `"token":`)
+}
+
+func TestGenerateSignupToken_MissingToken(t *testing.T) {
+	_, err := requireUser(appCtx, "auth-gensignup-missingtoken", "admin")
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("POST", "/auth/signup/generate", `{"ttl":3600,"username":"iot-device"}`)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireUnauthorized(t, resp)
+}
+
+func TestGenerateSignupToken_MissingBody(t *testing.T) {
+	u, err := requireUser(appCtx, "auth-gensignup-missingbody", "admin")
+	test.RequireErrNil(t, err)
+
+	token, err := requireJWT(appCtx, u)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("POST", "/auth/signup/generate", "",
+		"Authorization", "Bearer "+token)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireBadRequest(t, resp)
+}
+
+func TestGenerateSignupToken_NotAdmin(t *testing.T) {
+	u, err := requireUser(appCtx, "auth-gensignup-notadmin", "user")
+	test.RequireErrNil(t, err)
+
+	token, err := requireJWT(appCtx, u)
+	test.RequireErrNil(t, err)
+
+	resp, err := doRequest("POST", "/auth/signup/generate", `{"ttl":3600,"username":"iot-device"}`,
+		"Authorization", "Bearer "+token)
+	requireReqNotFailed(t, err)
+	defer resp.Body.Close()
+
+	requireForbidden(t, resp)
+}
