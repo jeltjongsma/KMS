@@ -1,4 +1,4 @@
-package users
+package clients
 
 import (
 	c "kms/internal/bootstrap/context"
@@ -8,25 +8,25 @@ import (
 )
 
 type Handler struct {
-	Service UserService
+	Service ClientService
 	Logger  c.Logger
 }
 
-func NewHandler(userService UserService, logger c.Logger) *Handler {
+func NewHandler(clientService ClientService, logger c.Logger) *Handler {
 	return &Handler{
-		Service: userService,
+		Service: clientService,
 		Logger:  logger,
 	}
 }
 
-type UserService interface {
-	GetAll() ([]User, *kmsErrors.AppError)
+type ClientService interface {
+	GetAll() ([]Client, *kmsErrors.AppError)
 }
 
 func (h *Handler) GetAllDev(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
-	users, appErr := h.Service.GetAll()
+	clients, appErr := h.Service.GetAll()
 	if appErr != nil {
 		return appErr
 	}
-	return pHttp.WriteJSON(w, users)
+	return pHttp.WriteJSON(w, clients)
 }

@@ -14,7 +14,7 @@ func TestCreateKey_Success(t *testing.T) {
 		ID:           1,
 		KeyReference: "keyReference",
 		DEK:          "validB64",
-		UserId:       1,
+		ClientId:     1,
 		Encoding:     "encoding",
 	}
 	mockRepo := keys.NewKeyRepositoryMock()
@@ -53,7 +53,7 @@ func TestCreateKey_RepoError(t *testing.T) {
 		ID:           1,
 		KeyReference: "keyReference",
 		DEK:          "validB64",
-		UserId:       1,
+		ClientId:     1,
 		Encoding:     "encoding",
 	}
 	mockRepo := keys.NewKeyRepositoryMock()
@@ -105,7 +105,7 @@ func TestGetKey_Success(t *testing.T) {
 		ID:           1,
 		KeyReference: "keyReference",
 		DEK:          "validB64",
-		UserId:       1,
+		ClientId:     1,
 		Encoding:     "encoding",
 	}
 	var enc keys.Key
@@ -162,7 +162,7 @@ func TestUpdateKey_Success(t *testing.T) {
 		ID:           1,
 		KeyReference: "keyReference",
 		DEK:          "validB64",
-		UserId:       1,
+		ClientId:     1,
 		Encoding:     "encoding",
 	}
 	var enc keys.Key

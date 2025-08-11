@@ -9,7 +9,7 @@ import (
 )
 
 func TestGenerateKey(t *testing.T) {
-	u, err := requireUser(appCtx, "keys-generatekey", "user")
+	u, err := requireClient(appCtx, "keys-generatekey", "client")
 	test.RequireErrNil(t, err)
 
 	token, err := requireJWT(appCtx, u)
@@ -39,14 +39,14 @@ func TestGenerateKey(t *testing.T) {
 	if key.KeyReference != keyRefHash {
 		t.Errorf("expected reference: %s, got %s", keyRefHash, key.KeyReference)
 	}
-	// check if user ID is correct
-	if key.UserId != u.ID {
-		t.Errorf("expected userID: %v, got %v", u.ID, key.UserId)
+	// check if client ID is correct
+	if key.ClientId != u.ID {
+		t.Errorf("expected clientID: %v, got %v", u.ID, key.ClientId)
 	}
 }
 
 func TestGenerateKey_MissingToken(t *testing.T) {
-	_, err := requireUser(appCtx, "keys-generatekey-missingtoken", "user")
+	_, err := requireClient(appCtx, "keys-generatekey-missingtoken", "client")
 	test.RequireErrNil(t, err)
 
 	keyRef := "database-key"
@@ -58,7 +58,7 @@ func TestGenerateKey_MissingToken(t *testing.T) {
 }
 
 func TestGenerateKey_InvalidKeyReference(t *testing.T) {
-	u, err := requireUser(appCtx, "keys-generatekey-invkeyref", "user")
+	u, err := requireClient(appCtx, "keys-generatekey-invkeyref", "client")
 	test.RequireErrNil(t, err)
 
 	token, err := requireJWT(appCtx, u)
@@ -75,7 +75,7 @@ func TestGenerateKey_InvalidKeyReference(t *testing.T) {
 }
 
 func TestGetKey(t *testing.T) {
-	u, err := requireUser(appCtx, "keys-getkey", "user")
+	u, err := requireClient(appCtx, "keys-getkey", "client")
 	test.RequireErrNil(t, err)
 
 	keyRef := "db-key"
@@ -117,7 +117,7 @@ func TestGetKey(t *testing.T) {
 }
 
 func TestGetKey_MissingToken(t *testing.T) {
-	u, err := requireUser(appCtx, "keys-getkey-missingtoken", "user")
+	u, err := requireClient(appCtx, "keys-getkey-missingtoken", "client")
 	test.RequireErrNil(t, err)
 
 	keyRef := "db-key"
@@ -132,7 +132,7 @@ func TestGetKey_MissingToken(t *testing.T) {
 }
 
 func TestGetKey_NotFound(t *testing.T) {
-	u, err := requireUser(appCtx, "keys-getkey-notfound", "user")
+	u, err := requireClient(appCtx, "keys-getkey-notfound", "client")
 	test.RequireErrNil(t, err)
 
 	token, err := requireJWT(appCtx, u)
@@ -148,7 +148,7 @@ func TestGetKey_NotFound(t *testing.T) {
 }
 
 func TestGetKey_InvalidKeyReference(t *testing.T) {
-	u, err := requireUser(appCtx, "keys-getkey-invkeyref", "user")
+	u, err := requireClient(appCtx, "keys-getkey-invkeyref", "client")
 	test.RequireErrNil(t, err)
 
 	token, err := requireJWT(appCtx, u)
@@ -164,7 +164,7 @@ func TestGetKey_InvalidKeyReference(t *testing.T) {
 }
 
 func TestRenewKey(t *testing.T) {
-	u, err := requireUser(appCtx, "keys-renewkey", "user")
+	u, err := requireClient(appCtx, "keys-renewkey", "client")
 	test.RequireErrNil(t, err)
 
 	keyRef := "db-key"
@@ -215,7 +215,7 @@ func TestRenewKey_MissingToken(t *testing.T) {
 }
 
 func TestRenewKey_InvalidKeyReference(t *testing.T) {
-	u, err := requireUser(appCtx, "keys-renewkey-invkeyref", "user")
+	u, err := requireClient(appCtx, "keys-renewkey-invkeyref", "client")
 	test.RequireErrNil(t, err)
 
 	token, err := requireJWT(appCtx, u)
@@ -231,7 +231,7 @@ func TestRenewKey_InvalidKeyReference(t *testing.T) {
 }
 
 func TestDeleteKey(t *testing.T) {
-	u, err := requireUser(appCtx, "keys-delete", "user")
+	u, err := requireClient(appCtx, "keys-delete", "client")
 	test.RequireErrNil(t, err)
 
 	keyRef := "db-key"
@@ -255,7 +255,7 @@ func TestDeleteKey(t *testing.T) {
 }
 
 func TestDeleteKey_MissingToken(t *testing.T) {
-	u, err := requireUser(appCtx, "keys-delete-missingtoken", "user")
+	u, err := requireClient(appCtx, "keys-delete-missingtoken", "client")
 	test.RequireErrNil(t, err)
 
 	keyRef := "db-key"
@@ -274,7 +274,7 @@ func TestDeleteKey_MissingToken(t *testing.T) {
 }
 
 func TestDeleteKey_InvalidReference(t *testing.T) {
-	u, err := requireUser(appCtx, "keys-delete-invalidref", "user")
+	u, err := requireClient(appCtx, "keys-delete-invalidref", "client")
 	test.RequireErrNil(t, err)
 
 	token, err := requireJWT(appCtx, u)

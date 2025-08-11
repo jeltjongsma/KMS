@@ -2,89 +2,89 @@ package encryption
 
 import (
 	c "kms/internal/bootstrap/context"
-	"kms/internal/users"
+	"kms/internal/clients"
 )
 
-type EncryptedUserRepo struct {
-	UserRepo   users.UserRepository
+type EncryptedClientRepo struct {
+	ClientRepo clients.ClientRepository
 	KeyManager c.KeyManager
 }
 
-func NewEncryptedUserRepo(userRepo users.UserRepository, keyManager c.KeyManager) *EncryptedUserRepo {
-	return &EncryptedUserRepo{
-		UserRepo:   userRepo,
+func NewEncryptedClientRepo(clientRepo clients.ClientRepository, keyManager c.KeyManager) *EncryptedClientRepo {
+	return &EncryptedClientRepo{
+		ClientRepo: clientRepo,
 		KeyManager: keyManager,
 	}
 }
 
-func (r *EncryptedUserRepo) CreateUser(user *users.User) (int, error) {
-	encUser := &users.User{}
-	if err := EncryptFields(encUser, user, r.KeyManager); err != nil {
+func (r *EncryptedClientRepo) CreateClient(client *clients.Client) (int, error) {
+	encClient := &clients.Client{}
+	if err := EncryptFields(encClient, client, r.KeyManager); err != nil {
 		return 0, err
 	}
-	id, err := r.UserRepo.CreateUser(encUser)
+	id, err := r.ClientRepo.CreateClient(encClient)
 	if err != nil {
 		return 0, err
 	}
 	return id, nil
 }
 
-func (r *EncryptedUserRepo) GetUser(id int) (*users.User, error) {
-	user, err := r.UserRepo.GetUser(id)
+func (r *EncryptedClientRepo) GetClient(id int) (*clients.Client, error) {
+	client, err := r.ClientRepo.GetClient(id)
 	if err != nil {
 		return nil, err
 	}
-	decUser := &users.User{}
-	if err := DecryptFields(decUser, user, r.KeyManager); err != nil {
+	decClient := &clients.Client{}
+	if err := DecryptFields(decClient, client, r.KeyManager); err != nil {
 		return nil, err
 	}
-	return decUser, nil
+	return decClient, nil
 }
 
-func (r *EncryptedUserRepo) GetAll() ([]users.User, error) {
-	stored, err := r.UserRepo.GetAll()
+func (r *EncryptedClientRepo) GetAll() ([]clients.Client, error) {
+	stored, err := r.ClientRepo.GetAll()
 	if err != nil {
 		return nil, err
 	}
 
-	decUsers := make([]users.User, len(stored))
+	decClients := make([]clients.Client, len(stored))
 	for idx, u := range stored {
-		decU := &users.User{}
+		decU := &clients.Client{}
 		if err := DecryptFields(decU, &u, r.KeyManager); err != nil {
 			return nil, err
 		}
-		decUsers[idx] = *decU
+		decClients[idx] = *decU
 	}
 
-	return decUsers, nil
+	return decClients, nil
 }
 
-func (r *EncryptedUserRepo) Delete(userId int) error {
-	return r.UserRepo.Delete(userId)
+func (r *EncryptedClientRepo) Delete(clientId int) error {
+	return r.ClientRepo.Delete(clientId)
 }
 
-func (r *EncryptedUserRepo) FindByHashedUsername(email string) (*users.User, error) {
-	user, err := r.UserRepo.FindByHashedUsername(email)
+func (r *EncryptedClientRepo) FindByHashedClientname(email string) (*clients.Client, error) {
+	client, err := r.ClientRepo.FindByHashedClientname(email)
 	if err != nil {
 		return nil, err
 	}
-	decUser := &users.User{}
-	if err := DecryptFields(decUser, user, r.KeyManager); err != nil {
+	decClient := &clients.Client{}
+	if err := DecryptFields(decClient, client, r.KeyManager); err != nil {
 		return nil, err
 	}
-	return decUser, nil
+	return decClient, nil
 }
 
-func (r *EncryptedUserRepo) UpdateRole(id int, role string) error {
+func (r *EncryptedClientRepo) UpdateRole(id int, role string) error {
 	encRole, err := EncryptString(role, r.KeyManager.DBKey())
 	if err != nil {
 		return err
 	}
-	return r.UserRepo.UpdateRole(id, encRole)
+	return r.ClientRepo.UpdateRole(id, encRole)
 }
 
-func (r *EncryptedUserRepo) GetRole(id int) (string, error) {
-	encRole, err := r.UserRepo.GetRole(id)
+func (r *EncryptedClientRepo) GetRole(id int) (string, error) {
+	encRole, err := r.ClientRepo.GetRole(id)
 	if err != nil {
 		return "", err
 	}

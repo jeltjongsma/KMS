@@ -14,7 +14,7 @@ import (
 
 func TestHandler_GenerateKey_Success(t *testing.T) {
 	mockService := NewKeyServiceMock()
-	mockService.CreateKeyFunc = func(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
+	mockService.CreateKeyFunc = func(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
 		return &Key{
 			DEK:      "dek",
 			Encoding: "encoding",
@@ -61,7 +61,7 @@ func TestHandler_GenerateKey_MissingToken(t *testing.T) {
 	}
 }
 
-func TestHandler_GenerateKey_InvalidUserIdError(t *testing.T) {
+func TestHandler_GenerateKey_InvalidClientIdError(t *testing.T) {
 	mockService := NewKeyServiceMock()
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
@@ -69,7 +69,7 @@ func TestHandler_GenerateKey_InvalidUserIdError(t *testing.T) {
 	req := httptest.NewRequest("POST", "/keys/actions/generate", strings.NewReader(`{"keyReference": "keyRef"}`))
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{
-			Sub: "userId",
+			Sub: "clientId",
 		},
 	})
 	req = req.WithContext(ctx)
@@ -115,7 +115,7 @@ func TestHandler_GenerateKey_ParseBodyError(t *testing.T) {
 
 func TestHandler_GenerateKey_ServiceError(t *testing.T) {
 	mockService := NewKeyServiceMock()
-	mockService.CreateKeyFunc = func(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
+	mockService.CreateKeyFunc = func(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
 		return nil, kmsErrors.NewAppError(nil, "service error", 500)
 	}
 	mockLogger := mocks.NewLoggerMock()
@@ -144,7 +144,7 @@ func TestHandler_GenerateKey_ServiceError(t *testing.T) {
 
 func TestHandler_GetKey_Success(t *testing.T) {
 	mockService := NewKeyServiceMock()
-	mockService.GetKeyFunc = func(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
+	mockService.GetKeyFunc = func(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
 		return &Key{
 			DEK:      "dek",
 			Encoding: "encoding",
@@ -194,7 +194,7 @@ func TestHandler_GetKey_MissingToken(t *testing.T) {
 	}
 }
 
-func TestHandler_GetKey_InvalidUserIdError(t *testing.T) {
+func TestHandler_GetKey_InvalidClientIdError(t *testing.T) {
 	mockService := NewKeyServiceMock()
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
@@ -202,7 +202,7 @@ func TestHandler_GetKey_InvalidUserIdError(t *testing.T) {
 	req := httptest.NewRequest("POST", "/keys/keyRef", nil)
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{
-			Sub: "userId",
+			Sub: "clientId",
 		},
 	})
 	req = req.WithContext(ctx)
@@ -248,7 +248,7 @@ func TestHandler_GetKey_MissingRouteParam(t *testing.T) {
 
 func TestHandler_GetKey_ServiceError(t *testing.T) {
 	mockService := NewKeyServiceMock()
-	mockService.GetKeyFunc = func(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
+	mockService.GetKeyFunc = func(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
 		return nil, kmsErrors.NewAppError(nil, "service error", 500)
 	}
 	mockLogger := mocks.NewLoggerMock()
@@ -280,7 +280,7 @@ func TestHandler_GetKey_ServiceError(t *testing.T) {
 
 func TestHandler_RenewKey_Success(t *testing.T) {
 	mockService := NewKeyServiceMock()
-	mockService.RenewKeyFunc = func(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
+	mockService.RenewKeyFunc = func(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
 		return &Key{
 			DEK:      "dek",
 			Encoding: "encoding",
@@ -366,7 +366,7 @@ func TestHandler_RenewKey_MissingRouteParam(t *testing.T) {
 
 func TestService_RenewKey_ServiceError(t *testing.T) {
 	mockService := NewKeyServiceMock()
-	mockService.RenewKeyFunc = func(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
+	mockService.RenewKeyFunc = func(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
 		return nil, kmsErrors.NewAppError(nil, "service error", 500)
 	}
 	mockLogger := mocks.NewLoggerMock()
@@ -400,7 +400,7 @@ func TestService_RenewKey_ServiceError(t *testing.T) {
 
 func TestHandler_DeleteKey_Success(t *testing.T) {
 	mockService := NewKeyServiceMock()
-	mockService.DeleteKeyFunc = func(userId int, keyReference string) *kmsErrors.AppError {
+	mockService.DeleteKeyFunc = func(clientId int, keyReference string) *kmsErrors.AppError {
 		return nil
 	}
 	mockLogger := mocks.NewLoggerMock()
@@ -502,7 +502,7 @@ func TestHandler_DeleteKey_MissingRouteParam(t *testing.T) {
 
 func TestHandler_DeleteKey_ServiceError(t *testing.T) {
 	mockService := NewKeyServiceMock()
-	mockService.DeleteKeyFunc = func(userId int, keyReference string) *kmsErrors.AppError {
+	mockService.DeleteKeyFunc = func(clientId int, keyReference string) *kmsErrors.AppError {
 		return kmsErrors.NewAppError(nil, "service error", 500)
 	}
 	mockLogger := mocks.NewLoggerMock()
@@ -550,7 +550,7 @@ func TestHandler_GetAllDev_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(rr.Body.String(), `{"id":0,"keyReference":"keyRef","dek":"dek","userId":0,"encoding":""}`) {
+	if !strings.Contains(rr.Body.String(), `{"id":0,"keyReference":"keyRef","dek":"dek","clientId":0,"encoding":""}`) {
 		t.Errorf("unexpected body: %v", rr.Body.String())
 	}
 }

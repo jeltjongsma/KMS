@@ -4,7 +4,7 @@ type Key struct {
 	ID           int    `json:"id"`
 	KeyReference string `json:"keyReference"`
 	DEK          string `json:"dek" encrypt:"true" encoded:"true" key:"kek"`
-	UserId       int    `json:"userId"`
+	ClientId     int    `json:"clientId"`
 	Encoding     string `json:"encoding" encrypt:"true"`
 }
 

@@ -4,48 +4,48 @@ import (
 	"fmt"
 	"kms/internal/auth"
 	c "kms/internal/bootstrap/context"
-	"kms/internal/users"
+	"kms/internal/clients"
 	kmsErrors "kms/pkg/errors"
 	"unicode"
 )
 
 type Service struct {
 	AdminRepo  AdminRepository
-	UserRepo   users.UserRepository
+	ClientRepo clients.ClientRepository
 	KeyManager c.KeyManager
 	Logger     c.Logger
 }
 
-func NewService(adminRepo AdminRepository, userRepo users.UserRepository, keyManager c.KeyManager, logger c.Logger) *Service {
+func NewService(adminRepo AdminRepository, clientRepo clients.ClientRepository, keyManager c.KeyManager, logger c.Logger) *Service {
 	return &Service{
 		AdminRepo:  adminRepo,
-		UserRepo:   userRepo,
+		ClientRepo: clientRepo,
 		KeyManager: keyManager,
 		Logger:     logger,
 	}
 }
 
 type AdminRepository interface {
-	GetAdmin(id int) (*users.User, error)
+	GetAdmin(id int) (*clients.Client, error)
 }
 
-func (s *Service) UpdateRole(userId int, role string, adminId string) *kmsErrors.AppError {
-	oldRole, err := s.UserRepo.GetRole(userId)
+func (s *Service) UpdateRole(clientId int, role string, adminId string) *kmsErrors.AppError {
+	oldRole, err := s.ClientRepo.GetRole(clientId)
 	if err != nil {
 		return kmsErrors.MapRepoErr(err)
 	}
 
-	if err := s.UserRepo.UpdateRole(userId, role); err != nil {
+	if err := s.ClientRepo.UpdateRole(clientId, role); err != nil {
 		return kmsErrors.MapRepoErr(err)
 	}
 
-	s.Logger.Info("User role updated", "userId", userId, "oldRole", oldRole, "newRole", role)
+	s.Logger.Info("Client role updated", "clientId", clientId, "oldRole", oldRole, "newRole", role)
 
 	return nil
 }
 
-func (s *Service) Me(userId int) (*users.User, *kmsErrors.AppError) {
-	admin, err := s.UserRepo.GetUser(userId)
+func (s *Service) Me(clientId int) (*clients.Client, *kmsErrors.AppError) {
+	admin, err := s.ClientRepo.GetClient(clientId)
 	if err != nil {
 		return nil, kmsErrors.MapRepoErr(err)
 	}
@@ -53,12 +53,12 @@ func (s *Service) Me(userId int) (*users.User, *kmsErrors.AppError) {
 }
 
 func (s *Service) GenerateSignupToken(body *GenerateSignupTokenRequest, adminId string) (string, *kmsErrors.AppError) {
-	if err := validateUsername(body.Username); err != nil {
+	if err := validateClientname(body.Clientname); err != nil {
 		return "", kmsErrors.NewAppError(
 			kmsErrors.WrapError(err, map[string]any{
-				"username": body.Username,
+				"clientname": body.Clientname,
 			}),
-			"Username does not meet minimum requirements. 4 <= len <= 64 & [a-Z0-9\\-]",
+			"Clientname does not meet minimum requirements. 4 <= len <= 64 & [a-Z0-9\\-]",
 			400,
 		)
 	}
@@ -69,41 +69,41 @@ func (s *Service) GenerateSignupToken(body *GenerateSignupTokenRequest, adminId 
 		Typ:    "signup",
 	}
 
-	token, err := auth.GenerateSignupToken(tokenGenInfo, body.Username)
+	token, err := auth.GenerateSignupToken(tokenGenInfo, body.Clientname)
 	if err != nil {
 		return "", kmsErrors.NewInternalServerError(err)
 	}
 
-	s.Logger.Info("Generated signup token", "adminId", adminId, "username", body.Username)
+	s.Logger.Info("Generated signup token", "adminId", adminId, "clientname", body.Clientname)
 
 	return token, nil
 }
 
-func (s *Service) GetUsers() ([]users.User, *kmsErrors.AppError) {
-	users, err := s.UserRepo.GetAll()
+func (s *Service) GetClients() ([]clients.Client, *kmsErrors.AppError) {
+	clients, err := s.ClientRepo.GetAll()
 	if err != nil {
 		return nil, kmsErrors.MapRepoErr(err)
 	}
 
-	return users, nil
+	return clients, nil
 }
 
-func (s *Service) DeleteUser(userId int) *kmsErrors.AppError {
-	if err := s.UserRepo.Delete(userId); err != nil {
+func (s *Service) DeleteClient(clientId int) *kmsErrors.AppError {
+	if err := s.ClientRepo.Delete(clientId); err != nil {
 		return kmsErrors.MapRepoErr(err)
 	}
 
 	return nil
 }
 
-// Allow 0-9, a-Z and '-' in username
-func validateUsername(username string) error {
-	if len(username) < 4 || len(username) > 64 {
-		return fmt.Errorf("username length should be between 4 and 64, is %d", len(username))
+// Allow 0-9, a-Z and '-' in clientname
+func validateClientname(clientname string) error {
+	if len(clientname) < 4 || len(clientname) > 64 {
+		return fmt.Errorf("clientname length should be between 4 and 64, is %d", len(clientname))
 	}
-	for _, r := range username {
+	for _, r := range clientname {
 		if !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-') {
-			return fmt.Errorf("invalid character in username (%v): %c", username, r)
+			return fmt.Errorf("invalid character in clientname (%v): %c", clientname, r)
 		}
 	}
 	return nil

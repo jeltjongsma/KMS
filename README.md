@@ -21,7 +21,7 @@ In this documentation "client" refers to **service account** — a non-human ser
 
 ## Workflows 
 ### Client registration and authentication
-1. Admin generates client signup token -> `/users/tokens/generate`
+1. Admin generates client signup token -> `/auth/signup/generate`
 2. Client registers using signup token -> `/auth/signup`
 3. Client logs in to get JWT -> ```/auth/login```
 
@@ -38,6 +38,7 @@ git clone https://github.com/jeltjongsma/KMS.git
 cd kms
 
 # Copy variables from .env.example into .env and define them
+# Keys should be 32 bytes, encoded with base64url (RFC 4648)
 cp .env.example .env
 
 # Run the application

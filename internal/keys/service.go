@@ -26,13 +26,13 @@ func NewService(keyRepo KeyRepository, keyManager c.KeyManager, logger c.Logger)
 
 type KeyRepository interface {
 	CreateKey(key *Key) (*Key, error)
-	GetKey(userId int, keyReference string) (*Key, error)
-	UpdateKey(userId int, keyReference string, newKey string) (*Key, error)
-	Delete(userId int, keyReference string) (int, error)
+	GetKey(clientId int, keyReference string) (*Key, error)
+	UpdateKey(clientId int, keyReference string, newKey string) (*Key, error)
+	Delete(clientId int, keyReference string) (int, error)
 	GetAll() ([]Key, error)
 }
 
-func (s *Service) CreateKey(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
+func (s *Service) CreateKey(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
 	if err := validateKeyReference(keyReference); err != nil {
 		return nil, kmsErrors.NewAppError(err, "Key reference does not meet minimum requirements. 0 < len <= 64 & contains only [0-9a-Z\\-]", 400)
 	}
@@ -54,7 +54,7 @@ func (s *Service) CreateKey(userId int, keyReference string) (*Key, *kmsErrors.A
 	key := &Key{
 		KeyReference: hashedReference,
 		DEK:          DEKB64,
-		UserId:       userId,
+		ClientId:     clientId,
 		Encoding:     "base64url (RFC 4648)",
 	}
 	newKey, err := s.KeyRepo.CreateKey(key)
@@ -62,7 +62,7 @@ func (s *Service) CreateKey(userId int, keyReference string) (*Key, *kmsErrors.A
 		return nil, kmsErrors.MapRepoErr(err)
 	}
 
-	s.Logger.Info("Key created", "keyId", newKey.ID, "userId", newKey.UserId)
+	s.Logger.Info("Key created", "keyId", newKey.ID, "clientId", newKey.ClientId)
 
 	return newKey, nil
 }
@@ -80,7 +80,7 @@ func validateKeyReference(keyReference string) error {
 	return nil
 }
 
-func (s *Service) GetKey(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
+func (s *Service) GetKey(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
 	if err := validateKeyReference(keyReference); err != nil {
 		return nil, kmsErrors.NewAppError(err, "Invalid key reference", 400)
 	}
@@ -90,17 +90,17 @@ func (s *Service) GetKey(userId int, keyReference string) (*Key, *kmsErrors.AppE
 	}
 
 	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), keyRefSecret)
-	key, err := s.KeyRepo.GetKey(userId, hashedReference)
+	key, err := s.KeyRepo.GetKey(clientId, hashedReference)
 	if err != nil {
 		return nil, kmsErrors.MapRepoErr(err)
 	}
 
-	s.Logger.Info("Key retrieved", "keyId", key.ID, "userId", userId)
+	s.Logger.Info("Key retrieved", "keyId", key.ID, "clientId", clientId)
 
 	return key, nil
 }
 
-func (s *Service) RenewKey(userId int, keyReference string) (*Key, *kmsErrors.AppError) {
+func (s *Service) RenewKey(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
 	if err := validateKeyReference(keyReference); err != nil {
 		return nil, kmsErrors.NewAppError(err, "Invalid key reference", 400)
 	}
@@ -117,17 +117,17 @@ func (s *Service) RenewKey(userId int, keyReference string) (*Key, *kmsErrors.Ap
 	}
 
 	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), keyRefSecret)
-	key, err := s.KeyRepo.UpdateKey(userId, hashedReference, DEKB64)
+	key, err := s.KeyRepo.UpdateKey(clientId, hashedReference, DEKB64)
 	if err != nil {
 		return nil, kmsErrors.MapRepoErr(err)
 	}
 
-	s.Logger.Info("Key updated", "keyId", key.ID, "userId", userId)
+	s.Logger.Info("Key updated", "keyId", key.ID, "clientId", clientId)
 
 	return key, nil
 }
 
-func (s *Service) DeleteKey(userId int, keyReference string) *kmsErrors.AppError {
+func (s *Service) DeleteKey(clientId int, keyReference string) *kmsErrors.AppError {
 	if err := validateKeyReference(keyReference); err != nil {
 		return kmsErrors.NewAppError(err, "Invalid key reference", 400)
 	}
@@ -138,12 +138,12 @@ func (s *Service) DeleteKey(userId int, keyReference string) *kmsErrors.AppError
 	}
 
 	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), keyRefSecret)
-	keyId, err := s.KeyRepo.Delete(userId, hashedReference)
+	keyId, err := s.KeyRepo.Delete(clientId, hashedReference)
 	if err != nil {
 		return kmsErrors.MapRepoErr(err)
 	}
 
-	s.Logger.Info("Key deleted", "keyId", keyId, "userId", userId)
+	s.Logger.Info("Key deleted", "keyId", keyId, "clientId", clientId)
 
 	return nil
 }

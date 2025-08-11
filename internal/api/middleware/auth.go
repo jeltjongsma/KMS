@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"kms/internal/auth"
+	"kms/internal/clients"
 	"kms/internal/httpctx"
-	"kms/internal/users"
 	kmsErrors "kms/pkg/errors"
 	"net/http"
 	"strconv"
@@ -57,7 +57,7 @@ func Authorize(jwtSecret []byte) func(httpctx.AppHandler) httpctx.AppHandler {
 	}
 }
 
-func RequireAdmin(userRepo users.UserRepository) func(httpctx.AppHandler) httpctx.AppHandler {
+func RequireAdmin(clientRepo clients.ClientRepository) func(httpctx.AppHandler) httpctx.AppHandler {
 	return func(next httpctx.AppHandler) httpctx.AppHandler {
 		return func(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
 			token, err := httpctx.ExtractToken(r.Context())
@@ -65,12 +65,12 @@ func RequireAdmin(userRepo users.UserRepository) func(httpctx.AppHandler) httpct
 				return kmsErrors.NewInternalServerError(err)
 			}
 
-			userId, err := strconv.Atoi(token.Payload.Sub)
+			clientId, err := strconv.Atoi(token.Payload.Sub)
 			if err != nil {
 				return kmsErrors.NewInternalServerError(err)
 			}
 
-			role, err := userRepo.GetRole(userId)
+			role, err := clientRepo.GetRole(clientId)
 			if err != nil {
 				return kmsErrors.MapRepoErr(err)
 			}

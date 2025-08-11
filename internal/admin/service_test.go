@@ -2,26 +2,26 @@ package admin
 
 import (
 	"errors"
+	"kms/internal/clients"
 	"kms/internal/test"
 	"kms/internal/test/mocks"
-	"kms/internal/users"
 	"strings"
 	"testing"
 )
 
 func TestService_UpdateRole_Success(t *testing.T) {
 	mockRepo := NewAdminRepositoryMock()
-	mockUserRepo := users.NewUserRepositoryMock()
+	mockClientRepo := clients.NewClientRepositoryMock()
 	mockLogger := mocks.NewLoggerMock()
 
-	mockUserRepo.GetRoleFunc = func(userId int) (string, error) {
-		return "user", nil
+	mockClientRepo.GetRoleFunc = func(clientId int) (string, error) {
+		return "client", nil
 	}
-	mockUserRepo.UpdateRoleFunc = func(userId int, role string) error {
+	mockClientRepo.UpdateRoleFunc = func(clientId int, role string) error {
 		return nil
 	}
 
-	service := NewService(mockRepo, mockUserRepo, nil, mockLogger)
+	service := NewService(mockRepo, mockClientRepo, nil, mockLogger)
 	err := service.UpdateRole(1, "admin", "admin123")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -30,14 +30,14 @@ func TestService_UpdateRole_Success(t *testing.T) {
 
 func TestService_UpdateRole_RepoGetRoleError(t *testing.T) {
 	mockRepo := NewAdminRepositoryMock()
-	mockUserRepo := users.NewUserRepositoryMock()
+	mockClientRepo := clients.NewClientRepositoryMock()
 	mockLogger := mocks.NewLoggerMock()
 
-	mockUserRepo.GetRoleFunc = func(userId int) (string, error) {
+	mockClientRepo.GetRoleFunc = func(clientId int) (string, error) {
 		return "", errors.New("repo error")
 	}
 
-	service := NewService(mockRepo, mockUserRepo, nil, mockLogger)
+	service := NewService(mockRepo, mockClientRepo, nil, mockLogger)
 	err := service.UpdateRole(1, "admin", "admin123")
 	if err == nil || !strings.Contains(err.Err.Error(), "repo error") {
 		t.Fatalf("expected repo error, got %v", err)
@@ -49,17 +49,17 @@ func TestService_UpdateRole_RepoGetRoleError(t *testing.T) {
 
 func TestService_UpdateRole_RepoUpdateRoleError(t *testing.T) {
 	mockRepo := NewAdminRepositoryMock()
-	mockUserRepo := users.NewUserRepositoryMock()
+	mockClientRepo := clients.NewClientRepositoryMock()
 	mockLogger := mocks.NewLoggerMock()
 
-	mockUserRepo.GetRoleFunc = func(userId int) (string, error) {
-		return "user", nil
+	mockClientRepo.GetRoleFunc = func(clientId int) (string, error) {
+		return "client", nil
 	}
-	mockUserRepo.UpdateRoleFunc = func(userId int, role string) error {
+	mockClientRepo.UpdateRoleFunc = func(clientId int, role string) error {
 		return errors.New("update error")
 	}
 
-	service := NewService(mockRepo, mockUserRepo, nil, mockLogger)
+	service := NewService(mockRepo, mockClientRepo, nil, mockLogger)
 	err := service.UpdateRole(1, "admin", "admin123")
 	if err == nil || !strings.Contains(err.Err.Error(), "update error") {
 		t.Fatalf("expected update error, got %v", err)
@@ -71,14 +71,14 @@ func TestService_UpdateRole_RepoUpdateRoleError(t *testing.T) {
 
 func TestService_Me_Success(t *testing.T) {
 	mockRepo := NewAdminRepositoryMock()
-	mockUserRepo := users.NewUserRepositoryMock()
+	mockClientRepo := clients.NewClientRepositoryMock()
 	mockLogger := mocks.NewLoggerMock()
 
-	mockUserRepo.GetUserFunc = func(userId int) (*users.User, error) {
-		return &users.User{Username: "username", Role: "admin"}, nil
+	mockClientRepo.GetClientFunc = func(clientId int) (*clients.Client, error) {
+		return &clients.Client{Clientname: "clientname", Role: "admin"}, nil
 	}
 
-	service := NewService(mockRepo, mockUserRepo, nil, mockLogger)
+	service := NewService(mockRepo, mockClientRepo, nil, mockLogger)
 	admin, err := service.Me(1)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -86,21 +86,21 @@ func TestService_Me_Success(t *testing.T) {
 	if admin.Role != "admin" {
 		t.Errorf("expected role 'admin', got %s", admin.Role)
 	}
-	if admin.Username != "username" {
-		t.Errorf("expected username 'username', got %s", admin.Username)
+	if admin.Clientname != "clientname" {
+		t.Errorf("expected clientname 'clientname', got %s", admin.Clientname)
 	}
 }
 
 func TestService_Me_Error(t *testing.T) {
 	mockRepo := NewAdminRepositoryMock()
-	mockUserRepo := users.NewUserRepositoryMock()
+	mockClientRepo := clients.NewClientRepositoryMock()
 	mockLogger := mocks.NewLoggerMock()
 
-	mockUserRepo.GetUserFunc = func(userId int) (*users.User, error) {
+	mockClientRepo.GetClientFunc = func(clientId int) (*clients.Client, error) {
 		return nil, errors.New("repo error")
 	}
 
-	service := NewService(mockRepo, mockUserRepo, nil, mockLogger)
+	service := NewService(mockRepo, mockClientRepo, nil, mockLogger)
 	admin, err := service.Me(1)
 	if admin != nil {
 		t.Fatalf("expected nil admin, got %v", admin)
@@ -115,7 +115,7 @@ func TestService_Me_Error(t *testing.T) {
 
 func TestService_GenerateSignupToken_Success(t *testing.T) {
 	mockRepo := NewAdminRepositoryMock()
-	mockUserRepo := users.NewUserRepositoryMock()
+	mockClientRepo := clients.NewClientRepositoryMock()
 	mockLogger := mocks.NewLoggerMock()
 	mockKeyManager := mocks.NewKeyManagerMock()
 
@@ -123,10 +123,10 @@ func TestService_GenerateSignupToken_Success(t *testing.T) {
 		return []byte("test-signup-key")
 	}
 
-	service := NewService(mockRepo, mockUserRepo, mockKeyManager, mockLogger)
+	service := NewService(mockRepo, mockClientRepo, mockKeyManager, mockLogger)
 	body := &GenerateSignupTokenRequest{
-		Username: "testuser",
-		Ttl:      3600,
+		Clientname: "testclient",
+		Ttl:        3600,
 	}
 	token, err := service.GenerateSignupToken(body, "admin123")
 	if err != nil {
@@ -137,61 +137,61 @@ func TestService_GenerateSignupToken_Success(t *testing.T) {
 	}
 }
 
-func TestService_GenerateSignupToken_validateUsernameError(t *testing.T) {
+func TestService_GenerateSignupToken_validateClientnameError(t *testing.T) {
 	mockRepo := NewAdminRepositoryMock()
-	mockUserRepo := users.NewUserRepositoryMock()
+	mockClientRepo := clients.NewClientRepositoryMock()
 	mockLogger := mocks.NewLoggerMock()
 	mockKeyManager := mocks.NewKeyManagerMock()
 
-	service := NewService(mockRepo, mockUserRepo, mockKeyManager, mockLogger)
+	service := NewService(mockRepo, mockClientRepo, mockKeyManager, mockLogger)
 	body := &GenerateSignupTokenRequest{
-		Username: "invalid@user",
-		Ttl:      3600,
+		Clientname: "invalid@client",
+		Ttl:        3600,
 	}
 	_, err := service.GenerateSignupToken(body, "admin123")
-	if err == nil || !strings.Contains(err.Err.Error(), "invalid character in username") {
-		t.Fatalf("expected invalid username error, got %v", err)
+	if err == nil || !strings.Contains(err.Err.Error(), "invalid character in clientname") {
+		t.Fatalf("expected invalid clientname error, got %v", err)
 	}
 	if err.Code != 400 {
 		t.Errorf("expected error code 400, got %d", err.Code)
 	}
 }
 
-func TestService_validateUsername(t *testing.T) {
+func TestService_validateClientname(t *testing.T) {
 	tests := []struct {
-		username    string
+		clientname  string
 		expectError bool
 	}{
-		{"validUser", false},
-		{"valid-user123", false},
-		{"invalid@user", true},
+		{"validClient", false},
+		{"valid-client123", false},
+		{"invalid@client", true},
 		{"", true},
 		{"abc", true},
 		{"valid-key-with-maximum-length-12345678901234567890123456789012345678901234567890123456789012345678901234567890", true},
 	}
 	for _, tt := range tests {
-		err := validateUsername(tt.username)
+		err := validateClientname(tt.clientname)
 		if (err != nil) != tt.expectError {
-			t.Errorf("validateUsername(%q) error = %v, expectError %v", tt.username, err, tt.expectError)
+			t.Errorf("validateClientname(%q) error = %v, expectError %v", tt.clientname, err, tt.expectError)
 			continue
 		}
 	}
 }
 
-func TestService_GetUsers_Success(t *testing.T) {
+func TestService_GetClients_Success(t *testing.T) {
 	mockAdminRepo := NewAdminRepositoryMock()
-	mockUserRepo := users.NewUserRepositoryMock()
-	mockUserRepo.GetAllFunc = func() ([]users.User, error) {
-		return []users.User{
-			{ID: 1, Username: "username"},
+	mockClientRepo := clients.NewClientRepositoryMock()
+	mockClientRepo.GetAllFunc = func() ([]clients.Client, error) {
+		return []clients.Client{
+			{ID: 1, Clientname: "clientname"},
 		}, nil
 	}
 	mockKeyManager := mocks.NewKeyManagerMock()
 	mockLogger := mocks.NewLoggerMock()
 
-	service := NewService(mockAdminRepo, mockUserRepo, mockKeyManager, mockLogger)
+	service := NewService(mockAdminRepo, mockClientRepo, mockKeyManager, mockLogger)
 
-	u, err := service.GetUsers()
+	u, err := service.GetClients()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -200,23 +200,23 @@ func TestService_GetUsers_Success(t *testing.T) {
 		t.Errorf("expected length 1, got %d", len(u))
 	}
 
-	if u[0].ID != 1 || u[0].Username != "username" {
-		t.Errorf("expected ID=1 and Username='username', got %v", u[0])
+	if u[0].ID != 1 || u[0].Clientname != "clientname" {
+		t.Errorf("expected ID=1 and Clientname='clientname', got %v", u[0])
 	}
 }
 
-func TestService_GetUsers_RepoError(t *testing.T) {
+func TestService_GetClients_RepoError(t *testing.T) {
 	mockAdminRepo := NewAdminRepositoryMock()
-	mockUserRepo := users.NewUserRepositoryMock()
-	mockUserRepo.GetAllFunc = func() ([]users.User, error) {
+	mockClientRepo := clients.NewClientRepositoryMock()
+	mockClientRepo.GetAllFunc = func() ([]clients.Client, error) {
 		return nil, errors.New("repo error")
 	}
 	mockKeyManager := mocks.NewKeyManagerMock()
 	mockLogger := mocks.NewLoggerMock()
 
-	service := NewService(mockAdminRepo, mockUserRepo, mockKeyManager, mockLogger)
+	service := NewService(mockAdminRepo, mockClientRepo, mockKeyManager, mockLogger)
 
-	_, err := service.GetUsers()
+	_, err := service.GetClients()
 	if err == nil {
 		t.Fatal("expected repo error, got nil")
 	}
@@ -224,34 +224,34 @@ func TestService_GetUsers_RepoError(t *testing.T) {
 	test.RequireContains(t, err.Err.Error(), "repo error")
 }
 
-func TestService_DeleteUser_Success(t *testing.T) {
+func TestService_DeleteClient_Success(t *testing.T) {
 	mockAdminRepo := NewAdminRepositoryMock()
-	mockUserRepo := users.NewUserRepositoryMock()
-	mockUserRepo.DeleteFunc = func(userId int) error {
+	mockClientRepo := clients.NewClientRepositoryMock()
+	mockClientRepo.DeleteFunc = func(clientId int) error {
 		return nil
 	}
 	mockKeyManager := mocks.NewKeyManagerMock()
 	mockLogger := mocks.NewLoggerMock()
 
-	service := NewService(mockAdminRepo, mockUserRepo, mockKeyManager, mockLogger)
+	service := NewService(mockAdminRepo, mockClientRepo, mockKeyManager, mockLogger)
 
-	if err := service.DeleteUser(1); err != nil {
+	if err := service.DeleteClient(1); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
-func TestService_DeleteUser_RepoError(t *testing.T) {
+func TestService_DeleteClient_RepoError(t *testing.T) {
 	mockAdminRepo := NewAdminRepositoryMock()
-	mockUserRepo := users.NewUserRepositoryMock()
-	mockUserRepo.DeleteFunc = func(userId int) error {
+	mockClientRepo := clients.NewClientRepositoryMock()
+	mockClientRepo.DeleteFunc = func(clientId int) error {
 		return errors.New("repo error")
 	}
 	mockKeyManager := mocks.NewKeyManagerMock()
 	mockLogger := mocks.NewLoggerMock()
 
-	service := NewService(mockAdminRepo, mockUserRepo, mockKeyManager, mockLogger)
+	service := NewService(mockAdminRepo, mockClientRepo, mockKeyManager, mockLogger)
 
-	err := service.DeleteUser(1)
+	err := service.DeleteClient(1)
 
 	if err == nil {
 		t.Fatal("expected error")

@@ -8,7 +8,7 @@ import (
 func TestConnectDatabase_InvalidConfig(t *testing.T) {
 	cfg := c.KmsConfig{
 		"DB_PORT":     "5432",
-		"DB_USER":     "invalid_user",
+		"DB_USER":     "invalid_client",
 		"DB_PASSWORD": "invalid_pass",
 		"DB_NAME":     "invalid_db",
 		"DB_SSLMODE":  "disable",

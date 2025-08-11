@@ -14,33 +14,33 @@ func NewPostgresKeyRepo(db *sql.DB) *PostgresKeyRepo {
 }
 
 func (r *PostgresKeyRepo) CreateKey(key *keys.Key) (*keys.Key, error) {
-	query := "INSERT INTO keys (keyReference, dek, userId, encoding) VALUES ($1, $2, $3, $4) RETURNING *"
+	query := "INSERT INTO keys (keyReference, dek, clientId, encoding) VALUES ($1, $2, $3, $4) RETURNING *"
 	var newKey keys.Key
-	err := r.db.QueryRow(query, key.KeyReference, key.DEK, key.UserId, key.Encoding).
-		Scan(&newKey.ID, &newKey.KeyReference, &newKey.DEK, &newKey.UserId, &newKey.Encoding)
+	err := r.db.QueryRow(query, key.KeyReference, key.DEK, key.ClientId, key.Encoding).
+		Scan(&newKey.ID, &newKey.KeyReference, &newKey.DEK, &newKey.ClientId, &newKey.Encoding)
 	return &newKey, err
 }
 
-func (r *PostgresKeyRepo) GetKey(userId int, keyReference string) (*keys.Key, error) {
-	query := "SELECT * FROM keys WHERE userId = $1 AND keyReference = $2"
+func (r *PostgresKeyRepo) GetKey(clientId int, keyReference string) (*keys.Key, error) {
+	query := "SELECT * FROM keys WHERE clientId = $1 AND keyReference = $2"
 	var key keys.Key
-	err := r.db.QueryRow(query, userId, keyReference).
-		Scan(&key.ID, &key.KeyReference, &key.DEK, &key.UserId, &key.Encoding)
+	err := r.db.QueryRow(query, clientId, keyReference).
+		Scan(&key.ID, &key.KeyReference, &key.DEK, &key.ClientId, &key.Encoding)
 	return &key, err
 }
 
-func (r *PostgresKeyRepo) UpdateKey(userId int, keyReference string, newKey string) (*keys.Key, error) {
-	query := "UPDATE keys SET dek = $1 WHERE userId = $2 AND keyReference = $3 RETURNING *"
+func (r *PostgresKeyRepo) UpdateKey(clientId int, keyReference string, newKey string) (*keys.Key, error) {
+	query := "UPDATE keys SET dek = $1 WHERE clientId = $2 AND keyReference = $3 RETURNING *"
 	var key keys.Key
-	err := r.db.QueryRow(query, newKey, userId, keyReference).
-		Scan(&key.ID, &key.KeyReference, &key.DEK, &key.UserId, &key.Encoding)
+	err := r.db.QueryRow(query, newKey, clientId, keyReference).
+		Scan(&key.ID, &key.KeyReference, &key.DEK, &key.ClientId, &key.Encoding)
 	return &key, err
 }
 
-func (r *PostgresKeyRepo) Delete(userId int, keyReference string) (int, error) {
-	query := "DELETE FROM keys WHERE userId = $1 AND keyReference = $2 RETURNING id"
+func (r *PostgresKeyRepo) Delete(clientId int, keyReference string) (int, error) {
+	query := "DELETE FROM keys WHERE clientId = $1 AND keyReference = $2 RETURNING id"
 	var keyId int
-	err := r.db.QueryRow(query, userId, keyReference).Scan(&keyId)
+	err := r.db.QueryRow(query, clientId, keyReference).Scan(&keyId)
 	return keyId, err
 }
 
@@ -55,7 +55,7 @@ func (r *PostgresKeyRepo) GetAll() ([]keys.Key, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var key keys.Key
-		err := rows.Scan(&key.ID, &key.KeyReference, &key.DEK, &key.UserId, &key.Encoding)
+		err := rows.Scan(&key.ID, &key.KeyReference, &key.DEK, &key.ClientId, &key.Encoding)
 		if err != nil {
 			return allKeys, err
 		}

@@ -35,14 +35,14 @@ func InitStaticKeyManager(cfg c.KmsConfig) (*StaticKeyManager, error) {
 	if err != nil {
 		return nil, err
 	}
-	usernameKey, err := b64.RawURLEncoding.DecodeString(cfg["USERNAME_SECRET"])
+	clientnameKey, err := b64.RawURLEncoding.DecodeString(cfg["USERNAME_SECRET"])
 	if err != nil {
 		return nil, err
 	}
 
 	hashKeys := map[string][]byte{
 		"keyReference": keyRefKey,
-		"username":     usernameKey,
+		"clientname":     clientnameKey,
 	}
 
 	return &StaticKeyManager{
