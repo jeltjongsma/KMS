@@ -113,6 +113,7 @@ func requireKey(appCtx *bootstrap.AppContext, clientID int, keyRef string) (*key
 		KeyReference: hashing.HashHS256ToB64([]byte(keyRef), keyRefHashKey),
 		DEK:          dek,
 		ClientId:     clientID,
+		Version:      1,
 		Encoding:     "encoding",
 	})
 }

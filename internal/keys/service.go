@@ -26,7 +26,7 @@ func NewService(keyRepo KeyRepository, keyManager c.KeyManager, logger c.Logger)
 
 type KeyRepository interface {
 	CreateKey(key *Key) (*Key, error)
-	GetKey(clientId int, keyReference string) (*Key, error)
+	GetKey(clientId int, keyReference string, version int) (*Key, error)
 	UpdateKey(clientId int, keyReference string, newKey string) (*Key, error)
 	Delete(clientId int, keyReference string) (int, error)
 	GetAll() ([]Key, error)
@@ -52,11 +52,14 @@ func (s *Service) CreateKey(clientId int, keyReference string) (*Key, *kmsErrors
 	DEKB64 := b64.RawURLEncoding.EncodeToString(DEKBytes)
 
 	key := &Key{
-		KeyReference: hashedReference,
-		DEK:          DEKB64,
 		ClientId:     clientId,
+		KeyReference: hashedReference,
+		Version:      1,
+		DEK:          DEKB64,
+		State:        StateInUse,
 		Encoding:     "base64url (RFC 4648)",
 	}
+
 	newKey, err := s.KeyRepo.CreateKey(key)
 	if err != nil {
 		return nil, kmsErrors.MapRepoErr(err)
@@ -80,7 +83,7 @@ func validateKeyReference(keyReference string) error {
 	return nil
 }
 
-func (s *Service) GetKey(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
+func (s *Service) GetKey(clientId int, keyReference string, version int) (*Key, *kmsErrors.AppError) {
 	if err := validateKeyReference(keyReference); err != nil {
 		return nil, kmsErrors.NewAppError(err, "Invalid key reference", 400)
 	}
@@ -90,7 +93,7 @@ func (s *Service) GetKey(clientId int, keyReference string) (*Key, *kmsErrors.Ap
 	}
 
 	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), keyRefSecret)
-	key, err := s.KeyRepo.GetKey(clientId, hashedReference)
+	key, err := s.KeyRepo.GetKey(clientId, hashedReference, version)
 	if err != nil {
 		return nil, kmsErrors.MapRepoErr(err)
 	}

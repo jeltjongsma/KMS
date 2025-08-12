@@ -33,8 +33,8 @@ func (r *EncryptedKeyRepo) CreateKey(key *keys.Key) (*keys.Key, error) {
 	return retKey, nil
 }
 
-func (r *EncryptedKeyRepo) GetKey(id int, keyReference string) (*keys.Key, error) {
-	key, err := r.KeyRepo.GetKey(id, keyReference)
+func (r *EncryptedKeyRepo) GetKey(id int, keyReference string, version int) (*keys.Key, error) {
+	key, err := r.KeyRepo.GetKey(id, keyReference, version)
 	if err != nil {
 		return nil, err
 	}

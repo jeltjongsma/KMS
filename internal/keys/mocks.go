@@ -7,7 +7,7 @@ import (
 
 // Repository mock for Key operations
 type KeyRepositoryMock struct {
-	GetKeyFunc    func(id int, keyReference string) (*Key, error)
+	GetKeyFunc    func(id int, keyReference string, version int) (*Key, error)
 	CreateKeyFunc func(key *Key) (*Key, error)
 	UpdateKeyFunc func(clientId int, keyReference, newKey string) (*Key, error)
 	DeleteFunc    func(clientId int, keyReference string) (int, error)
@@ -18,9 +18,9 @@ func NewKeyRepositoryMock() *KeyRepositoryMock {
 	return &KeyRepositoryMock{}
 }
 
-func (m *KeyRepositoryMock) GetKey(id int, keyReference string) (*Key, error) {
+func (m *KeyRepositoryMock) GetKey(id int, keyReference string, version int) (*Key, error) {
 	if m.GetKeyFunc != nil {
-		return m.GetKeyFunc(id, keyReference)
+		return m.GetKeyFunc(id, keyReference, version)
 	}
 	return nil, errors.New("GetKey not implemented")
 }
@@ -55,7 +55,7 @@ func (m *KeyRepositoryMock) GetAll() ([]Key, error) {
 
 // Service mock for Key operations
 type KeyServiceMock struct {
-	GetKeyFunc    func(clientId int, keyReference string) (*Key, *kmsErrors.AppError)
+	GetKeyFunc    func(clientId int, keyReference string, version int) (*Key, *kmsErrors.AppError)
 	CreateKeyFunc func(clientId int, keyReference string) (*Key, *kmsErrors.AppError)
 	RenewKeyFunc  func(clientId int, keyReference string) (*Key, *kmsErrors.AppError)
 	DeleteKeyFunc func(clientId int, keyReference string) *kmsErrors.AppError
@@ -66,9 +66,9 @@ func NewKeyServiceMock() *KeyServiceMock {
 	return &KeyServiceMock{}
 }
 
-func (m *KeyServiceMock) GetKey(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
+func (m *KeyServiceMock) GetKey(clientId int, keyReference string, version int) (*Key, *kmsErrors.AppError) {
 	if m.GetKeyFunc != nil {
-		return m.GetKeyFunc(clientId, keyReference)
+		return m.GetKeyFunc(clientId, keyReference, version)
 	}
 	return nil, kmsErrors.LiftToAppError(errors.New("GetKey not implemented in mock"))
 }

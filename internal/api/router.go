@@ -55,7 +55,7 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 			),
 			mw.NewRoute(
 				"GET",
-				"/keys/{keyReference}",
+				"/keys/{keyReference}/{version}",
 				withAuth(keyHandler.GetKey),
 			),
 			mw.NewRoute(

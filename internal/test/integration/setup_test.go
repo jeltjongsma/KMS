@@ -55,19 +55,23 @@ func TestMain(m *testing.M) {
 			Name: "keys",
 			Fields: map[string]string{
 				"id":           "SERIAL PRIMARY KEY",
-				"keyReference": "VARCHAR(64) NOT NULL",
-				"dek":          "VARCHAR(80) NOT NULL",
 				"clientId":     "INTEGER NOT NULL",
+				"keyReference": "VARCHAR(64) NOT NULL",
+				"version":      "INTEGER NOT NULL",
+				"dek":          "VARCHAR(80) NOT NULL",
+				"state":        "VARCHAR(52) NOT NULL",
 				"encoding":     "VARCHAR(64) NOT NULL",
 			},
 			Keys: []string{
 				"id",
-				"keyReference",
-				"dek",
 				"clientId",
+				"keyReference",
+				"version",
+				"dek",
+				"state",
 				"encoding",
 			},
-			Unique: []string{"clientId", "keyReference"},
+			Unique: []string{"clientId", "keyReference", "version"},
 		},
 		{
 			Name: "clients",
@@ -127,7 +131,7 @@ func TestMethodNotAllowed(t *testing.T) {
 		allowedMethods []string
 	}{
 		{"/keys/actions/generate", []string{"POST"}},
-		{"/keys/keyRef", []string{"GET"}},
+		{"/keys/keyRef/1", []string{"GET"}},
 		{"/keys/keyRef/actions/renew", []string{"PATCH"}},
 		{"/keys/keyRef/actions/delete", []string{"DELETE"}},
 		{"/auth/signup", []string{"POST"}},

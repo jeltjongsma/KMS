@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"kms/internal/test"
 	"kms/pkg/hashing"
+	"strconv"
 	"testing"
 )
 
@@ -25,6 +26,7 @@ func TestGenerateKey(t *testing.T) {
 
 	body := GetBody(resp)
 	test.RequireContains(t, body, `"dek":`)
+	test.RequireContains(t, body, `"version":`)
 	test.RequireContains(t, body, `"encoding":`)
 
 	keyRefHashKey, err := appCtx.KeyManager.HashKey("keyReference")
@@ -32,7 +34,7 @@ func TestGenerateKey(t *testing.T) {
 	keyRefHash := hashing.HashHS256ToB64([]byte(keyRef), keyRefHashKey)
 
 	// check if key was created
-	key, err := appCtx.KeyRepo.GetKey(u.ID, keyRefHash)
+	key, err := appCtx.KeyRepo.GetKey(u.ID, keyRefHash, 1)
 	test.RequireErrNil(t, err)
 
 	// check if key ref hash is correct
@@ -85,7 +87,7 @@ func TestGetKey(t *testing.T) {
 	token, err := requireJWT(appCtx, u)
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("GET", "/keys/"+keyRef, "",
+	resp, err := doRequest("GET", "/keys/"+keyRef+"/"+strconv.Itoa(key.Version), "",
 		"Authorization", "Bearer "+token)
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
@@ -121,10 +123,10 @@ func TestGetKey_MissingToken(t *testing.T) {
 	test.RequireErrNil(t, err)
 
 	keyRef := "db-key"
-	_, err = requireKey(appCtx, u.ID, keyRef)
+	key, err := requireKey(appCtx, u.ID, keyRef)
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("GET", "/keys/"+keyRef, "")
+	resp, err := doRequest("GET", "/keys/"+keyRef+"/"+strconv.Itoa(key.Version), "")
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
 
@@ -138,7 +140,7 @@ func TestGetKey_NotFound(t *testing.T) {
 	token, err := requireJWT(appCtx, u)
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("GET", "/keys/not-found", "",
+	resp, err := doRequest("GET", "/keys/not-found/1", "",
 		"Authorization", "Bearer "+token)
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
@@ -154,7 +156,7 @@ func TestGetKey_InvalidKeyReference(t *testing.T) {
 	token, err := requireJWT(appCtx, u)
 	test.RequireErrNil(t, err)
 
-	resp, err := doRequest("GET", "/keys/invalid+reference", "",
+	resp, err := doRequest("GET", "/keys/invalid+reference/1", "",
 		"Authorization", "Bearer "+token)
 	requireReqNotFailed(t, err)
 	defer resp.Body.Close()
@@ -249,7 +251,7 @@ func TestDeleteKey(t *testing.T) {
 	requireStatusCode(t, resp.StatusCode, 204)
 
 	// check if key is actually deleted
-	_, err = appCtx.KeyRepo.GetKey(u.ID, key.KeyReference)
+	_, err = appCtx.KeyRepo.GetKey(u.ID, key.KeyReference, 1)
 	test.RequireErrNotNil(t, err)
 	test.RequireContains(t, err.Error(), "no rows")
 }
@@ -269,7 +271,7 @@ func TestDeleteKey_MissingToken(t *testing.T) {
 	requireUnauthorized(t, resp)
 
 	// check if key wasn't deleted regardless
-	_, err = appCtx.KeyRepo.GetKey(u.ID, key.KeyReference)
+	_, err = appCtx.KeyRepo.GetKey(u.ID, key.KeyReference, 1)
 	test.RequireErrNil(t, err)
 }
 

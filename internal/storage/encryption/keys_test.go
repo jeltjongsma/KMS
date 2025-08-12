@@ -113,12 +113,12 @@ func TestGetKey_Success(t *testing.T) {
 	test.RequireErrNil(t, err)
 
 	mockRepo := keys.NewKeyRepositoryMock()
-	mockRepo.GetKeyFunc = func(id int, keyReference string) (*keys.Key, error) {
+	mockRepo.GetKeyFunc = func(id int, keyReference string, v int) (*keys.Key, error) {
 		return &enc, nil
 	}
 
 	repo := NewEncryptedKeyRepo(mockRepo, keyManager)
-	retrieved, err := repo.GetKey(1, "ref")
+	retrieved, err := repo.GetKey(1, "ref", 1)
 
 	test.RequireErrNil(t, err)
 
@@ -129,13 +129,13 @@ func TestGetKey_Success(t *testing.T) {
 
 func TestGetKey_RepoError(t *testing.T) {
 	mockRepo := keys.NewKeyRepositoryMock()
-	mockRepo.GetKeyFunc = func(id int, ref string) (*keys.Key, error) {
+	mockRepo.GetKeyFunc = func(id int, ref string, v int) (*keys.Key, error) {
 		return nil, errors.New("repo error")
 	}
 	keyManager := mocks.NewKeyManagerMock()
 	repo := NewEncryptedKeyRepo(mockRepo, keyManager)
 
-	_, err := repo.GetKey(1, "ref")
+	_, err := repo.GetKey(1, "ref", 1)
 
 	test.RequireErrNotNil(t, err)
 	test.RequireErrContains(t, err, "repo error")

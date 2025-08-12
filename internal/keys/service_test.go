@@ -95,7 +95,7 @@ func TestService_CreateKey_RepoError(t *testing.T) {
 
 func TestService_GetKey_Success(t *testing.T) {
 	mockRepo := NewKeyRepositoryMock()
-	mockRepo.GetKeyFunc = func(clientId int, keyReference string) (*Key, error) {
+	mockRepo.GetKeyFunc = func(clientId int, keyReference string, version int) (*Key, error) {
 		return &Key{ID: clientId, KeyReference: "testKey"}, nil
 	}
 	mockLogger := mocks.NewLoggerMock()
@@ -106,7 +106,7 @@ func TestService_GetKey_Success(t *testing.T) {
 
 	service := NewService(mockRepo, mockKeyManager, mockLogger)
 
-	key, err := service.GetKey(1, "testKey")
+	key, err := service.GetKey(1, "testKey", 1)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -126,7 +126,7 @@ func TestService_GetKey_KeyManagerError(t *testing.T) {
 		return nil, errors.New("hashing error")
 	}
 	service := NewService(mockRepo, mockKeyManager, mockLogger)
-	_, err := service.GetKey(1, "testKey")
+	_, err := service.GetKey(1, "testKey", 1)
 	if err == nil || err.Err.Error() != "hashing error" {
 		t.Fatalf("expected hashing error, got %v", err)
 	}
@@ -137,13 +137,13 @@ func TestService_GetKey_KeyManagerError(t *testing.T) {
 
 func TestService_GetKey_RepoError(t *testing.T) {
 	mockRepo := NewKeyRepositoryMock()
-	mockRepo.GetKeyFunc = func(id int, keyReference string) (*Key, error) {
+	mockRepo.GetKeyFunc = func(id int, keyReference string, v int) (*Key, error) {
 		return nil, errors.New("repo error")
 	}
 	mockLogger := mocks.NewLoggerMock()
 	mockKeyManager := mocks.NewKeyManagerMock()
 	service := NewService(mockRepo, mockKeyManager, mockLogger)
-	_, err := service.GetKey(1, "testKey")
+	_, err := service.GetKey(1, "testKey", 1)
 	if err == nil || err.Err.Error() != "repo error" {
 		t.Fatalf("expected repo error, got %v", err)
 	}

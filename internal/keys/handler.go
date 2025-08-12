@@ -24,7 +24,7 @@ func NewHandler(keyService KeyService, logger c.Logger) *Handler {
 
 type KeyService interface {
 	CreateKey(clientId int, keyReference string) (*Key, *kmsErrors.AppError)
-	GetKey(clientId int, keyReference string) (*Key, *kmsErrors.AppError)
+	GetKey(clientId int, keyReference string, version int) (*Key, *kmsErrors.AppError)
 	RenewKey(clientId int, keyReference string) (*Key, *kmsErrors.AppError)
 	DeleteKey(clientId int, keyReference string) *kmsErrors.AppError
 	GetAll() ([]Key, *kmsErrors.AppError)
@@ -51,10 +51,7 @@ func (h *Handler) GenerateKey(w http.ResponseWriter, r *http.Request) *kmsErrors
 		return appErr
 	}
 
-	response := &KeyResponse{
-		DEK:      key.DEK,
-		Encoding: key.Encoding,
-	}
+	response := BuildKeyResponse(key)
 
 	return pHttp.WriteJSON(w, response)
 }
@@ -75,15 +72,22 @@ func (h *Handler) GetKey(w http.ResponseWriter, r *http.Request) *kmsErrors.AppE
 		return kmsErrors.NewInternalServerError(err)
 	}
 
-	key, appErr := h.Service.GetKey(clientId, keyReference)
+	versionStr, err := httpctx.GetRouteParam(r.Context(), "version")
+	if err != nil {
+		return kmsErrors.NewInternalServerError(err)
+	}
+
+	version, err := strconv.Atoi(versionStr)
+	if err != nil {
+		return kmsErrors.NewAppError(err, "Invalid path parameter", 400)
+	}
+
+	key, appErr := h.Service.GetKey(clientId, keyReference, version)
 	if appErr != nil {
 		return appErr
 	}
 
-	response := &KeyResponse{
-		DEK:      key.DEK,
-		Encoding: key.Encoding,
-	}
+	response := BuildKeyResponse(key)
 
 	return pHttp.WriteJSON(w, response)
 }
@@ -109,10 +113,7 @@ func (h *Handler) RenewKey(w http.ResponseWriter, r *http.Request) *kmsErrors.Ap
 		return appErr
 	}
 
-	response := &KeyResponse{
-		DEK:      key.DEK,
-		Encoding: key.Encoding,
-	}
+	response := BuildKeyResponse(key)
 
 	return pHttp.WriteJSON(w, response)
 }

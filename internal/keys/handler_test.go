@@ -36,8 +36,8 @@ func TestHandler_GenerateKey_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(rr.Body.String(), `"dek":"dek","encoding":"encoding"`) {
-		t.Errorf("expected \"dek\":\"dek\",\"encoding\":\"encoding\", got: %v", rr.Body.String())
+	if !strings.Contains(rr.Body.String(), `"dek":"dek","version":0,"encoding":"encoding"`) {
+		t.Errorf("expected \"dek\":\"dek\",\"version\":0,\"encoding\":\"encoding\", got: %v", rr.Body.String())
 	}
 }
 
@@ -144,9 +144,10 @@ func TestHandler_GenerateKey_ServiceError(t *testing.T) {
 
 func TestHandler_GetKey_Success(t *testing.T) {
 	mockService := NewKeyServiceMock()
-	mockService.GetKeyFunc = func(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
+	mockService.GetKeyFunc = func(clientId int, keyReference string, version int) (*Key, *kmsErrors.AppError) {
 		return &Key{
 			DEK:      "dek",
+			Version:  1,
 			Encoding: "encoding",
 		}, nil
 	}
@@ -161,6 +162,7 @@ func TestHandler_GetKey_Success(t *testing.T) {
 	})
 	ctx_ := context.WithValue(ctx, httpctx.RouteParamsCtxKey, map[string]string{
 		"keyReference": "keyRef",
+		"version":      "1",
 	})
 	req = req.WithContext(ctx_)
 	rr := httptest.NewRecorder()
@@ -169,8 +171,8 @@ func TestHandler_GetKey_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(rr.Body.String(), `"dek":"dek","encoding":"encoding"`) {
-		t.Errorf("expected \"dek\":\"dek\",\"encoding\":\"encoding\", got: %v", rr.Body.String())
+	if !strings.Contains(rr.Body.String(), `"dek":"dek","version":1,"encoding":"encoding"`) {
+		t.Errorf("expected \"dek\":\"dek\",\"version\":1,\"encoding\":\"encoding\", got: %v", rr.Body.String())
 	}
 }
 
@@ -248,7 +250,7 @@ func TestHandler_GetKey_MissingRouteParam(t *testing.T) {
 
 func TestHandler_GetKey_ServiceError(t *testing.T) {
 	mockService := NewKeyServiceMock()
-	mockService.GetKeyFunc = func(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
+	mockService.GetKeyFunc = func(clientId int, keyReference string, version int) (*Key, *kmsErrors.AppError) {
 		return nil, kmsErrors.NewAppError(nil, "service error", 500)
 	}
 	mockLogger := mocks.NewLoggerMock()
@@ -262,6 +264,7 @@ func TestHandler_GetKey_ServiceError(t *testing.T) {
 	})
 	ctx_ := context.WithValue(ctx, httpctx.RouteParamsCtxKey, map[string]string{
 		"keyReference": "keyRef",
+		"version":      "1",
 	})
 	req = req.WithContext(ctx_)
 	rr := httptest.NewRecorder()
@@ -309,7 +312,7 @@ func TestHandler_RenewKey_Success(t *testing.T) {
 	if rr.Code != 200 {
 		t.Errorf("expected status 200, got %d", rr.Code)
 	}
-	if !strings.Contains(rr.Body.String(), `{"dek":"dek","encoding":"encoding"}`) {
+	if !strings.Contains(rr.Body.String(), `{"dek":"dek","version":0,"encoding":"encoding"}`) {
 		t.Errorf("unexpected body: %v", rr.Body.String())
 	}
 }
@@ -550,7 +553,7 @@ func TestHandler_GetAllDev_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(rr.Body.String(), `{"id":0,"keyReference":"keyRef","dek":"dek","clientId":0,"encoding":""}`) {
+	if !strings.Contains(rr.Body.String(), `{"id":0,"clientId":0,"keyReference":"keyRef","version":0,"dek":"dek","state":"","encoding":""}`) {
 		t.Errorf("unexpected body: %v", rr.Body.String())
 	}
 }
