@@ -38,8 +38,8 @@ func TestHandler_GenerateKey_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(rr.Body.String(), `"dek":"dek","version":1,"state":"state","encoding":"encoding"`) {
-		t.Errorf("expected \"dek\":\"dek\",\"version\":1,\"state\":\"state\",\"encoding\":\"encoding\", got: %v", rr.Body.String())
+	if !strings.Contains(rr.Body.String(), `"dek":"dek","version":1,"encoding":"encoding","expiresAt":`) {
+		t.Errorf("expected \"dek\":\"dek\",\"version\":1,\"encoding\":\"encoding\",\"expiresAt\":[time], got: %v", rr.Body.String())
 	}
 }
 
@@ -179,8 +179,8 @@ func TestHandler_GetKey_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(rr.Body.String(), `{"decryptWith":{"dek":"dek","version":1,"state":"stateA","encoding":"encoding"},"encryptWith":{"dek":"dek","version":2,"state":"stateB","encoding":"encoding"}}`) {
-		t.Errorf(`{"decryptWith":{"dek":"dek","version":1,"state":"stateA","encoding":"encoding"},"encryptWith":{"dek":"dek","version":2,"state":"stateB","encoding":"encoding"}}, got %s`, rr.Body.String())
+	if !strings.Contains(rr.Body.String(), `{"decryptWith":{"dek":"dek","version":1,"encoding":"encoding","expiresAt":`) || !strings.Contains(rr.Body.String(), `"encryptWith":{"dek":"dek","version":2,"encoding":"encoding","expiresAt":`) {
+		t.Errorf(`expected {"decryptWith":{"dek":"dek","version":1,"encoding":"encoding","expiresAt":[time]},"encryptWith":{"dek":"dek","version":2,"encoding":"encoding","expiresAt":[time]}}, got %s`, rr.Body.String())
 	}
 }
 
@@ -322,8 +322,8 @@ func TestHandler_RotateKey_Success(t *testing.T) {
 	if rr.Code != 200 {
 		t.Errorf("expected status 200, got %d", rr.Code)
 	}
-	if !strings.Contains(rr.Body.String(), `{"dek":"dek","version":1,"state":"state","encoding":"encoding"}`) {
-		t.Errorf(`expected {"dek":"dek","version":1,"state":"state","encoding":"encoding"}, got %s`, rr.Body.String())
+	if !strings.Contains(rr.Body.String(), `{"dek":"dek","version":1,"encoding":"encoding","expiresAt":`) {
+		t.Errorf(`expected {"dek":"dek","version":1,"encoding":"encoding","expiresAt":[time]}, got %s`, rr.Body.String())
 	}
 }
 

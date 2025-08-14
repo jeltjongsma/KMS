@@ -1,5 +1,7 @@
 package keys
 
+import "time"
+
 const (
 	StateInUse      = "in-use"
 	StateDeprecated = "deprecated"
@@ -25,18 +27,18 @@ type GenerateKeyRequest struct {
 }
 
 type KeyResponse struct {
-	DEK      string `json:"dek"`
-	Version  int    `json:"version"`
-	State    string `json:"state"`
-	Encoding string `json:"encoding"`
+	DEK       string    `json:"dek"`
+	Version   int       `json:"version"`
+	Encoding  string    `json:"encoding"`
+	ExpiresAt time.Time `json:"expiresAt"`
 }
 
 func BuildKeyResponse(k *Key) *KeyResponse {
 	return &KeyResponse{
-		DEK:      k.DEK,
-		Version:  k.Version,
-		State:    k.State,
-		Encoding: k.Encoding,
+		DEK:       k.DEK,
+		Version:   k.Version,
+		Encoding:  k.Encoding,
+		ExpiresAt: time.Now().Add(time.Minute * 5),
 	}
 }
 

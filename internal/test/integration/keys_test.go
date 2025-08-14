@@ -8,6 +8,7 @@ import (
 	"kms/pkg/hashing"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func TestGenerateKey(t *testing.T) {
@@ -106,8 +107,12 @@ func TestGetKey(t *testing.T) {
 	if decryptW == nil {
 		t.Fatal("expected decryptWith, got nil")
 	}
-	if decryptW.DEK != key.DEK || decryptW.Version != key.Version || decryptW.State != key.State || decryptW.Encoding != key.Encoding {
+	if decryptW.DEK != key.DEK || decryptW.Version != key.Version || decryptW.Encoding != key.Encoding {
 		t.Errorf("expected %v, got %v", key, decryptW)
+	}
+	before := time.Now().Add(time.Minute * 5)
+	if decryptW.ExpiresAt.After(before) {
+		t.Errorf("expected expiresAt to be before %v, got %v", before, decryptW.ExpiresAt)
 	}
 
 	// check if encrypt is correct
@@ -115,8 +120,12 @@ func TestGetKey(t *testing.T) {
 	if encryptW == nil {
 		t.Fatal("expected decryptWith, got nil")
 	}
-	if encryptW.DEK != key.DEK || encryptW.Version != key.Version || encryptW.State != key.State || encryptW.Encoding != key.Encoding {
+	if encryptW.DEK != key.DEK || encryptW.Version != key.Version || encryptW.Encoding != key.Encoding {
 		t.Errorf("expected %v, got %v", key, encryptW)
+	}
+	before = time.Now().Add(time.Minute * 5)
+	if encryptW.ExpiresAt.After(before) {
+		t.Errorf("expected expiresAt to be before %v, got %v", before, encryptW.ExpiresAt)
 	}
 }
 
@@ -151,8 +160,12 @@ func TestGetKey_Deprecated(t *testing.T) {
 	if decryptW == nil {
 		t.Fatal("expected decryptWith, got nil")
 	}
-	if decryptW.DEK != key.DEK || decryptW.Version != key.Version || decryptW.State != key.State || decryptW.Encoding != key.Encoding {
+	if decryptW.DEK != key.DEK || decryptW.Version != key.Version || decryptW.Encoding != key.Encoding {
 		t.Errorf("expected %v, got %v", key, decryptW)
+	}
+	before := time.Now().Add(time.Minute * 5)
+	if decryptW.ExpiresAt.After(before) {
+		t.Errorf("expected expiresAt to be before %v, got %v", before, decryptW.ExpiresAt)
 	}
 
 	// check if encrypt is correct
@@ -160,8 +173,12 @@ func TestGetKey_Deprecated(t *testing.T) {
 	if encryptW == nil {
 		t.Fatal("expected decryptWith, got nil")
 	}
-	if encryptW.DEK != latestKey.DEK || encryptW.Version != latestKey.Version || encryptW.State != latestKey.State || encryptW.Encoding != latestKey.Encoding {
+	if encryptW.DEK != latestKey.DEK || encryptW.Version != latestKey.Version || encryptW.Encoding != latestKey.Encoding {
 		t.Errorf("expected %v, got %v", key, encryptW)
+	}
+	before = time.Now().Add(time.Minute * 5)
+	if encryptW.ExpiresAt.After(before) {
+		t.Errorf("expected expiresAt to be before %v, got %v", before, encryptW.ExpiresAt)
 	}
 }
 
@@ -233,10 +250,6 @@ func TestRotateKey(t *testing.T) {
 	var body keys.KeyResponse
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 		t.Fatalf("failed to decode response body: %v", err)
-	}
-
-	if body.State != keys.StateInUse {
-		t.Errorf("expected state %s, got %s", keys.StateInUse, body.State)
 	}
 
 	if body.Encoding != "base64url (RFC 4648)" {
