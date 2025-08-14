@@ -33,50 +33,7 @@ func main() {
 	}
 	defer db.Close()
 
-	// TODO: Implement migration instead of this mess
-	schemas := []postgres.TableSchema{
-		{
-			Name: "keys",
-			Fields: map[string]string{
-				"id":           "SERIAL PRIMARY KEY",
-				"clientId":     "INTEGER NOT NULL",
-				"keyReference": "VARCHAR(64) NOT NULL",
-				"version":      "INTEGER NOT NULL",
-				"dek":          "VARCHAR(80) NOT NULL",
-				"state":        "VARCHAR(52) NOT NULL",
-				"encoding":     "VARCHAR(64) NOT NULL",
-			},
-			Keys: []string{
-				"id",
-				"clientId",
-				"keyReference",
-				"version",
-				"dek",
-				"state",
-				"encoding",
-			},
-			Unique: []string{"clientId", "keyReference", "version"},
-		},
-		{
-			Name: "clients",
-			Fields: map[string]string{
-				"id":               "SERIAL PRIMARY KEY",
-				"clientname":       "VARCHAR(128) UNIQUE NOT NULL",
-				"hashedClientname": "VARCHAR(44) UNIQUE NOT NULL",
-				"password":         "CHAR(60) NOT NULL",
-				"role":             "VARCHAR(46) NOT NULL DEFAULT 'client'",
-			},
-			Keys: []string{
-				"id",
-				"clientname",
-				"hashedClientname",
-				"password",
-				"role",
-			},
-		},
-	}
-
-	if err := postgres.InitSchema(cfg, db, schemas, keyManager); err != nil {
+	if err := postgres.InitSchema(cfg, db, keyManager, "database/migrations"); err != nil {
 		log.Fatal("Failed to create schema: ", err)
 	}
 
