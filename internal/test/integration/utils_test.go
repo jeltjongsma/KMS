@@ -29,6 +29,16 @@ func requireStatusCode(t *testing.T, got int, expected int) {
 	}
 }
 
+func requireHeader(t *testing.T, header *http.Header, key, value string) {
+	v := header.Get(key)
+	if v == "" {
+		t.Fatalf("expected %s to be set", key)
+	}
+	if v != value {
+		t.Errorf("expected %s: %s, got %s", key, value, v)
+	}
+}
+
 func GetBody(resp *http.Response) string {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
@@ -99,7 +109,7 @@ func doRequest(method, path, payload string, headers ...string) (*http.Response,
 	return http.DefaultClient.Do(req)
 }
 
-func requireKey(appCtx *bootstrap.AppContext, clientID int, keyRef string) (*keys.Key, error) {
+func requireKey(appCtx *bootstrap.AppContext, clientID int, keyRef string, v int, s string) (*keys.Key, error) {
 	keyRefHashKey, err := appCtx.KeyManager.HashKey("keyReference")
 	if err != nil {
 		return nil, err
@@ -113,7 +123,8 @@ func requireKey(appCtx *bootstrap.AppContext, clientID int, keyRef string) (*key
 		KeyReference: hashing.HashHS256ToB64([]byte(keyRef), keyRefHashKey),
 		DEK:          dek,
 		ClientId:     clientID,
-		Version:      1,
+		Version:      v,
+		State:        s,
 		Encoding:     "encoding",
 	})
 }

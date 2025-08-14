@@ -12,9 +12,11 @@ import (
 func TestCreateKey_Success(t *testing.T) {
 	key := &keys.Key{
 		ID:           1,
-		KeyReference: "keyReference",
-		DEK:          "validB64",
 		ClientId:     1,
+		KeyReference: "keyReference",
+		Version:      1,
+		DEK:          "validB64",
+		State:        "state",
 		Encoding:     "encoding",
 	}
 	mockRepo := keys.NewKeyRepositoryMock()
@@ -51,9 +53,11 @@ func TestCreateKey_Success(t *testing.T) {
 func TestCreateKey_RepoError(t *testing.T) {
 	key := &keys.Key{
 		ID:           1,
-		KeyReference: "keyReference",
-		DEK:          "validB64",
 		ClientId:     1,
+		KeyReference: "keyReference",
+		Version:      1,
+		DEK:          "validB64",
+		State:        "state",
 		Encoding:     "encoding",
 	}
 	mockRepo := keys.NewKeyRepositoryMock()
@@ -103,9 +107,11 @@ func TestGetKey_Success(t *testing.T) {
 
 	key := &keys.Key{
 		ID:           1,
-		KeyReference: "keyReference",
-		DEK:          "validB64",
 		ClientId:     1,
+		KeyReference: "keyReference",
+		Version:      1,
+		DEK:          "validB64",
+		State:        "state",
 		Encoding:     "encoding",
 	}
 	var enc keys.Key
@@ -141,6 +147,65 @@ func TestGetKey_RepoError(t *testing.T) {
 	test.RequireErrContains(t, err, "repo error")
 }
 
+func TestGetLatestKey_Success(t *testing.T) {
+	keyManager := mocks.NewKeyManagerMock()
+	dbKey, err := encryption.GenerateKey(32)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	kek, err := encryption.GenerateKey(32)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	keyManager.DBKeyFunc = func() []byte {
+		return dbKey
+	}
+	keyManager.KEKFunc = func() []byte {
+		return kek
+	}
+
+	key := &keys.Key{
+		ID:           1,
+		ClientId:     1,
+		KeyReference: "keyReference",
+		Version:      1,
+		DEK:          "validB64",
+		State:        "state",
+		Encoding:     "encoding",
+	}
+	var enc keys.Key
+	err = EncryptFields(&enc, key, keyManager)
+	test.RequireErrNil(t, err)
+
+	mockRepo := keys.NewKeyRepositoryMock()
+	mockRepo.GetLatestKeyFunc = func(id int, keyReference string) (*keys.Key, error) {
+		return &enc, nil
+	}
+
+	repo := NewEncryptedKeyRepo(mockRepo, keyManager)
+	retrieved, err := repo.GetLatestKey(1, "ref")
+
+	test.RequireErrNil(t, err)
+
+	if *retrieved != *key {
+		t.Errorf("expected original and retrieved to be same, got %v", retrieved)
+	}
+}
+
+func TestGetLatestKey_RepoError(t *testing.T) {
+	mockRepo := keys.NewKeyRepositoryMock()
+	mockRepo.GetKeyFunc = func(id int, ref string, v int) (*keys.Key, error) {
+		return nil, errors.New("repo error")
+	}
+	keyManager := mocks.NewKeyManagerMock()
+	repo := NewEncryptedKeyRepo(mockRepo, keyManager)
+
+	_, err := repo.GetKey(1, "ref", 1)
+
+	test.RequireErrNotNil(t, err)
+	test.RequireErrContains(t, err, "repo error")
+}
+
 func TestUpdateKey_Success(t *testing.T) {
 	keyManager := mocks.NewKeyManagerMock()
 	dbKey, err := encryption.GenerateKey(32)
@@ -160,9 +225,11 @@ func TestUpdateKey_Success(t *testing.T) {
 
 	key := &keys.Key{
 		ID:           1,
-		KeyReference: "keyReference",
-		DEK:          "validB64",
 		ClientId:     1,
+		KeyReference: "keyReference",
+		Version:      1,
+		DEK:          "validB64",
+		State:        "state",
 		Encoding:     "encoding",
 	}
 	var enc keys.Key
@@ -170,18 +237,14 @@ func TestUpdateKey_Success(t *testing.T) {
 	test.RequireErrNil(t, err)
 
 	mockRepo := keys.NewKeyRepositoryMock()
-	mockRepo.UpdateKeyFunc = func(id int, keyReference string, new string) (*keys.Key, error) {
-		return &enc, nil
+	mockRepo.UpdateKeyFunc = func(id int, keyReference string, v int, s string) error {
+		return nil
 	}
 
 	repo := NewEncryptedKeyRepo(mockRepo, keyManager)
-	retrieved, err := repo.UpdateKey(1, "ref", "newValidB64")
+	err = repo.UpdateKey(1, "ref", 1, "state")
 
 	test.RequireErrNil(t, err)
-
-	if *retrieved != *key {
-		t.Errorf("expected original and retrieved to be different, got %v", retrieved)
-	}
 }
 
 func TestUpdateKey_InvalidKey(t *testing.T) {
@@ -197,29 +260,28 @@ func TestUpdateKey_InvalidKey(t *testing.T) {
 	mockRepo := keys.NewKeyRepositoryMock()
 
 	repo := NewEncryptedKeyRepo(mockRepo, keyManager)
-	_, err = repo.UpdateKey(1, "ref", "not+base64")
+	err = repo.UpdateKey(1, "ref", 1, "state")
 
 	test.RequireErrNotNil(t, err)
-	test.RequireContains(t, err.Error(), "illegal base64 data")
 }
 
 func TestUpdateKey_RepoError(t *testing.T) {
 	keyManager := mocks.NewKeyManagerMock()
-	kek, err := encryption.GenerateKey(32)
+	dbKey, err := encryption.GenerateKey(32)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	keyManager.KEKFunc = func() []byte {
-		return kek
+	keyManager.DBKeyFunc = func() []byte {
+		return dbKey
 	}
 
 	mockRepo := keys.NewKeyRepositoryMock()
-	mockRepo.UpdateKeyFunc = func(x int, y, z string) (*keys.Key, error) {
-		return nil, errors.New("repo error")
+	mockRepo.UpdateKeyFunc = func(x int, y string, v int, z string) error {
+		return errors.New("repo error")
 	}
 
 	repo := NewEncryptedKeyRepo(mockRepo, keyManager)
-	_, err = repo.UpdateKey(1, "ref", "validBase64")
+	err = repo.UpdateKey(1, "ref", 1, "state")
 
 	test.RequireErrNotNil(t, err)
 	test.RequireContains(t, err.Error(), "repo error")

@@ -12,7 +12,7 @@ In this documentation "client" refers to **service account** — a non-human ser
 - Deterministically hashed key references for lookups
 - Admin-generated client signup tokens
 - Workflow-oriented API design
-- DEK renewal 
+- DEK rotation 
 
 ## Planned
 - DEK and KEK versioning and rotation
@@ -28,7 +28,7 @@ In this documentation "client" refers to **service account** — a non-human ser
 ### Key management
 1. Generate new DEK -> `/keys/actions/generate`
 2. Retrieve DEK by reference -> `/keys/{keyReference}`
-3. Renew key -> `/keys/{keyReference}/actions/renew`
+3. Rotate key -> `/keys/{keyReference}/actions/rotate`
 
 ## Installation and setup
 ```bash

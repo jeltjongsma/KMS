@@ -14,6 +14,11 @@ func WriteJSON(w http.ResponseWriter, src interface{}) *kmsErrors.AppError {
 	return nil
 }
 
+func WriteHeader(w http.ResponseWriter, key, value string) *kmsErrors.AppError {
+	w.Header().Set(key, value)
+	return nil
+}
+
 func WriteStatus(w http.ResponseWriter, status int) *kmsErrors.AppError {
 	w.WriteHeader(status)
 	return nil

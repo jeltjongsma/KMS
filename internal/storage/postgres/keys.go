@@ -3,7 +3,6 @@ package postgres
 import (
 	"database/sql"
 	"kms/internal/keys"
-	"log"
 )
 
 type PostgresKeyRepo struct {
@@ -15,7 +14,6 @@ func NewPostgresKeyRepo(db *sql.DB) *PostgresKeyRepo {
 }
 
 func (r *PostgresKeyRepo) CreateKey(key *keys.Key) (*keys.Key, error) {
-	log.Printf("[TEMP] Key state: %s, length: %d", key.State, len(key.State))
 	query := "INSERT INTO keys (clientId, keyReference, version, dek, state, encoding) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *"
 	var newKey keys.Key
 	err := r.db.QueryRow(query, key.ClientId, key.KeyReference, key.Version, key.DEK, key.State, key.Encoding).
@@ -31,12 +29,18 @@ func (r *PostgresKeyRepo) GetKey(clientId int, keyReference string, version int)
 	return &key, err
 }
 
-func (r *PostgresKeyRepo) UpdateKey(clientId int, keyReference string, newKey string) (*keys.Key, error) {
-	query := "UPDATE keys SET dek = $1 WHERE clientId = $2 AND keyReference = $3 RETURNING *"
+func (r *PostgresKeyRepo) GetLatestKey(clientId int, keyReference string) (*keys.Key, error) {
+	query := "SELECT * FROM keys WHERE clientId = $1 AND keyReference = $2 ORDER BY version DESC LIMIT 1"
 	var key keys.Key
-	err := r.db.QueryRow(query, newKey, clientId, keyReference).
+	err := r.db.QueryRow(query, clientId, keyReference).
 		Scan(&key.ID, &key.ClientId, &key.KeyReference, &key.Version, &key.DEK, &key.State, &key.Encoding)
 	return &key, err
+}
+
+func (r *PostgresKeyRepo) UpdateKey(clientId int, keyReference string, version int, state string) error {
+	query := "UPDATE keys SET state = $1 WHERE clientId = $2 AND keyReference = $3 AND version = $4"
+	_, err := r.db.Exec(query, state, clientId, keyReference, version)
+	return err
 }
 
 // don't care for version, delete everything

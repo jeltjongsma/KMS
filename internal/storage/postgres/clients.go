@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"kms/internal/clients"
 	kmsErrors "kms/pkg/errors"
-	"log"
 )
 
 type PostgresClientRepo struct {
@@ -16,7 +15,6 @@ func NewPostgresClientRepo(db *sql.DB) *PostgresClientRepo {
 }
 
 func (r *PostgresClientRepo) CreateClient(client *clients.Client) (int, error) {
-	log.Printf("[TEMP] clientname: %d, hash: %d, password: %d, role: %d\n", len(client.Clientname), len(client.HashedClientname), len(client.Password), len(client.Role))
 	query := "INSERT INTO clients (clientname, hashedClientname, password, role) VALUES ($1, $2, $3, $4) RETURNING id"
 	var id int
 	err := r.db.QueryRow(query, client.Clientname, client.HashedClientname, client.Password, client.Role).Scan(&id)

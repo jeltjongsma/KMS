@@ -27,12 +27,13 @@ func NewService(keyRepo KeyRepository, keyManager c.KeyManager, logger c.Logger)
 type KeyRepository interface {
 	CreateKey(key *Key) (*Key, error)
 	GetKey(clientId int, keyReference string, version int) (*Key, error)
-	UpdateKey(clientId int, keyReference string, newKey string) (*Key, error)
+	GetLatestKey(clientId int, keyReference string) (*Key, error)
+	UpdateKey(clientId int, keyReference string, version int, state string) error
 	Delete(clientId int, keyReference string) (int, error)
 	GetAll() ([]Key, error)
 }
 
-func (s *Service) CreateKey(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
+func (s *Service) CreateKey(clientId int, keyReference string, version int) (*Key, *kmsErrors.AppError) {
 	if err := validateKeyReference(keyReference); err != nil {
 		return nil, kmsErrors.NewAppError(err, "Key reference does not meet minimum requirements. 0 < len <= 64 & contains only [0-9a-Z\\-]", 400)
 	}
@@ -47,14 +48,14 @@ func (s *Service) CreateKey(clientId int, keyReference string) (*Key, *kmsErrors
 		return nil, kmsErrors.NewInternalServerError(err)
 	}
 
-	// No need to check for collisions, since 'keyReference' column has unique constraint
+	// No need to check for collisions, since 'clientId', 'keyReference' and 'version' columns have unique constraint
 	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), keyRefSecret)
 	DEKB64 := b64.RawURLEncoding.EncodeToString(DEKBytes)
 
 	key := &Key{
 		ClientId:     clientId,
 		KeyReference: hashedReference,
-		Version:      1,
+		Version:      version,
 		DEK:          DEKB64,
 		State:        StateInUse,
 		Encoding:     "base64url (RFC 4648)",
@@ -83,36 +84,41 @@ func validateKeyReference(keyReference string) error {
 	return nil
 }
 
-func (s *Service) GetKey(clientId int, keyReference string, version int) (*Key, *kmsErrors.AppError) {
+func (s *Service) GetKey(clientId int, keyReference string, version int) (*Key, *Key, *kmsErrors.AppError) {
 	if err := validateKeyReference(keyReference); err != nil {
-		return nil, kmsErrors.NewAppError(err, "Invalid key reference", 400)
+		return nil, nil, kmsErrors.NewAppError(err, "Invalid key reference", 400)
 	}
 	keyRefSecret, err := s.KeyManager.HashKey("keyReference")
 	if err != nil {
-		return nil, kmsErrors.NewInternalServerError(err)
+		return nil, nil, kmsErrors.NewInternalServerError(err)
 	}
 
 	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), keyRefSecret)
-	key, err := s.KeyRepo.GetKey(clientId, hashedReference, version)
+
+	// get requested key
+	decKey, err := s.KeyRepo.GetKey(clientId, hashedReference, version)
 	if err != nil {
-		return nil, kmsErrors.MapRepoErr(err)
+		return nil, nil, kmsErrors.MapRepoErr(err)
 	}
 
-	s.Logger.Info("Key retrieved", "keyId", key.ID, "clientId", clientId)
+	s.Logger.Info("Key retrieved", "keyId", decKey.ID, "clientId", clientId)
 
-	return key, nil
+	// get latest key
+	encKey, err := s.KeyRepo.GetLatestKey(clientId, hashedReference)
+	if err != nil {
+		return nil, nil, kmsErrors.MapRepoErr(err)
+	}
+
+	s.Logger.Info("Key retrieved", "keyId", encKey.ID, "clientId", clientId)
+
+	return decKey, encKey, nil
 }
 
-func (s *Service) RenewKey(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
+// TODO: Make this a transaction
+func (s *Service) RotateKey(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
 	if err := validateKeyReference(keyReference); err != nil {
 		return nil, kmsErrors.NewAppError(err, "Invalid key reference", 400)
 	}
-	DEKBytes, err := encryption.GenerateKey(32)
-	if err != nil {
-		return nil, kmsErrors.NewInternalServerError(err)
-	}
-
-	DEKB64 := b64.RawURLEncoding.EncodeToString(DEKBytes)
 
 	keyRefSecret, err := s.KeyManager.HashKey("keyReference")
 	if err != nil {
@@ -120,14 +126,27 @@ func (s *Service) RenewKey(clientId int, keyReference string) (*Key, *kmsErrors.
 	}
 
 	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), keyRefSecret)
-	key, err := s.KeyRepo.UpdateKey(clientId, hashedReference, DEKB64)
+
+	// get latest key
+	latest, err := s.KeyRepo.GetLatestKey(clientId, hashedReference)
 	if err != nil {
 		return nil, kmsErrors.MapRepoErr(err)
 	}
 
-	s.Logger.Info("Key updated", "keyId", key.ID, "clientId", clientId)
+	// set latest key's state to deprecated
+	if err := s.KeyRepo.UpdateKey(clientId, hashedReference, latest.Version, StateDeprecated); err != nil {
+		return nil, kmsErrors.MapRepoErr(err)
+	}
 
-	return key, nil
+	// create new key
+	newKey, appErr := s.CreateKey(clientId, keyReference, latest.Version+1)
+	if appErr != nil {
+		return nil, appErr // TODO: Wrap so it's clear which function threw an error
+	}
+
+	s.Logger.Info("Key rotated", "keyId", newKey.ID, "clientId", clientId)
+
+	return newKey, nil
 }
 
 func (s *Service) DeleteKey(clientId int, keyReference string) *kmsErrors.AppError {

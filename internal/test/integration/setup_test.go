@@ -132,7 +132,7 @@ func TestMethodNotAllowed(t *testing.T) {
 	}{
 		{"/keys/actions/generate", []string{"POST"}},
 		{"/keys/keyRef/1", []string{"GET"}},
-		{"/keys/keyRef/actions/renew", []string{"PATCH"}},
+		{"/keys/keyRef/actions/rotate", []string{"POST"}},
 		{"/keys/keyRef/actions/delete", []string{"DELETE"}},
 		{"/auth/signup", []string{"POST"}},
 		{"/auth/login", []string{"POST"}},

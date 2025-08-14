@@ -64,9 +64,9 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 				withAuth(keyHandler.DeleteKey),
 			),
 			mw.NewRoute(
-				"PATCH",
-				"/keys/{keyReference}/actions/renew",
-				withAuth(keyHandler.RenewKey),
+				"POST",
+				"/keys/{keyReference}/actions/rotate",
+				withAuth(keyHandler.RotateKey),
 			),
 		},
 	)))
