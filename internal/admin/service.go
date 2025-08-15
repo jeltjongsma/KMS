@@ -53,7 +53,7 @@ func (s *Service) Me(clientId int) (*clients.Client, *kmsErrors.AppError) {
 }
 
 func (s *Service) GenerateSignupToken(body *GenerateSignupTokenRequest, adminId string) (string, *kmsErrors.AppError) {
-	if err := validateClientname(body.Clientname); err != nil {
+	if err := ValidateClientname(body.Clientname); err != nil {
 		return "", kmsErrors.NewAppError(
 			kmsErrors.WrapError(err, map[string]any{
 				"clientname": body.Clientname,
@@ -97,7 +97,7 @@ func (s *Service) DeleteClient(clientId int) *kmsErrors.AppError {
 }
 
 // Allow 0-9, a-Z and '-' in clientname
-func validateClientname(clientname string) error {
+func ValidateClientname(clientname string) error {
 	if len(clientname) < 4 || len(clientname) > 64 {
 		return fmt.Errorf("clientname length should be between 4 and 64, is %d", len(clientname))
 	}

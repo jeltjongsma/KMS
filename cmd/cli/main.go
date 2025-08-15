@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"flag"
+	"kms/internal/admin"
 	"kms/internal/auth"
 	"kms/internal/bootstrap"
 	"log"
@@ -18,6 +19,10 @@ func main() {
 	flag.Int64Var(&ttl, "ttl", 86400000, "Token's time-to-live")
 
 	flag.Parse()
+
+	if err := admin.ValidateClientname(name); err != nil {
+		log.Fatalf("Invalid name: %v", err)
+	}
 
 	cfg, err := bootstrap.LoadConfig(".env")
 	if err != nil {
