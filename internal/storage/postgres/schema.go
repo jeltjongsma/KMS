@@ -51,7 +51,9 @@ func InitSchema(cfg c.KmsConfig, db *sql.DB, keyManager c.KeyManager, migrations
 	clearTables := cfg["ENV"] == "dev" && cfg["CLEAR_DB"] == "true"
 	if clearTables {
 		if err := bootstrap.MigrateDown(db, migrationsPath); err != nil {
-			return err
+			if !errors.Is(err, migrate.ErrNoChange) {
+				return err
+			}
 		}
 	}
 

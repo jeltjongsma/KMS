@@ -15,13 +15,13 @@ func main() {
 		ttl  int64
 	)
 
-	flag.StringVar(&name, "name", "", "Client's name")
-	flag.Int64Var(&ttl, "ttl", 86400000, "Token's time-to-live")
+	flag.StringVar(&name, "name", "", "client's name")
+	flag.Int64Var(&ttl, "ttl", 86400000, "token's time-to-live")
 
 	flag.Parse()
 
 	if err := admin.ValidateClientname(name); err != nil {
-		log.Fatalf("Invalid name: %v", err)
+		log.Fatalf("invalid name: %v", err)
 	}
 
 	cfg, err := bootstrap.LoadConfig(".env")
@@ -29,14 +29,14 @@ func main() {
 		log.Fatalf("unexpected error: %v", err)
 	}
 
-	secret, err := base64.RawURLEncoding.DecodeString(cfg["SIGNUP_SECRET"])
+	signupSecret, err := base64.RawURLEncoding.DecodeString(cfg["SIGNUP_SECRET"])
 	if err != nil {
 		log.Fatalf("unexpected error: %v", err)
 	}
 
 	genInfo := &auth.TokenGenInfo{
 		Ttl:    ttl,
-		Secret: secret,
+		Secret: signupSecret,
 		Typ:    "signup",
 	}
 
@@ -45,5 +45,5 @@ func main() {
 		log.Fatalf("unexpected error: %v", err)
 	}
 
-	log.Printf("Generated signup token for '%s': %s\n", name, token)
+	log.Printf("generated signup token for '%s': %s\n", name, token)
 }

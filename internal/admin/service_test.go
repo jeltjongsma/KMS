@@ -170,7 +170,7 @@ func TestService_validateClientname(t *testing.T) {
 		{"valid-key-with-maximum-length-12345678901234567890123456789012345678901234567890123456789012345678901234567890", true},
 	}
 	for _, tt := range tests {
-		err := validateClientname(tt.clientname)
+		err := ValidateClientname(tt.clientname)
 		if (err != nil) != tt.expectError {
 			t.Errorf("validateClientname(%q) error = %v, expectError %v", tt.clientname, err, tt.expectError)
 			continue

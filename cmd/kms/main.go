@@ -34,7 +34,7 @@ func main() {
 	defer db.Close()
 
 	if err := postgres.InitSchema(cfg, db, keyManager, "database/migrations"); err != nil {
-		log.Fatal("Failed to create schema: ", err)
+		log.Fatal("Failed to init schema: ", err)
 	}
 
 	keyRepo := dbEncr.NewEncryptedKeyRepo(postgres.NewPostgresKeyRepo(db), keyManager)

@@ -56,10 +56,10 @@ func (r *PostgresClientRepo) Delete(clientId int) error {
 	return nil
 }
 
-func (r *PostgresClientRepo) FindByHashedClientname(email string) (*clients.Client, error) {
+func (r *PostgresClientRepo) FindByHashedClientname(name string) (*clients.Client, error) {
 	query := "SELECT * FROM clients WHERE hashedClientname = $1"
 	var client clients.Client
-	err := r.db.QueryRow(query, email).Scan(&client.ID, &client.Clientname, &client.HashedClientname, &client.Password, &client.Role)
+	err := r.db.QueryRow(query, name).Scan(&client.ID, &client.Clientname, &client.HashedClientname, &client.Password, &client.Role)
 	return &client, err
 }
 
