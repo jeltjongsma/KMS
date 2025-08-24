@@ -173,6 +173,9 @@ func TestService_GetKey_RepoError(t *testing.T) {
 func TestService_RotateKey_Success(t *testing.T) {
 	clientId := 1
 	mockRepo := NewKeyRepositoryMock()
+	mockRepo.BeginTransactionFunc = func() (KeyRepository, error) { return mockRepo, nil }
+	mockRepo.CommitTransactionFunc = func() error { return nil }
+	mockRepo.RollbackTransactionFunc = func() error { return nil }
 	mockRepo.GetLatestKeyFunc = func(c int, k string) (*Key, error) {
 		return &Key{ClientId: clientId, KeyReference: "testKey", Version: 1}, nil
 	}
@@ -182,7 +185,14 @@ func TestService_RotateKey_Success(t *testing.T) {
 	mockRepo.CreateKeyFunc = func(key *Key) (*Key, error) {
 		return &Key{ClientId: clientId, KeyReference: "testKey", Version: 2}, nil
 	}
+
+	// capture critical logs for rollback failures
+	logs := []string{}
 	mockLogger := mocks.NewLoggerMock()
+	mockLogger.CriticalFunc = func(msg string, keysAndValues ...any) {
+		logs = append(logs, msg)
+	}
+
 	refKey := []byte("keyRefHashKey")
 	mockKeyManager := mocks.NewKeyManagerMock()
 	mockKeyManager.HashKeyFunc = func(ref string) ([]byte, error) {
@@ -208,6 +218,10 @@ func TestService_RotateKey_Success(t *testing.T) {
 	}
 	if key.Version != 2 {
 		t.Errorf("expected key version = 2, got %d", key.Version)
+	}
+
+	if len(logs) != 0 {
+		t.Errorf("expected no critical logs, got %v", logs)
 	}
 }
 
@@ -255,9 +269,18 @@ func TestService_RotateKey_RepoError(t *testing.T) {
 
 	for _, tt := range tests {
 		mockRepo := NewKeyRepositoryMock()
+		mockRepo.BeginTransactionFunc = func() (KeyRepository, error) { return mockRepo, nil }
+		mockRepo.CommitTransactionFunc = func() error { return nil }
 		mockRepo.UpdateKeyFunc = tt.updateFunc
 		mockRepo.GetLatestKeyFunc = tt.getLatestFunc
+
+		// capture debug logs for rollback attempts
+		logs := []string{}
 		mockLogger := mocks.NewLoggerMock()
+		mockLogger.DebugFunc = func(msg string, keysAndValues ...any) {
+			logs = append(logs, msg)
+		}
+
 		refKey := []byte("keyRefHashKey")
 		mockKeyManager := mocks.NewKeyManagerMock()
 		mockKeyManager.HashKeyFunc = func(ref string) ([]byte, error) {
@@ -278,12 +301,28 @@ func TestService_RotateKey_RepoError(t *testing.T) {
 		if appErr.Err.Error() != "repo error" {
 			t.Errorf("expected repo error, got %v", appErr.Err)
 		}
+
+		if len(logs) == 0 {
+			t.Errorf("expected debug log for rollback attempt, got none")
+		}
+
+		rollbackAttempted := false
+		for _, logMsg := range logs {
+			if strings.Contains(logMsg, "Transaction rollback attempted") {
+				rollbackAttempted = true
+			}
+		}
+		if !rollbackAttempted {
+			t.Errorf("expected debug log for rollback attempt, got: %v", logs)
+		}
 	}
 }
 
 func TestService_RotateKey_ServiceError(t *testing.T) {
 	clientId := 1
 	mockRepo := NewKeyRepositoryMock()
+	mockRepo.BeginTransactionFunc = func() (KeyRepository, error) { return mockRepo, nil }
+	mockRepo.CommitTransactionFunc = func() error { return nil }
 	mockRepo.GetLatestKeyFunc = func(c int, k string) (*Key, error) {
 		return &Key{ClientId: clientId, KeyReference: "testKey", Version: 1}, nil
 	}
@@ -293,7 +332,14 @@ func TestService_RotateKey_ServiceError(t *testing.T) {
 	mockRepo.CreateKeyFunc = func(key *Key) (*Key, error) {
 		return nil, errors.New("repo error")
 	}
+
+	// capture debug logs for rollback attempts
+	logs := []string{}
 	mockLogger := mocks.NewLoggerMock()
+	mockLogger.DebugFunc = func(msg string, keysAndValues ...any) {
+		logs = append(logs, msg)
+	}
+
 	refKey := []byte("keyRefHashKey")
 	mockKeyManager := mocks.NewKeyManagerMock()
 	mockKeyManager.HashKeyFunc = func(ref string) ([]byte, error) {
@@ -315,6 +361,147 @@ func TestService_RotateKey_ServiceError(t *testing.T) {
 	}
 	if appErr.Code != 500 {
 		t.Errorf("expected code 500, got %d", appErr.Code)
+	}
+
+	if len(logs) == 0 {
+		t.Errorf("expected debug log for rollback attempt, got none")
+	}
+
+	rollbackAttempted := false
+	for _, logMsg := range logs {
+		if strings.Contains(logMsg, "Transaction rollback attempted") {
+			rollbackAttempted = true
+		}
+	}
+	if !rollbackAttempted {
+		t.Errorf("expected debug log for rollback attempt, got: %v", logs)
+	}
+}
+
+func TestService_RotateKey_BeginTransactionError(t *testing.T) {
+	mockRepo := NewKeyRepositoryMock()
+	mockRepo.BeginTransactionFunc = func() (KeyRepository, error) {
+		return nil, errors.New("begin transaction error")
+	}
+	mockLogger := mocks.NewLoggerMock()
+	mockKeyManager := mocks.NewKeyManagerMock()
+
+	service := NewService(mockRepo, mockKeyManager, mockLogger)
+
+	_, appErr := service.RotateKey(1, "keyRef")
+
+	if appErr == nil || appErr.Err.Error() != "begin transaction error" {
+		t.Fatalf("expected begin transaction error, got %v", appErr)
+	}
+
+	if appErr.Code != 500 {
+		t.Errorf("expected error code 500, got %d", appErr.Code)
+	}
+}
+
+func TestService_RotateKey_CommitTransactionError(t *testing.T) {
+	clientId := 1
+	mockRepo := NewKeyRepositoryMock()
+	mockRepo.BeginTransactionFunc = func() (KeyRepository, error) { return mockRepo, nil }
+	mockRepo.CommitTransactionFunc = func() error { return errors.New("commit transaction error") }
+	mockRepo.RollbackTransactionFunc = func() error { return nil }
+	mockRepo.GetLatestKeyFunc = func(c int, k string) (*Key, error) {
+		return &Key{ClientId: clientId, KeyReference: "testKey", Version: 1}, nil
+	}
+	mockRepo.UpdateKeyFunc = func(clientId int, keyRef string, version int, state string) error {
+		return nil
+	}
+	mockRepo.CreateKeyFunc = func(key *Key) (*Key, error) {
+		return &Key{ClientId: clientId, KeyReference: "testKey", Version: 2}, nil
+	}
+
+	mockLogger := mocks.NewLoggerMock()
+
+	refKey := []byte("keyRefHashKey")
+	mockKeyManager := mocks.NewKeyManagerMock()
+	mockKeyManager.HashKeyFunc = func(ref string) ([]byte, error) {
+		return refKey, nil
+	}
+
+	service := NewService(mockRepo, mockKeyManager, mockLogger)
+
+	key, appErr := service.RotateKey(1, "keyRef")
+
+	if appErr == nil {
+		t.Fatal("expected commit transaction error")
+	}
+
+	if key != nil {
+		t.Errorf("expected key = nil, got %v", key)
+	}
+
+	if appErr.Code != 500 {
+		t.Errorf("expected error code 500, got %d", appErr.Code)
+	}
+
+	if appErr.Err.Error() != "commit transaction error" {
+		t.Errorf("expected commit transaction error, got %v", appErr.Err)
+	}
+}
+
+func TestService_RotateKey_RollbackTransactionError(t *testing.T) {
+	clientId := 1
+	mockRepo := NewKeyRepositoryMock()
+	mockRepo.BeginTransactionFunc = func() (KeyRepository, error) { return mockRepo, nil }
+	mockRepo.CommitTransactionFunc = func() error { return nil }
+	mockRepo.RollbackTransactionFunc = func() error { return errors.New("rollback transaction error") }
+	mockRepo.GetLatestKeyFunc = func(c int, k string) (*Key, error) {
+		return &Key{ClientId: clientId, KeyReference: "testKey", Version: 1}, nil
+	}
+	mockRepo.UpdateKeyFunc = func(clientId int, keyRef string, version int, state string) error {
+		return nil
+	}
+	mockRepo.CreateKeyFunc = func(key *Key) (*Key, error) {
+		return nil, errors.New("repo error")
+	}
+
+	// capture critical logs for rollback failures
+	logs := []string{}
+	mockLogger := mocks.NewLoggerMock()
+	mockLogger.CriticalFunc = func(msg string, keysAndValues ...any) {
+		logs = append(logs, msg)
+	}
+
+	refKey := []byte("keyRefHashKey")
+	mockKeyManager := mocks.NewKeyManagerMock()
+	mockKeyManager.HashKeyFunc = func(ref string) ([]byte, error) {
+		return refKey, nil
+	}
+
+	service := NewService(mockRepo, mockKeyManager, mockLogger)
+
+	key, appErr := service.RotateKey(1, "keyRef")
+
+	if key != nil {
+		t.Fatalf("expected key = nil, got %v", key)
+	}
+	if appErr == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if appErr.Err.Error() != "repo error" {
+		t.Errorf("expected repo error")
+	}
+	if appErr.Code != 500 {
+		t.Errorf("expected code 500, got %d", appErr.Code)
+	}
+
+	if len(logs) == 0 {
+		t.Errorf("expected critical log for rollback failure, got none")
+	}
+
+	rollbackLogged := false
+	for _, logMsg := range logs {
+		if strings.Contains(logMsg, "Failed to rollback transaction") {
+			rollbackLogged = true
+		}
+	}
+	if !rollbackLogged {
+		t.Errorf("expected critical log for rollback failure, got: %v", logs)
 	}
 }
 

@@ -7,6 +7,10 @@ import (
 
 // Repository mock for Key operations
 type KeyRepositoryMock struct {
+	BeginTransactionFunc    func() (KeyRepository, error)
+	CommitTransactionFunc   func() error
+	RollbackTransactionFunc func() error
+
 	GetKeyFunc       func(id int, keyReference string, version int) (*Key, error)
 	GetLatestKeyFunc func(id int, keyReference string) (*Key, error)
 	CreateKeyFunc    func(key *Key) (*Key, error)
@@ -17,6 +21,27 @@ type KeyRepositoryMock struct {
 
 func NewKeyRepositoryMock() *KeyRepositoryMock {
 	return &KeyRepositoryMock{}
+}
+
+func (m *KeyRepositoryMock) BeginTransaction() (KeyRepository, error) {
+	if m.BeginTransactionFunc != nil {
+		return m.BeginTransactionFunc()
+	}
+	return nil, errors.New("BeginTransaction not implemented")
+}
+
+func (m *KeyRepositoryMock) CommitTransaction() error {
+	if m.CommitTransactionFunc != nil {
+		return m.CommitTransactionFunc()
+	}
+	return errors.New("CommitTransaction not implemented")
+}
+
+func (m *KeyRepositoryMock) RollbackTransaction() error {
+	if m.RollbackTransactionFunc != nil {
+		return m.RollbackTransactionFunc()
+	}
+	return errors.New("RollbackTransaction not implemented")
 }
 
 func (m *KeyRepositoryMock) GetKey(id int, keyReference string, version int) (*Key, error) {

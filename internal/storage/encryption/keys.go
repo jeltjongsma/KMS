@@ -17,6 +17,23 @@ func NewEncryptedKeyRepo(keyRepo keys.KeyRepository, keyManager c.KeyManager) *E
 	}
 }
 
+func (r *EncryptedKeyRepo) BeginTransaction() (keys.KeyRepository, error) {
+	newRepo, err := r.KeyRepo.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
+	r.KeyRepo = newRepo
+	return r, nil
+}
+
+func (r *EncryptedKeyRepo) CommitTransaction() error {
+	return r.KeyRepo.CommitTransaction()
+}
+
+func (r *EncryptedKeyRepo) RollbackTransaction() error {
+	return r.KeyRepo.RollbackTransaction()
+}
+
 func (r *EncryptedKeyRepo) CreateKey(key *keys.Key) (*keys.Key, error) {
 	encKey := &keys.Key{}
 	if err := EncryptFields(encKey, key, r.KeyManager); err != nil {

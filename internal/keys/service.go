@@ -25,6 +25,11 @@ func NewService(keyRepo KeyRepository, keyManager c.KeyManager, logger c.Logger)
 }
 
 type KeyRepository interface {
+	// For transaction support
+	BeginTransaction() (KeyRepository, error)
+	CommitTransaction() error
+	RollbackTransaction() error
+
 	CreateKey(key *Key) (*Key, error)
 	GetKey(clientId int, keyReference string, version int) (*Key, error)
 	GetLatestKey(clientId int, keyReference string) (*Key, error)
@@ -114,8 +119,7 @@ func (s *Service) GetKey(clientId int, keyReference string, version int) (*Key, 
 	return decKey, encKey, nil
 }
 
-// TODO: Make this a transaction
-func (s *Service) RotateKey(clientId int, keyReference string) (*Key, *kmsErrors.AppError) {
+func (s *Service) RotateKey(clientId int, keyReference string) (key *Key, appErr *kmsErrors.AppError) {
 	if err := validateKeyReference(keyReference); err != nil {
 		return nil, kmsErrors.NewAppError(err, "Invalid key reference", 400)
 	}
@@ -127,21 +131,55 @@ func (s *Service) RotateKey(clientId int, keyReference string) (*Key, *kmsErrors
 
 	hashedReference := hashing.HashHS256ToB64([]byte(keyReference), keyRefSecret)
 
+	// begin transaction
+	newRepo, err := s.KeyRepo.BeginTransaction()
+	if err != nil {
+		return nil, kmsErrors.MapRepoErr(err)
+	}
+	s.KeyRepo = newRepo
+
+	// ensure rollback if anything fails
+	defer func() {
+		err := s.KeyRepo.RollbackTransaction()
+		s.Logger.Debug("Transaction rollback attempted", "error", err)
+
+		if err != nil {
+			// log the rollback error, but return the original error (if any)
+			s.Logger.Critical("Failed to rollback transaction", "error", err.Error(), "clientId", clientId, "keyReference", keyReference)
+			if appErr == nil {
+				appErr = kmsErrors.MapRepoErr(err)
+			}
+		}
+	}()
+
+	s.Logger.Info("Key rotation started", "clientId", clientId)
+
 	// get latest key
 	latest, err := s.KeyRepo.GetLatestKey(clientId, hashedReference)
 	if err != nil {
 		return nil, kmsErrors.MapRepoErr(err)
 	}
 
+	s.Logger.Info("Latest key retrieved", "keyId", latest.ID, "clientId", clientId)
+
 	// set latest key's state to deprecated
 	if err := s.KeyRepo.UpdateKey(clientId, hashedReference, latest.Version, StateDeprecated); err != nil {
 		return nil, kmsErrors.MapRepoErr(err)
 	}
 
+	s.Logger.Info("Latest key deprecated", "keyId", latest.ID, "clientId", clientId)
+
 	// create new key
 	newKey, appErr := s.CreateKey(clientId, keyReference, latest.Version+1)
 	if appErr != nil {
 		return nil, appErr // TODO: Wrap so it's clear which function threw an error
+	}
+
+	s.Logger.Info("New key created", "keyId", newKey.ID, "clientId", clientId)
+
+	// commit transaction
+	if err := s.KeyRepo.CommitTransaction(); err != nil {
+		return nil, kmsErrors.MapRepoErr(err)
 	}
 
 	s.Logger.Info("Key rotated", "keyId", newKey.ID, "clientId", clientId)
