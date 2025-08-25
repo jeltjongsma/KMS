@@ -30,6 +30,9 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
+	// set log level to debug for tests always
+	cfg["LOG_LEVEL"] = "debug"
+
 	keyManager, err := bootstrap.InitStaticKeyManager(cfg)
 	if err != nil {
 		panic(err)
@@ -46,52 +49,13 @@ func TestMain(m *testing.M) {
 	}
 	defer db.Close()
 
-	// TODO: Implement migration instead of this mess
-	schemas := []postgres.TableSchema{
-		{
-			Name: "keys",
-			Fields: map[string]string{
-				"id":           "SERIAL PRIMARY KEY",
-				"keyReference": "VARCHAR(64) NOT NULL",
-				"dek":          "VARCHAR(80) NOT NULL",
-				"userId":       "INTEGER NOT NULL",
-				"encoding":     "VARCHAR(64) NOT NULL",
-			},
-			Keys: []string{
-				"id",
-				"keyReference",
-				"dek",
-				"userId",
-				"encoding",
-			},
-			Unique: []string{"userId", "keyReference"},
-		},
-		{
-			Name: "users",
-			Fields: map[string]string{
-				"id":             "SERIAL PRIMARY KEY",
-				"username":       "VARCHAR(128) UNIQUE NOT NULL",
-				"hashedUsername": "VARCHAR(44) UNIQUE NOT NULL",
-				"password":       "CHAR(60) NOT NULL",
-				"role":           "VARCHAR(44) NOT NULL DEFAULT 'user'",
-			},
-			Keys: []string{
-				"id",
-				"username",
-				"hashedUsername",
-				"password",
-				"role",
-			},
-		},
-	}
-
-	if err := postgres.InitSchema(cfg, db, schemas, keyManager); err != nil {
+	if err := postgres.InitSchema(cfg, db, keyManager, "test_migrations"); err != nil {
 		panic(err)
 	}
 
 	keyRepo := dbEncr.NewEncryptedKeyRepo(postgres.NewPostgresKeyRepo(db), keyManager)
 	adminRepo := dbEncr.NewEncryptedAdminRepo(postgres.NewPostgresAdminRepo(db), keyManager)
-	userRepo := dbEncr.NewEncryptedUserRepo(postgres.NewPostgresUserRepo(db), keyManager)
+	clientRepo := dbEncr.NewEncryptedClientRepo(postgres.NewPostgresClientRepo(db), keyManager)
 
 	// TODO: Add startup time to dismiss old JWTs
 	appCtx = &bootstrap.AppContext{
@@ -99,7 +63,7 @@ func TestMain(m *testing.M) {
 		KeyManager: keyManager,
 		Logger:     consoleLogger,
 		DB:         db,
-		UserRepo:   userRepo,
+		ClientRepo: clientRepo,
 		KeyRepo:    keyRepo,
 		AdminRepo:  adminRepo,
 	}
@@ -124,14 +88,14 @@ func TestMethodNotAllowed(t *testing.T) {
 		allowedMethods []string
 	}{
 		{"/keys/actions/generate", []string{"POST"}},
-		{"/keys/keyRef", []string{"GET"}},
-		{"/keys/keyRef/actions/renew", []string{"PATCH"}},
+		{"/keys/keyRef/1", []string{"GET"}},
+		{"/keys/keyRef/actions/rotate", []string{"POST"}},
 		{"/keys/keyRef/actions/delete", []string{"DELETE"}},
 		{"/auth/signup", []string{"POST"}},
 		{"/auth/login", []string{"POST"}},
-		{"/users/12/role", []string{"POST"}},
-		{"/users/tokens/generate", []string{"POST"}},
-		{"/users/12", []string{"DELETE"}},
+		{"/auth/signup/generate", []string{"POST"}},
+		{"/clients/12/role", []string{"POST"}},
+		{"/clients/12", []string{"DELETE"}},
 	}
 
 	for _, tt := range tests {

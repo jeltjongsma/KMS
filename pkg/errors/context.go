@@ -19,6 +19,10 @@ func NewAppError(err error, msg string, code int) *AppError {
 	}
 }
 
+func (e *AppError) Error() string {
+	return e.Err.Error()
+}
+
 var ErrNoRowsAffected = errors.New("no rows affected")
 var ErrInvalidToken = errors.New("invalid token")
 var ErrRepoEncryption = errors.New("database encryption wrapper failed")

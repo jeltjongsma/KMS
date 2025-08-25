@@ -7,9 +7,9 @@ import (
 	"io"
 	"kms/internal/auth"
 	"kms/internal/bootstrap"
+	"kms/internal/clients"
 	"kms/internal/keys"
 	"kms/internal/test"
-	"kms/internal/users"
 	"kms/pkg/encryption"
 	"kms/pkg/hashing"
 	"net/http"
@@ -29,13 +29,23 @@ func requireStatusCode(t *testing.T, got int, expected int) {
 	}
 }
 
+func requireHeader(t *testing.T, header *http.Header, key, value string) {
+	v := header.Get(key)
+	if v == "" {
+		t.Fatalf("expected %s to be set", key)
+	}
+	if v != value {
+		t.Errorf("expected %s: %s, got %s", key, value, v)
+	}
+}
+
 func GetBody(resp *http.Response) string {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
 	return buf.String()
 }
 
-func requireJWT(appCtx *bootstrap.AppContext, u *users.User) (string, error) {
+func requireJWT(appCtx *bootstrap.AppContext, u *clients.Client) (string, error) {
 	ttl, _ := strconv.ParseInt(appCtx.Cfg["JWT_TTL"], 10, 64)
 	genInfo := &auth.TokenGenInfo{
 		Ttl:    ttl,
@@ -46,18 +56,18 @@ func requireJWT(appCtx *bootstrap.AppContext, u *users.User) (string, error) {
 	return auth.GenerateJWT(genInfo, u)
 }
 
-func requireSignupToken(appCtx *bootstrap.AppContext, username string) (string, error) {
+func requireSignupToken(appCtx *bootstrap.AppContext, clientname string) (string, error) {
 	genInfo := &auth.TokenGenInfo{
 		Ttl:    3600,
 		Secret: appCtx.KeyManager.SignupKey(),
 		Typ:    "signup",
 	}
 
-	return auth.GenerateSignupToken(genInfo, username)
+	return auth.GenerateSignupToken(genInfo, clientname)
 }
 
-func requireUser(appCtx *bootstrap.AppContext, username, role string) (*users.User, error) {
-	userHashKey, err := appCtx.KeyManager.HashKey("username")
+func requireClient(appCtx *bootstrap.AppContext, clientname, role string) (*clients.Client, error) {
+	clientHashKey, err := appCtx.KeyManager.HashKey("clientname")
 	if err != nil {
 		return nil, err
 	}
@@ -65,18 +75,18 @@ func requireUser(appCtx *bootstrap.AppContext, username, role string) (*users.Us
 	if err != nil {
 		return nil, err
 	}
-	hashedUser := hashing.HashHS256ToB64([]byte(username), userHashKey)
-	_, err = appCtx.UserRepo.CreateUser(&users.User{
-		Username:       username,
-		HashedUsername: hashedUser,
-		Password:       password,
-		Role:           role,
+	hashedClient := hashing.HashHS256ToB64([]byte(clientname), clientHashKey)
+	_, err = appCtx.ClientRepo.CreateClient(&clients.Client{
+		Clientname:       clientname,
+		HashedClientname: hashedClient,
+		Password:         password,
+		Role:             role,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return appCtx.UserRepo.FindByHashedUsername(hashedUser)
+	return appCtx.ClientRepo.FindByHashedClientname(hashedClient)
 }
 
 func doRequest(method, path, payload string, headers ...string) (*http.Response, error) {
@@ -99,7 +109,7 @@ func doRequest(method, path, payload string, headers ...string) (*http.Response,
 	return http.DefaultClient.Do(req)
 }
 
-func requireKey(appCtx *bootstrap.AppContext, userID int, keyRef string) (*keys.Key, error) {
+func requireKey(appCtx *bootstrap.AppContext, clientID int, keyRef string, v int, s string) (*keys.Key, error) {
 	keyRefHashKey, err := appCtx.KeyManager.HashKey("keyReference")
 	if err != nil {
 		return nil, err
@@ -112,7 +122,9 @@ func requireKey(appCtx *bootstrap.AppContext, userID int, keyRef string) (*keys.
 	return appCtx.KeyRepo.CreateKey(&keys.Key{
 		KeyReference: hashing.HashHS256ToB64([]byte(keyRef), keyRefHashKey),
 		DEK:          dek,
-		UserId:       userID,
+		ClientId:     clientID,
+		Version:      v,
+		State:        s,
 		Encoding:     "encoding",
 	})
 }

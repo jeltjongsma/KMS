@@ -17,6 +17,23 @@ func NewEncryptedKeyRepo(keyRepo keys.KeyRepository, keyManager c.KeyManager) *E
 	}
 }
 
+func (r *EncryptedKeyRepo) BeginTransaction() (keys.KeyRepository, error) {
+	newRepo, err := r.KeyRepo.BeginTransaction()
+	if err != nil {
+		return nil, err
+	}
+	r.KeyRepo = newRepo
+	return r, nil
+}
+
+func (r *EncryptedKeyRepo) CommitTransaction() error {
+	return r.KeyRepo.CommitTransaction()
+}
+
+func (r *EncryptedKeyRepo) RollbackTransaction() error {
+	return r.KeyRepo.RollbackTransaction()
+}
+
 func (r *EncryptedKeyRepo) CreateKey(key *keys.Key) (*keys.Key, error) {
 	encKey := &keys.Key{}
 	if err := EncryptFields(encKey, key, r.KeyManager); err != nil {
@@ -33,8 +50,8 @@ func (r *EncryptedKeyRepo) CreateKey(key *keys.Key) (*keys.Key, error) {
 	return retKey, nil
 }
 
-func (r *EncryptedKeyRepo) GetKey(id int, keyReference string) (*keys.Key, error) {
-	key, err := r.KeyRepo.GetKey(id, keyReference)
+func (r *EncryptedKeyRepo) GetKey(id int, keyReference string, version int) (*keys.Key, error) {
+	key, err := r.KeyRepo.GetKey(id, keyReference, version)
 	if err != nil {
 		return nil, err
 	}
@@ -47,26 +64,31 @@ func (r *EncryptedKeyRepo) GetKey(id int, keyReference string) (*keys.Key, error
 	return retKey, nil
 }
 
-func (r *EncryptedKeyRepo) UpdateKey(userId int, keyReference string, newKey string) (*keys.Key, error) {
-	encKey, err := EncryptBase64(newKey, r.KeyManager.KEK())
-	if err != nil {
-		return nil, err
-	}
-
-	stored, err := r.KeyRepo.UpdateKey(userId, keyReference, encKey)
+func (r *EncryptedKeyRepo) GetLatestKey(id int, keyReference string) (*keys.Key, error) {
+	key, err := r.KeyRepo.GetLatestKey(id, keyReference)
 	if err != nil {
 		return nil, err
 	}
 
 	retKey := &keys.Key{}
-	if err := DecryptFields(retKey, stored, r.KeyManager); err != nil {
+	if err := DecryptFields(retKey, key, r.KeyManager); err != nil {
 		return nil, err
 	}
+
 	return retKey, nil
 }
 
-func (r *EncryptedKeyRepo) Delete(userId int, keyReference string) (int, error) {
-	return r.KeyRepo.Delete(userId, keyReference)
+func (r *EncryptedKeyRepo) UpdateKey(clientId int, keyReference string, version int, state string) error {
+	encState, err := EncryptString(state, r.KeyManager.DBKey())
+	if err != nil {
+		return err
+	}
+
+	return r.KeyRepo.UpdateKey(clientId, keyReference, version, encState)
+}
+
+func (r *EncryptedKeyRepo) Delete(clientId int, keyReference string) (int, error) {
+	return r.KeyRepo.Delete(clientId, keyReference)
 }
 
 // Dev

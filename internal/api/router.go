@@ -24,25 +24,25 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 		Typ:    "jwt",
 	}
 
-	authService := auth.NewService(ctx.Cfg, ctx.UserRepo, jwtGenInfo, ctx.KeyManager, ctx.Logger)
+	authService := auth.NewService(ctx.Cfg, ctx.ClientRepo, jwtGenInfo, ctx.KeyManager, ctx.Logger)
 	authHandler := auth.NewHandler(authService, ctx.Logger)
 
 	keyService := keys.NewService(ctx.KeyRepo, ctx.KeyManager, ctx.Logger)
 	keyHandler := keys.NewHandler(keyService, ctx.Logger)
 
-	adminService := admin.NewService(ctx.AdminRepo, ctx.UserRepo, ctx.KeyManager, ctx.Logger)
+	adminService := admin.NewService(ctx.AdminRepo, ctx.ClientRepo, ctx.KeyManager, ctx.Logger)
 	adminHandler := admin.NewHandler(adminService, ctx.Logger)
 
-	// userService := users.NewService(ctx.UserRepo, ctx.Logger)
-	// userHandler := users.NewHandler(userService, ctx.Logger)
+	// clientService := clients.NewService(ctx.ClientRepo, ctx.Logger)
+	// clientHandler := clients.NewHandler(clientService, ctx.Logger)
 
 	var withAuth = mw.Authorize(ctx.KeyManager.JWTKey())
-	var adminOnly = mw.RequireAdmin(ctx.UserRepo)
+	var adminOnly = mw.RequireAdmin(ctx.ClientRepo)
 	var globalHandler = httpctx.GlobalAppHandler(ctx.Logger)
 
 	// Register routes for dev-only environment
 	if ctx.Cfg["ENV"] == "dev" {
-		// http.Handle("/users", globalHandler(httpctx.AppHandler(userHandler.GetAllDev)))
+		// http.Handle("/clients", globalHandler(httpctx.AppHandler(clientHandler.GetAllDev)))
 		http.Handle("/keys", globalHandler(httpctx.AppHandler(keyHandler.GetAllDev)))
 	}
 
@@ -55,7 +55,7 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 			),
 			mw.NewRoute(
 				"GET",
-				"/keys/{keyReference}",
+				"/keys/{keyReference}/{version}",
 				withAuth(keyHandler.GetKey),
 			),
 			mw.NewRoute(
@@ -64,9 +64,9 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 				withAuth(keyHandler.DeleteKey),
 			),
 			mw.NewRoute(
-				"PATCH",
-				"/keys/{keyReference}/actions/renew",
-				withAuth(keyHandler.RenewKey),
+				"POST",
+				"/keys/{keyReference}/actions/rotate",
+				withAuth(keyHandler.RotateKey),
 			),
 		},
 	)))
@@ -74,6 +74,11 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 	// Auth
 	http.Handle("/auth/", globalHandler(mw.MakeRouter(
 		[]*mw.Route{
+			mw.NewRoute(
+				"POST",
+				"/auth/signup/generate",
+				withAuth(adminOnly(adminHandler.GenerateSignupToken)),
+			),
 			mw.NewRoute(
 				"POST",
 				"/auth/signup",
@@ -87,34 +92,29 @@ func RegisterRoutes(ctx *bootstrap.AppContext) error {
 		},
 	)))
 
-	// Users
-	http.Handle("/users/", globalHandler(mw.MakeRouter(
+	// Clients
+	http.Handle("/clients/", globalHandler(mw.MakeRouter(
 		[]*mw.Route{
 			mw.NewRoute(
 				"POST",
-				"/users/{id}/role",
+				"/clients/{id}/role",
 				withAuth(adminOnly(adminHandler.UpdateRole)),
 			),
 			mw.NewRoute(
-				"POST",
-				"/users/tokens/generate",
-				withAuth(adminOnly(adminHandler.GenerateSignupToken)),
-			),
-			mw.NewRoute(
 				"GET",
-				"/users",
-				withAuth(adminOnly(adminHandler.GetUsers)),
+				"/clients",
+				withAuth(adminOnly(adminHandler.GetClients)),
 			),
 			mw.NewRoute(
 				"DELETE",
-				"/users/{id}",
-				withAuth(adminOnly(adminHandler.DeleteUser)),
+				"/clients/{id}",
+				withAuth(adminOnly(adminHandler.DeleteClient)),
 			),
 		},
 	)))
 
 	// Admin
-	http.Handle("/admin", globalHandler(withAuth(adminOnly(adminHandler.Me))))
+	// http.Handle("/admin", globalHandler(withAuth(adminOnly(adminHandler.Me))))
 
 	return nil
 }

@@ -4,16 +4,16 @@ import (
 	"database/sql"
 	"errors"
 	c "kms/internal/bootstrap/context"
+	"kms/internal/clients"
 	"kms/internal/test/mocks"
-	"kms/internal/users"
 	"kms/pkg/hashing"
 	"strings"
 	"testing"
 )
 
 func TestService_Signup_Success(t *testing.T) {
-	mockRepo := users.NewUserRepositoryMock()
-	mockRepo.CreateUserFunc = func(user *users.User) (int, error) {
+	mockRepo := clients.NewClientRepositoryMock()
+	mockRepo.CreateClientFunc = func(client *clients.Client) (int, error) {
 		return 1, nil
 	}
 	mockLogger := mocks.NewLoggerMock()
@@ -23,11 +23,11 @@ func TestService_Signup_Success(t *testing.T) {
 		return signupSecret
 	}
 	mockKeyManager.HashKeyFunc = func(key string) ([]byte, error) {
-		return []byte("usernamesecret"), nil
+		return []byte("clientnamesecret"), nil
 	}
 
 	cfg := c.KmsConfig{
-		"DEFAULT_ROLE": "user",
+		"DEFAULT_ROLE": "client",
 	}
 
 	tokenGenInfo := &TokenGenInfo{
@@ -38,7 +38,7 @@ func TestService_Signup_Success(t *testing.T) {
 
 	service := NewService(cfg, mockRepo, tokenGenInfo, mockKeyManager, mockLogger)
 
-	token, err := GenerateSignupToken(tokenGenInfo, "testuser")
+	token, err := GenerateSignupToken(tokenGenInfo, "testclient")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -58,7 +58,7 @@ func TestService_Signup_Success(t *testing.T) {
 }
 
 func TestService_Signup_InvalidTokenError(t *testing.T) {
-	mockRepo := users.NewUserRepositoryMock()
+	mockRepo := clients.NewClientRepositoryMock()
 	mockLogger := mocks.NewLoggerMock()
 	mockKeyManager := mocks.NewKeyManagerMock()
 	signupSecret := []byte("signupsecret")
@@ -66,10 +66,10 @@ func TestService_Signup_InvalidTokenError(t *testing.T) {
 		return signupSecret
 	}
 	mockKeyManager.HashKeyFunc = func(key string) ([]byte, error) {
-		return []byte("usernamesecret"), nil
+		return []byte("clientnamesecret"), nil
 	}
 	cfg := c.KmsConfig{
-		"DEFAULT_ROLE": "user",
+		"DEFAULT_ROLE": "client",
 	}
 	tokenGenInfo := &TokenGenInfo{
 		Ttl:    3600,
@@ -94,7 +94,7 @@ func TestService_Signup_InvalidTokenError(t *testing.T) {
 }
 
 func TestService_Signup_WrongTokenTyp(t *testing.T) {
-	mockRepo := users.NewUserRepositoryMock()
+	mockRepo := clients.NewClientRepositoryMock()
 	mockLogger := mocks.NewLoggerMock()
 	mockKeyManager := mocks.NewKeyManagerMock()
 	signupSecret := []byte("signupsecret")
@@ -102,7 +102,7 @@ func TestService_Signup_WrongTokenTyp(t *testing.T) {
 		return signupSecret
 	}
 	cfg := c.KmsConfig{
-		"DEFAULT_ROLE": "user",
+		"DEFAULT_ROLE": "client",
 	}
 
 	tokenGenInfo := &TokenGenInfo{
@@ -113,7 +113,7 @@ func TestService_Signup_WrongTokenTyp(t *testing.T) {
 
 	service := NewService(cfg, mockRepo, tokenGenInfo, mockKeyManager, mockLogger)
 
-	token, err := GenerateSignupToken(tokenGenInfo, "testuser")
+	token, err := GenerateSignupToken(tokenGenInfo, "testclient")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -132,7 +132,7 @@ func TestService_Signup_WrongTokenTyp(t *testing.T) {
 }
 
 func TestService_Signup_InvalidPasswordError(t *testing.T) {
-	mockRepo := users.NewUserRepositoryMock()
+	mockRepo := clients.NewClientRepositoryMock()
 	mockLogger := mocks.NewLoggerMock()
 	mockKeyManager := mocks.NewKeyManagerMock()
 	signupSecret := []byte("signupsecret")
@@ -140,10 +140,10 @@ func TestService_Signup_InvalidPasswordError(t *testing.T) {
 		return signupSecret
 	}
 	mockKeyManager.HashKeyFunc = func(key string) ([]byte, error) {
-		return []byte("usernamesecret"), nil
+		return []byte("clientnamesecret"), nil
 	}
 	cfg := c.KmsConfig{
-		"DEFAULT_ROLE": "user",
+		"DEFAULT_ROLE": "client",
 	}
 	tokenGenInfo := &TokenGenInfo{
 		Ttl:    3600,
@@ -151,7 +151,7 @@ func TestService_Signup_InvalidPasswordError(t *testing.T) {
 		Typ:    "signup",
 	}
 	service := NewService(cfg, mockRepo, tokenGenInfo, mockKeyManager, mockLogger)
-	token, err := GenerateSignupToken(tokenGenInfo, "testuser")
+	token, err := GenerateSignupToken(tokenGenInfo, "testclient")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -169,8 +169,8 @@ func TestService_Signup_InvalidPasswordError(t *testing.T) {
 }
 
 func TestService_Signup_RepoError(t *testing.T) {
-	mockRepo := users.NewUserRepositoryMock()
-	mockRepo.CreateUserFunc = func(user *users.User) (int, error) {
+	mockRepo := clients.NewClientRepositoryMock()
+	mockRepo.CreateClientFunc = func(client *clients.Client) (int, error) {
 		return 0, errors.New("repo error")
 	}
 	mockLogger := mocks.NewLoggerMock()
@@ -180,10 +180,10 @@ func TestService_Signup_RepoError(t *testing.T) {
 		return signupSecret
 	}
 	mockKeyManager.HashKeyFunc = func(key string) ([]byte, error) {
-		return []byte("usernamesecret"), nil
+		return []byte("clientnamesecret"), nil
 	}
 	cfg := c.KmsConfig{
-		"DEFAULT_ROLE": "user",
+		"DEFAULT_ROLE": "client",
 	}
 	tokenGenInfo := &TokenGenInfo{
 		Ttl:    3600,
@@ -191,7 +191,7 @@ func TestService_Signup_RepoError(t *testing.T) {
 		Typ:    "signup",
 	}
 	service := NewService(cfg, mockRepo, tokenGenInfo, mockKeyManager, mockLogger)
-	token, err := GenerateSignupToken(tokenGenInfo, "testuser")
+	token, err := GenerateSignupToken(tokenGenInfo, "testclient")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -210,39 +210,39 @@ func TestService_Signup_RepoError(t *testing.T) {
 }
 
 func TestService_Login_Success(t *testing.T) {
-	mockRepo := users.NewUserRepositoryMock()
+	mockRepo := clients.NewClientRepositoryMock()
 	hashedPassword, _ := hashing.HashPassword("Valid123!1234")
-	mockRepo.FindByHashedUsernameFunc = func(username string) (*users.User, error) {
-		return &users.User{
-			ID:             1,
-			Username:       "testuser",
-			HashedUsername: "hashedusername",
-			Password:       hashedPassword,
-			Role:           "user",
+	mockRepo.FindByHashedClientnameFunc = func(clientname string) (*clients.Client, error) {
+		return &clients.Client{
+			ID:               1,
+			Clientname:       "testclient",
+			HashedClientname: "hashedclientname",
+			Password:         hashedPassword,
+			Role:             "client",
 		}, nil
 	}
 	mockLogger := mocks.NewLoggerMock()
 	mockKeyManager := mocks.NewKeyManagerMock()
-	usernameSecret := []byte("usernamesecret")
+	clientnameSecret := []byte("clientnamesecret")
 	mockKeyManager.HashKeyFunc = func(key string) ([]byte, error) {
-		return usernameSecret, nil
+		return clientnameSecret, nil
 	}
 
 	cfg := c.KmsConfig{
-		"DEFAULT_ROLE": "user",
+		"DEFAULT_ROLE": "client",
 	}
 
 	tokenGenInfo := &TokenGenInfo{
 		Ttl:    3600,
-		Secret: usernameSecret,
+		Secret: clientnameSecret,
 		Typ:    "jwt",
 	}
 
 	service := NewService(cfg, mockRepo, tokenGenInfo, mockKeyManager, mockLogger)
 
 	loginCreds := &Credentials{
-		Username: "testuser",
-		Password: "Valid123!1234",
+		Clientname: "testclient",
+		Password:   "Valid123!1234",
 	}
 
 	jwt, appErr := service.Login(loginCreds)
@@ -256,14 +256,14 @@ func TestService_Login_Success(t *testing.T) {
 }
 
 func TestService_Login_KeyManagerError(t *testing.T) {
-	mockRepo := users.NewUserRepositoryMock()
+	mockRepo := clients.NewClientRepositoryMock()
 	mockLogger := mocks.NewLoggerMock()
 	mockKeyManager := mocks.NewKeyManagerMock()
 	mockKeyManager.HashKeyFunc = func(key string) ([]byte, error) {
 		return nil, errors.New("key manager error")
 	}
 	cfg := c.KmsConfig{
-		"DEFAULT_ROLE": "user",
+		"DEFAULT_ROLE": "client",
 	}
 	tokenGenInfo := &TokenGenInfo{
 		Ttl:    3600,
@@ -273,8 +273,8 @@ func TestService_Login_KeyManagerError(t *testing.T) {
 	service := NewService(cfg, mockRepo, tokenGenInfo, mockKeyManager, mockLogger)
 
 	loginCreds := &Credentials{
-		Username: "testuser",
-		Password: "Valid123!1234",
+		Clientname: "testclient",
+		Password:   "Valid123!1234",
 	}
 
 	_, appErr := service.Login(loginCreds)
@@ -286,18 +286,18 @@ func TestService_Login_KeyManagerError(t *testing.T) {
 	}
 }
 
-func TestService_Login_UserNotFound(t *testing.T) {
-	mockRepo := users.NewUserRepositoryMock()
-	mockRepo.FindByHashedUsernameFunc = func(username string) (*users.User, error) {
+func TestService_Login_ClientNotFound(t *testing.T) {
+	mockRepo := clients.NewClientRepositoryMock()
+	mockRepo.FindByHashedClientnameFunc = func(clientname string) (*clients.Client, error) {
 		return nil, sql.ErrNoRows
 	}
 	mockLogger := mocks.NewLoggerMock()
 	mockKeyManager := mocks.NewKeyManagerMock()
 	mockKeyManager.HashKeyFunc = func(key string) ([]byte, error) {
-		return []byte("usernamesecret"), nil
+		return []byte("clientnamesecret"), nil
 	}
 	cfg := c.KmsConfig{
-		"DEFAULT_ROLE": "user",
+		"DEFAULT_ROLE": "client",
 	}
 	tokenGenInfo := &TokenGenInfo{
 		Ttl:    3600,
@@ -307,41 +307,41 @@ func TestService_Login_UserNotFound(t *testing.T) {
 	service := NewService(cfg, mockRepo, tokenGenInfo, mockKeyManager, mockLogger)
 
 	loginCreds := &Credentials{
-		Username: "testuser",
-		Password: "Valid123!1234",
+		Clientname: "testclient",
+		Password:   "Valid123!1234",
 	}
 
 	_, appErr := service.Login(loginCreds)
 	if appErr == nil {
-		t.Fatal("expected error for user not found, got nil")
+		t.Fatal("expected error for client not found, got nil")
 	}
 	if appErr.Code != 401 {
 		t.Errorf("expected error code 401, got %d", appErr.Code)
 	}
-	if appErr.Message != "Incorrect username or password" {
-		t.Errorf("expected error message 'Incorrect username or password', got '%s'", appErr.Message)
+	if appErr.Message != "Incorrect clientname or password" {
+		t.Errorf("expected error message 'Incorrect clientname or password', got '%s'", appErr.Message)
 	}
 }
 
 func TestService_Login_InvalidPassword(t *testing.T) {
-	mockRepo := users.NewUserRepositoryMock()
+	mockRepo := clients.NewClientRepositoryMock()
 	hashedPassword, _ := hashing.HashPassword("Valid123!1234")
-	mockRepo.FindByHashedUsernameFunc = func(username string) (*users.User, error) {
-		return &users.User{
-			ID:             1,
-			Username:       "testuser",
-			HashedUsername: "hashedusername",
-			Password:       hashedPassword,
-			Role:           "user",
+	mockRepo.FindByHashedClientnameFunc = func(clientname string) (*clients.Client, error) {
+		return &clients.Client{
+			ID:               1,
+			Clientname:       "testclient",
+			HashedClientname: "hashedclientname",
+			Password:         hashedPassword,
+			Role:             "client",
 		}, nil
 	}
 	mockLogger := mocks.NewLoggerMock()
 	mockKeyManager := mocks.NewKeyManagerMock()
 	mockKeyManager.HashKeyFunc = func(key string) ([]byte, error) {
-		return []byte("usernamesecret"), nil
+		return []byte("clientnamesecret"), nil
 	}
 	cfg := c.KmsConfig{
-		"DEFAULT_ROLE": "user",
+		"DEFAULT_ROLE": "client",
 	}
 	tokenGenInfo := &TokenGenInfo{
 		Ttl:    3600,
@@ -351,8 +351,8 @@ func TestService_Login_InvalidPassword(t *testing.T) {
 	service := NewService(cfg, mockRepo, tokenGenInfo, mockKeyManager, mockLogger)
 
 	loginCreds := &Credentials{
-		Username: "testuser",
-		Password: "WrongPassword123!",
+		Clientname: "testclient",
+		Password:   "WrongPassword123!",
 	}
 
 	_, appErr := service.Login(loginCreds)
@@ -362,8 +362,8 @@ func TestService_Login_InvalidPassword(t *testing.T) {
 	if appErr.Code != 401 {
 		t.Errorf("expected error code 401, got %d", appErr.Code)
 	}
-	if appErr.Message != "Incorrect username or password" {
-		t.Errorf("expected error message 'Incorrect username or password', got '%s'", appErr.Message)
+	if appErr.Message != "Incorrect clientname or password" {
+		t.Errorf("expected error message 'Incorrect clientname or password', got '%s'", appErr.Message)
 	}
 }
 

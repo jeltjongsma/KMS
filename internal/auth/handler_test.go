@@ -99,7 +99,7 @@ func TestHandler_Login_Success(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/auth/login", strings.NewReader(`{"username": "user", "password": "password"}`))
+	req := httptest.NewRequest("POST", "/auth/login", strings.NewReader(`{"clientname": "client", "password": "password"}`))
 	rr := httptest.NewRecorder()
 
 	err := handler.Login(rr, req)
@@ -116,7 +116,7 @@ func TestHandler_Login_ParseBodyError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/auth/login", strings.NewReader(`{"username": "user", "password": "password"`))
+	req := httptest.NewRequest("POST", "/auth/login", strings.NewReader(`{"clientname": "client", "password": "password"`))
 	rr := httptest.NewRecorder()
 
 	err := handler.Login(rr, req)
@@ -143,8 +143,8 @@ func TestHandler_Login_InvalidBodyError(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error")
 	}
-	if !strings.Contains(err.Err.Error(), "username and password should be non-empty") {
-		t.Errorf("expected error: username and password should be non-empty, got: %v", err.Err.Error())
+	if !strings.Contains(err.Err.Error(), "clientname and password should be non-empty") {
+		t.Errorf("expected error: clientname and password should be non-empty, got: %v", err.Err.Error())
 	}
 	if err.Code != 400 {
 		t.Errorf("handler returned wrong status code: got %v want %v", err.Code, 400)
@@ -159,7 +159,7 @@ func TestHandler_Login_ServiceError(t *testing.T) {
 	mockLogger := mocks.NewLoggerMock()
 	handler := NewHandler(mockService, mockLogger)
 
-	req := httptest.NewRequest("POST", "/auth/login", strings.NewReader(`{"username": "user", "password": "password"}`))
+	req := httptest.NewRequest("POST", "/auth/login", strings.NewReader(`{"clientname": "client", "password": "password"}`))
 	rr := httptest.NewRecorder()
 
 	err := handler.Login(rr, req)

@@ -2,19 +2,19 @@ package auth
 
 import (
 	"fmt"
-	"kms/internal/users"
+	"kms/internal/clients"
 )
 
 type Credentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Clientname string `json:"clientname"`
+	Password   string `json:"password"`
 }
 
-func (c *Credentials) Lift() *users.User {
-	var user users.User
-	user.Username = c.Username
-	user.Password = c.Password
-	return &user
+func (c *Credentials) Lift() *clients.Client {
+	var client clients.Client
+	client.Clientname = c.Clientname
+	client.Password = c.Password
+	return &client
 }
 
 type SignupCredentials struct {
@@ -30,8 +30,8 @@ func (c *SignupCredentials) Validate() error {
 }
 
 func (c *Credentials) Validate() error {
-	if c.Username != "" && c.Password != "" {
+	if c.Clientname != "" && c.Password != "" {
 		return nil
 	}
-	return fmt.Errorf("username and password should be non-empty")
+	return fmt.Errorf("clientname and password should be non-empty")
 }

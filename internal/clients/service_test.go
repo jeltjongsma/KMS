@@ -1,4 +1,4 @@
-package users
+package clients
 
 import (
 	"errors"
@@ -7,24 +7,24 @@ import (
 )
 
 func TestService_GetAll_Success(t *testing.T) {
-	mockRepo := NewUserRepositoryMock()
-	mockRepo.GetAllFunc = func() ([]User, error) {
-		return []User{{Username: "testuser"}}, nil
+	mockRepo := NewClientRepositoryMock()
+	mockRepo.GetAllFunc = func() ([]Client, error) {
+		return []Client{{Clientname: "testclient"}}, nil
 	}
 	mockLogger := mocks.NewLoggerMock()
 	service := NewService(mockRepo, mockLogger)
-	users, err := service.GetAll()
+	clients, err := service.GetAll()
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if len(users) != 1 || users[0].Username != "testuser" {
-		t.Errorf("expected one user with username 'testuser', got %v", users)
+	if len(clients) != 1 || clients[0].Clientname != "testclient" {
+		t.Errorf("expected one client with clientname 'testclient', got %v", clients)
 	}
 }
 
 func TestService_GetAll_Error(t *testing.T) {
-	mockRepo := NewUserRepositoryMock()
-	mockRepo.GetAllFunc = func() ([]User, error) {
+	mockRepo := NewClientRepositoryMock()
+	mockRepo.GetAllFunc = func() ([]Client, error) {
 		return nil, errors.New("repo error")
 	}
 	mockLogger := mocks.NewLoggerMock()

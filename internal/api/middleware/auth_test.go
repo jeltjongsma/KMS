@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"kms/internal/auth"
+	"kms/internal/clients"
 	"kms/internal/httpctx"
-	"kms/internal/users"
 	kmsErrors "kms/pkg/errors"
 	"net/http"
 	"net/http/httptest"
@@ -20,9 +20,9 @@ func TestAuthorize_Success(t *testing.T) {
 		Ttl:    3600,
 		Secret: jwtSecret,
 		Typ:    "jwt",
-	}, &users.User{
-		ID:       1,
-		Username: "testuser",
+	}, &clients.Client{
+		ID:         1,
+		Clientname: "testclient",
 	})
 	if err != nil {
 		t.Fatalf("failed to generate token: %v", err)
@@ -86,9 +86,9 @@ func TestAuthorize_InvalidHeader(t *testing.T) {
 		Ttl:    3600,
 		Secret: jwtSecret,
 		Typ:    "other",
-	}, &users.User{
-		ID:       1,
-		Username: "testuser",
+	}, &clients.Client{
+		ID:         1,
+		Clientname: "testclient",
 	})
 	if err != nil {
 		t.Fatalf("failed to generate wrong token: %v", err)
@@ -162,9 +162,9 @@ func TestAuthorize_InvalidHeader(t *testing.T) {
 }
 
 func TestRequireAdmin_Success(t *testing.T) {
-	// Mock user repository
-	userRepo := users.NewUserRepositoryMock()
-	userRepo.GetRoleFunc = func(userID int) (string, error) {
+	// Mock client repository
+	clientRepo := clients.NewClientRepositoryMock()
+	clientRepo.GetRoleFunc = func(clientID int) (string, error) {
 		return "admin", nil // Mock admin role
 	}
 
@@ -174,7 +174,7 @@ func TestRequireAdmin_Success(t *testing.T) {
 		return nil
 	}
 
-	handler := RequireAdmin(userRepo)(next)
+	handler := RequireAdmin(clientRepo)(next)
 
 	req, err := http.NewRequest("GET", "/admin", nil)
 	if err != nil {
@@ -183,7 +183,7 @@ func TestRequireAdmin_Success(t *testing.T) {
 
 	ctx := context.WithValue(req.Context(), httpctx.TokenCtxKey, auth.Token{
 		Payload: &auth.TokenPayload{
-			Sub: "1", // Mock user ID
+			Sub: "1", // Mock client ID
 		},
 	})
 
@@ -198,54 +198,54 @@ func TestRequireAdmin_Success(t *testing.T) {
 }
 
 // Missing token -> Internal server error
-// Invalid user ID -> Internal server error
+// Invalid client ID -> Internal server error
 // Repo error -> Internal server error
 // Forbidden role -> Forbidden
 
 func TestRequireAdmin_Error(t *testing.T) {
-	userRepoError := users.NewUserRepositoryMock()
-	userRepoError.GetRoleFunc = func(userID int) (string, error) {
+	clientRepoError := clients.NewClientRepositoryMock()
+	clientRepoError.GetRoleFunc = func(clientID int) (string, error) {
 		return "", errors.New("repo error") // Mock repository error
 	}
-	userRepoForbidden := users.NewUserRepositoryMock()
-	userRepoForbidden.GetRoleFunc = func(userID int) (string, error) {
-		return "user", nil // Mock non-admin role
+	clientRepoForbidden := clients.NewClientRepositoryMock()
+	clientRepoForbidden.GetRoleFunc = func(clientID int) (string, error) {
+		return "client", nil // Mock non-admin role
 	}
 
 	tests := []struct {
-		name     string
-		userRepo users.UserRepository
-		token    auth.Token
-		wantCode int
+		name       string
+		clientRepo clients.ClientRepository
+		token      auth.Token
+		wantCode   int
 	}{
 		{
-			name:     "Invalid user ID",
-			userRepo: userRepoError, // Will not be called
+			name:       "Invalid client ID",
+			clientRepo: clientRepoError, // Will not be called
 			token: auth.Token{Payload: &auth.TokenPayload{
-				Sub: "invalid", // Invalid user ID
+				Sub: "invalid", // Invalid client ID
 			}},
 			wantCode: 500,
 		},
 		{
-			name:     "Repository error",
-			userRepo: userRepoError,
+			name:       "Repository error",
+			clientRepo: clientRepoError,
 			token: auth.Token{Payload: &auth.TokenPayload{
-				Sub: "1", // Valid user ID
+				Sub: "1", // Valid client ID
 			}},
 			wantCode: 500,
 		},
 		{
-			name:     "Forbidden role",
-			userRepo: userRepoForbidden,
+			name:       "Forbidden role",
+			clientRepo: clientRepoForbidden,
 			token: auth.Token{Payload: &auth.TokenPayload{
-				Sub: "1", // Valid user ID
+				Sub: "1", // Valid client ID
 			}},
 			wantCode: 403,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := RequireAdmin(tt.userRepo)(func(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
+			handler := RequireAdmin(tt.clientRepo)(func(w http.ResponseWriter, r *http.Request) *kmsErrors.AppError {
 				return nil // This handler should not be called
 			})
 
@@ -269,9 +269,9 @@ func TestRequireAdmin_Error(t *testing.T) {
 }
 
 func TestRequireAdmin_MissingToken(t *testing.T) {
-	// Mock user repository
-	userRepo := users.NewUserRepositoryMock()
-	userRepo.GetRoleFunc = func(userID int) (string, error) {
+	// Mock client repository
+	clientRepo := clients.NewClientRepositoryMock()
+	clientRepo.GetRoleFunc = func(clientID int) (string, error) {
 		return "admin", nil // Mock admin role
 	}
 
@@ -280,7 +280,7 @@ func TestRequireAdmin_MissingToken(t *testing.T) {
 		return nil // This handler should not be called
 	}
 
-	handler := RequireAdmin(userRepo)(next)
+	handler := RequireAdmin(clientRepo)(next)
 
 	req, err := http.NewRequest("GET", "/admin", nil)
 	if err != nil {

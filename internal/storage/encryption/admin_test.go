@@ -3,8 +3,8 @@ package encryption
 import (
 	"errors"
 	"kms/internal/admin"
+	"kms/internal/clients"
 	"kms/internal/test/mocks"
-	"kms/internal/users"
 	"kms/pkg/encryption"
 	"strings"
 	"testing"
@@ -20,20 +20,20 @@ func TestGetAdmin_Success(t *testing.T) {
 		return dbKey
 	}
 
-	original := &users.User{
-		ID:             1,
-		Username:       "username",
-		HashedUsername: "hashedUsername",
-		Password:       "password",
-		Role:           "role",
+	original := &clients.Client{
+		ID:               1,
+		Clientname:       "clientname",
+		HashedClientname: "hashedClientname",
+		Password:         "password",
+		Role:             "role",
 	}
-	var a users.User
+	var a clients.Client
 	err = EncryptFields(&a, original, keyManager)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	mockRepo := admin.NewAdminRepositoryMock()
-	mockRepo.GetAdminFunc = func(id int) (*users.User, error) {
+	mockRepo.GetAdminFunc = func(id int) (*clients.Client, error) {
 		return &a, nil
 	}
 
@@ -50,7 +50,7 @@ func TestGetAdmin_Success(t *testing.T) {
 
 func TestAdmin_RepoError(t *testing.T) {
 	mockRepo := admin.NewAdminRepositoryMock()
-	mockRepo.GetAdminFunc = func(id int) (*users.User, error) {
+	mockRepo.GetAdminFunc = func(id int) (*clients.Client, error) {
 		return nil, errors.New("repo error")
 	}
 

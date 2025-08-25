@@ -52,7 +52,7 @@ func TestMapHashErr(t *testing.T) {
 		wantCode    int
 		wantMessage string
 	}{
-		{"mismatched hash", bcrypt.ErrMismatchedHashAndPassword, 401, "Incorrect username or password"},
+		{"mismatched hash", bcrypt.ErrMismatchedHashAndPassword, 401, "Incorrect clientname or password"},
 		{"other error", errors.New("boom"), 500, "Internal server error"},
 	}
 

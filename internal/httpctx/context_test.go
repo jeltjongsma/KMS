@@ -16,7 +16,7 @@ import (
 
 func TestGetRouteParam(t *testing.T) {
 	ctx := context.WithValue(context.Background(), RouteParamsCtxKey, map[string]string{
-		"userID": "123",
+		"clientID": "123",
 	})
 
 	tests := []struct {
@@ -26,7 +26,7 @@ func TestGetRouteParam(t *testing.T) {
 		wantErr  bool
 		wantMsg  string
 	}{
-		{"ValidParam", "userID", "123", false, ""},
+		{"ValidParam", "clientID", "123", false, ""},
 		{"InvalidParam", "invalid", "", true, "param (invalid) not in path"},
 	}
 
@@ -53,7 +53,7 @@ func TestGetRouteParam(t *testing.T) {
 func TestGetRouteParam_MissingContext(t *testing.T) {
 	ctx := context.Background() // No route params set
 
-	_, err := GetRouteParam(ctx, "userID")
+	_, err := GetRouteParam(ctx, "clientID")
 	if err == nil {
 		t.Error("GetRouteParam expected error, got nil")
 	} else if !strings.Contains(err.Error(), "no route params in context") {

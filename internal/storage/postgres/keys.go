@@ -2,45 +2,101 @@ package postgres
 
 import (
 	"database/sql"
+	"errors"
 	"kms/internal/keys"
 )
 
 type PostgresKeyRepo struct {
 	db *sql.DB
+	tx *sql.Tx
 }
 
 func NewPostgresKeyRepo(db *sql.DB) *PostgresKeyRepo {
 	return &PostgresKeyRepo{db: db}
 }
 
+func (r *PostgresKeyRepo) BeginTransaction() (keys.KeyRepository, error) {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	r.tx = tx
+	return r, nil
+}
+
+func (r *PostgresKeyRepo) CommitTransaction() error {
+	if r.tx == nil {
+		return errors.New("no active transaction to commit")
+	}
+	err := r.tx.Commit()
+	if err != nil {
+		return err
+	}
+	r.tx = nil
+	return nil
+}
+
+func (r *PostgresKeyRepo) RollbackTransaction() error {
+	if r.tx == nil {
+		return nil
+	}
+	err := r.tx.Rollback()
+	if err != nil {
+		return err
+	}
+	r.tx = nil
+	return nil
+}
+
 func (r *PostgresKeyRepo) CreateKey(key *keys.Key) (*keys.Key, error) {
-	query := "INSERT INTO keys (keyReference, dek, userId, encoding) VALUES ($1, $2, $3, $4) RETURNING *"
+	query := "INSERT INTO keys (clientId, keyReference, version, dek, state, encoding) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *"
 	var newKey keys.Key
-	err := r.db.QueryRow(query, key.KeyReference, key.DEK, key.UserId, key.Encoding).
-		Scan(&newKey.ID, &newKey.KeyReference, &newKey.DEK, &newKey.UserId, &newKey.Encoding)
+	if r.tx != nil {
+		err := r.tx.QueryRow(query, key.ClientId, key.KeyReference, key.Version, key.DEK, key.State, key.Encoding).
+			Scan(&newKey.ID, &newKey.ClientId, &newKey.KeyReference, &newKey.Version, &newKey.DEK, &newKey.State, &newKey.Encoding)
+		return &newKey, err
+	}
+	err := r.db.QueryRow(query, key.ClientId, key.KeyReference, key.Version, key.DEK, key.State, key.Encoding).
+		Scan(&newKey.ID, &newKey.ClientId, &newKey.KeyReference, &newKey.Version, &newKey.DEK, &newKey.State, &newKey.Encoding)
 	return &newKey, err
 }
 
-func (r *PostgresKeyRepo) GetKey(userId int, keyReference string) (*keys.Key, error) {
-	query := "SELECT * FROM keys WHERE userId = $1 AND keyReference = $2"
+func (r *PostgresKeyRepo) GetKey(clientId int, keyReference string, version int) (*keys.Key, error) {
+	query := "SELECT * FROM keys WHERE clientId = $1 AND keyReference = $2 AND version = $3"
 	var key keys.Key
-	err := r.db.QueryRow(query, userId, keyReference).
-		Scan(&key.ID, &key.KeyReference, &key.DEK, &key.UserId, &key.Encoding)
+	err := r.db.QueryRow(query, clientId, keyReference, version).
+		Scan(&key.ID, &key.ClientId, &key.KeyReference, &key.Version, &key.DEK, &key.State, &key.Encoding)
 	return &key, err
 }
 
-func (r *PostgresKeyRepo) UpdateKey(userId int, keyReference string, newKey string) (*keys.Key, error) {
-	query := "UPDATE keys SET dek = $1 WHERE userId = $2 AND keyReference = $3 RETURNING *"
+func (r *PostgresKeyRepo) GetLatestKey(clientId int, keyReference string) (*keys.Key, error) {
+	query := "SELECT * FROM keys WHERE clientId = $1 AND keyReference = $2 ORDER BY version DESC LIMIT 1"
 	var key keys.Key
-	err := r.db.QueryRow(query, newKey, userId, keyReference).
-		Scan(&key.ID, &key.KeyReference, &key.DEK, &key.UserId, &key.Encoding)
+	if r.tx != nil {
+		err := r.tx.QueryRow(query, clientId, keyReference).
+			Scan(&key.ID, &key.ClientId, &key.KeyReference, &key.Version, &key.DEK, &key.State, &key.Encoding)
+		return &key, err
+	}
+	err := r.db.QueryRow(query, clientId, keyReference).
+		Scan(&key.ID, &key.ClientId, &key.KeyReference, &key.Version, &key.DEK, &key.State, &key.Encoding)
 	return &key, err
 }
 
-func (r *PostgresKeyRepo) Delete(userId int, keyReference string) (int, error) {
-	query := "DELETE FROM keys WHERE userId = $1 AND keyReference = $2 RETURNING id"
+func (r *PostgresKeyRepo) UpdateKey(clientId int, keyReference string, version int, state string) error {
+	query := "UPDATE keys SET state = $1 WHERE clientId = $2 AND keyReference = $3 AND version = $4"
+	if r.tx != nil {
+		_, err := r.tx.Exec(query, state, clientId, keyReference, version)
+		return err
+	}
+	_, err := r.db.Exec(query, state, clientId, keyReference, version)
+	return err
+}
+
+// don't care for version, delete everything
+func (r *PostgresKeyRepo) Delete(clientId int, keyReference string) (int, error) {
+	query := "DELETE FROM keys WHERE clientId = $1 AND keyReference = $2 RETURNING id"
 	var keyId int
-	err := r.db.QueryRow(query, userId, keyReference).Scan(&keyId)
+	err := r.db.QueryRow(query, clientId, keyReference).Scan(&keyId)
 	return keyId, err
 }
 
@@ -55,7 +111,7 @@ func (r *PostgresKeyRepo) GetAll() ([]keys.Key, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var key keys.Key
-		err := rows.Scan(&key.ID, &key.KeyReference, &key.DEK, &key.UserId, &key.Encoding)
+		err := rows.Scan(&key.ID, &key.ClientId, &key.KeyReference, &key.Version, &key.DEK, &key.State, &key.Encoding)
 		if err != nil {
 			return allKeys, err
 		}

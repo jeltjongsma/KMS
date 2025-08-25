@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"kms/internal/admin"
 	c "kms/internal/bootstrap/context"
+	"kms/internal/clients"
 	"kms/internal/keys"
-	"kms/internal/users"
 )
 
 type AppContext struct {
@@ -14,6 +14,6 @@ type AppContext struct {
 	Logger     c.Logger
 	DB         *sql.DB
 	KeyRepo    keys.KeyRepository
-	UserRepo   users.UserRepository
+	ClientRepo clients.ClientRepository
 	AdminRepo  admin.AdminRepository
 }

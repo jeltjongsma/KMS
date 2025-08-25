@@ -33,59 +33,20 @@ func main() {
 	}
 	defer db.Close()
 
-	// TODO: Implement migration instead of this mess
-	schemas := []postgres.TableSchema{
-		{
-			Name: "keys",
-			Fields: map[string]string{
-				"id":           "SERIAL PRIMARY KEY",
-				"keyReference": "VARCHAR(64) NOT NULL",
-				"dek":          "VARCHAR(80) NOT NULL",
-				"userId":       "INTEGER NOT NULL",
-				"encoding":     "VARCHAR(64) NOT NULL",
-			},
-			Keys: []string{
-				"id",
-				"keyReference",
-				"dek",
-				"userId",
-				"encoding",
-			},
-			Unique: []string{"userId", "keyReference"},
-		},
-		{
-			Name: "users",
-			Fields: map[string]string{
-				"id":             "SERIAL PRIMARY KEY",
-				"username":       "VARCHAR(128) UNIQUE NOT NULL",
-				"hashedUsername": "VARCHAR(44) UNIQUE NOT NULL",
-				"password":       "CHAR(60) NOT NULL",
-				"role":           "VARCHAR(44) NOT NULL DEFAULT 'user'",
-			},
-			Keys: []string{
-				"id",
-				"username",
-				"hashedUsername",
-				"password",
-				"role",
-			},
-		},
-	}
-
-	if err := postgres.InitSchema(cfg, db, schemas, keyManager); err != nil {
-		log.Fatal("Failed to create schema: ", err)
+	if err := postgres.InitSchema(cfg, db, keyManager, "database/migrations"); err != nil {
+		log.Fatal("Failed to init schema: ", err)
 	}
 
 	keyRepo := dbEncr.NewEncryptedKeyRepo(postgres.NewPostgresKeyRepo(db), keyManager)
 	adminRepo := dbEncr.NewEncryptedAdminRepo(postgres.NewPostgresAdminRepo(db), keyManager)
-	userRepo := dbEncr.NewEncryptedUserRepo(postgres.NewPostgresUserRepo(db), keyManager)
+	clientRepo := dbEncr.NewEncryptedClientRepo(postgres.NewPostgresClientRepo(db), keyManager)
 
 	appCtx := &bootstrap.AppContext{
 		Cfg:        cfg,
 		KeyManager: keyManager,
 		Logger:     consoleLogger,
 		DB:         db,
-		UserRepo:   userRepo,
+		ClientRepo: clientRepo,
 		KeyRepo:    keyRepo,
 		AdminRepo:  adminRepo,
 	}

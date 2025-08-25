@@ -39,9 +39,9 @@ func TestInitStaticKeyManager_Success(t *testing.T) {
 	if err != nil || string(keyRef) != "keyref" {
 		t.Errorf("HashKey(keyReference) = %q, err=%v, want 'keyref'", string(keyRef), err)
 	}
-	uname, err := km.HashKey("username")
+	uname, err := km.HashKey("clientname")
 	if err != nil || string(uname) != "uname" {
-		t.Errorf("HashKey(username) = %q, err=%v, want 'uname'", string(uname), err)
+		t.Errorf("HashKey(clientname) = %q, err=%v, want 'uname'", string(uname), err)
 	}
 }
 
