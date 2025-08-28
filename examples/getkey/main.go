@@ -15,10 +15,11 @@ import (
 //   - A running KMS instance
 //   - A user created in the KMS
 //   - A key created in the KMS using the kms-client CLI tool
-//   - A .env file in the example/ directory with the following variables set:
+//   - The following environment variables set (e.g., in a .env file):
 //     KMS_BASE_URL: The base URL of the KMS instance (e.g., https://localhost:8443)
 //     KMS_USER: The username of the user created in the KMS
 //     KMS_PASS: The password of the user created in the KMS
+//     (Optional) KMS_INSECURE_SKIP_VERIFY: Set to "true" to skip TLS verification (for self-signed certificates)
 //
 // Run the example:
 //
