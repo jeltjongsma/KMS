@@ -29,7 +29,7 @@ I kept both to demonstrate my progression from a minimal working system toward a
 
 ### Key management
 1. Generate -> `/keys/actions/generate` || `kms-client generate --ref <key reference>`
-2. Retrieve -> `/keys/{keyReference}/{version}` || `sdk.GetKey(ref, version)`
+2. Retrieve -> `/keys/{keyReference}/{version}` || `client.GetKey(ref, version)`
 3. Rotate -> `/keys/{keyReference}/actions/rotate` || `kms-client rotate --ref <key reference>`
 4. Delete -> `/keys/{keyReference}/actions/delete` || `kms-client delete --ref <key reference>`
 
