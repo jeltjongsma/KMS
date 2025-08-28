@@ -4,7 +4,7 @@ Currently only supports key retrieval.
 
 ## Installation
 ```bash
-go get github.com/jeltjongsma/KMS/sdk
+go get github.com/jeltjongsma/KMS/pkg/sdk
 ```
 
 ## Usage
