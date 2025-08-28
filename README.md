@@ -15,6 +15,7 @@ In this documentation "client" refers to **service account** — a non-human ser
 - DEK rotation and versioning (`in-use | deprecated`)
 - Admin CLI (`kms-admin`) for generating signup tokens, which must be run locally on the KMS host
 - Client CLI (`kms-client`) for key lifecycle management
+- Lightweight [Go SDK](./pkg/sdk/README.md) for key retrieval  
 
 ## Workflows 
 ### Client registration and authentication
@@ -28,7 +29,7 @@ I kept both to demonstrate my progression from a minimal working system toward a
 
 ### Key management
 1. Generate -> `/keys/actions/generate` || `kms-client generate --ref <key reference>`
-2. Retrieve -> `/keys/{keyReference}/{version}`
+2. Retrieve -> `/keys/{keyReference}/{version}` || `sdk.GetKey(ref, version)`
 3. Rotate -> `/keys/{keyReference}/actions/rotate` || `kms-client rotate --ref <key reference>`
 4. Delete -> `/keys/{keyReference}/actions/delete` || `kms-client delete --ref <key reference>`
 
@@ -62,7 +63,7 @@ This project was developed as a learning exercise in secure API design and key m
 My focus was on building a production-ready system with a strong security model while exploring Go, PostgreSQL, and encryption best practices.
 
 To deepen my understanding, I deliberately avoided third-party libraries wherever possible and implemented almost everything myself. 
-This included JWT handling, encryption wrappers, simple migrations and logging, routing, and database transactions.
+This includes JWT handling, encryption wrappers, simple migrations and logging, routing, and database transactions.
 In a production system, these would typically be provided by well-tested libraries, but my goal was to explore the underlying implementations.
 
 AI was used as a brainstorming and troubleshooting tool, with all architecture, design decisions, and implementation completed manually.
@@ -73,8 +74,9 @@ Possible future improvements could include:
 - Full DEK lifecycle (`in-use | deprecated | retired`)  
 - Automatic DEK rotation  
 - Support for (automatic) KEK rotation and versioning  
-- Audit logging and monitoring  
-- Client SDKs (e.g., Go, Java, Python)  
+- Audit logging and monitoring
+- Support for full key usage in Go SDK (e.g., `Encrypt(*KeyBundle)`, `Decrypt(*KeyBundle)`)
+- SDKs in other languages (e.g., Java, Python)  
 
 ## License
 This project is licensed under the MIT license - see the [LICENSE](LICENSE) file for details.
