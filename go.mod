@@ -1,4 +1,4 @@
-module kms
+module github.com/jeltjongsma/kms
 
 go 1.23.0
 
